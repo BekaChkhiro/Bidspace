@@ -255,3 +255,14 @@ function populate_auction_columns($column, $post_id) {
     }
 }
 add_action('manage_auction_posts_custom_column', 'populate_auction_columns', 10, 2);
+
+// Hide admin bar using CSS as well
+function hide_admin_bar_css() {
+    if (!current_user_can('manage_options') && current_user_can('auction-user')) {
+        echo '<style type="text/css">
+            #wpadminbar { display: none !important; }
+            html { margin-top: 0 !important; }
+        </style>';
+    }
+}
+add_action('wp_head', 'hide_admin_bar_css');

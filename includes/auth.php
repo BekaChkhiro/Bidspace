@@ -159,6 +159,15 @@ function logout_page() {
 }
 add_action('wp_logout', 'logout_page');
 
+// Logout endpoint
+function custom_logout_endpoint() {
+    wp_logout();
+    return new WP_REST_Response([
+        'success' => true,
+        'message' => 'Successfully logged out'
+    ]);
+}
+
 // Register REST routes
 add_action('rest_api_init', function() {
     register_rest_route('custom/v1', '/login', array(
@@ -178,4 +187,10 @@ add_action('rest_api_init', function() {
         'callback' => 'custom_verify_code_endpoint',
         'permission_callback' => '__return_true'
     ));
+
+    register_rest_route('custom/v1', '/logout', [
+        'methods' => 'GET',
+        'callback' => 'custom_logout_endpoint',
+        'permission_callback' => '__return_true'
+    ]);
 });
