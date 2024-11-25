@@ -115,3 +115,22 @@ function spa_template() {
   return get_template_directory() . '/index.php';
 }
 add_filter('template_include', 'spa_template');
+
+function spa_enable_rewrites() {
+  add_rewrite_rule('^questions/?', 'index.php', 'top');
+  add_rewrite_rule('^auction/?', 'index.php', 'top');
+  add_rewrite_rule('^instruction/?', 'index.php', 'top');
+  add_rewrite_rule('^sport/?', 'index.php', 'top');
+  add_rewrite_rule('^travel/?', 'index.php', 'top');
+  add_rewrite_rule('^events/?', 'index.php', 'top');
+  add_rewrite_rule('^theater_cinema/?', 'index.php', 'top');
+}
+add_action('init', 'spa_enable_rewrites');
+
+function spa_template_include($template) {
+  if (is_404()) {
+      return get_stylesheet_directory() . '/index.php';
+  }
+  return $template;
+}
+add_filter('template_include', 'spa_template_include');
