@@ -105,3 +105,13 @@ add_filter('rest_user_query', function($args, $request) {
     $args['has_published_posts'] = false;
     return $args;
 }, 10, 2);
+
+function spa_rewrite_rules() {
+  add_rewrite_rule('^.*$', 'index.php', 'top');
+}
+add_action('init', 'spa_rewrite_rules');
+
+function spa_template() {
+  return get_template_directory() . '/index.php';
+}
+add_filter('template_include', 'spa_template');
