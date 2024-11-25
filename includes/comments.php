@@ -1,8 +1,9 @@
 <?php
 /**
- * Comments functionality
+ * Comments Functions
  */
 
+// Add comment capabilities
 function add_auction_comment_capabilities() {
     $roles = array('administrator', 'editor', 'author', 'contributor', 'subscriber');
     
@@ -14,7 +15,9 @@ function add_auction_comment_capabilities() {
         }
     }
 }
+add_action('init', 'add_auction_comment_capabilities');
 
+// Register meta fields
 function register_auction_meta_fields() {
     register_post_meta('auction', 'comments', array(
         'type' => 'object',
@@ -25,7 +28,9 @@ function register_auction_meta_fields() {
         }
     ));
 }
+add_action('init', 'register_auction_meta_fields');
 
+// Comment permissions
 function auction_rest_permission_callback($request) {
     if (is_user_logged_in()) {
         return true;
@@ -37,6 +42,7 @@ function auction_rest_permission_callback($request) {
     );
 }
 
+// Handle comment submission
 function handle_auction_comment($request) {
     $auction_id = $request->get_param('id');
     $user_id = get_current_user_id();
@@ -91,10 +97,7 @@ function handle_auction_comment($request) {
     );
 }
 
-// Add actions
-add_action('init', 'add_auction_comment_capabilities');
-add_action('init', 'register_auction_meta_fields');
-
+// Register comment REST route
 add_action('rest_api_init', function() {
     register_rest_route('wp/v2', '/auction/(?P<id>\d+)/comment', array(
         'methods' => 'POST',
@@ -109,3 +112,15 @@ add_action('rest_api_init', function() {
         )
     ));
 });
+
+// Allow anonymous comments
+add_filter('rest_allow_anonymous_comments', '__return_true');
+
+// Allow comment meta for all users
+add_filter('rest_auction_meta_check_permissions', 'custom_auction_rest_permission', 10, 4);
+function custom_auction_rest_permission($permission, $context, $object_id, $post_type) {
+    if ($post_type === 'auction' && is_user_logged_in()) {
+        return true;
+    }
+    return $permission;
+}
