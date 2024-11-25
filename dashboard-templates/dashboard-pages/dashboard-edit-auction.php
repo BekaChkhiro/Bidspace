@@ -74,6 +74,16 @@ function dashboard_content() {
             'buy_now' => floatval($_POST['buy_now'])
         );
 
+        // Add skhva_qalaqebi if city is 'skhva_qalaqebi'
+        if ($_POST['city'] === 'skhva_qalaqebi' && isset($_POST['skhva_qalaqebi'])) {
+            $meta_fields['skhva_qalaqebi'] = sanitize_text_field($_POST['skhva_qalaqebi']);
+        }
+
+        // Add sazgvargaret if city is 'sazgvargaret'
+        if ($_POST['city'] === 'sazgvargaret' && isset($_POST['sazgvargaret'])) {
+            $meta_fields['sazgvargaret'] = sanitize_text_field($_POST['sazgvargaret']);
+        }
+
         // Category-specific fields
         if (isset($_POST['hall'])) $meta_fields['hall'] = sanitize_text_field($_POST['hall']);
         if (isset($_POST['row'])) $meta_fields['row'] = sanitize_text_field($_POST['row']);
@@ -142,6 +152,18 @@ function dashboard_content() {
         }
         .scrollable-content::-webkit-scrollbar-thumb:hover {
             background: #555;
+        }
+        .city-btn {
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .city-btn.active {
+            background-color: #00AEEF;
+            color: white;
         }
     </style>
 
@@ -333,6 +355,7 @@ function dashboard_content() {
             categoryFields.innerHTML = fields;
             populateCategoryFields(category);
             addCategoryFieldListeners();
+            initializeCityButtons();
         }
 
         function populateCategoryFields(category) {
@@ -360,14 +383,35 @@ function dashboard_content() {
 
         function getCategoryFields(category) {
             const commonFields = `
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ქალაქი</label>
+                    <div class="city-buttons flex flex-wrap gap-2">
+                        <button type="button" class="city-btn" data-value="tbilisi">თბილისი</button>
+                        <button type="button" class="city-btn" data-value="batumi">ბათუმი</button>
+                        <button type="button" class="city-btn" data-value="kutaisi">ქუთაისი</button>
+                        <button type="button" class="city-btn" data-value="skhva_qalaqebi">სხვა ქალაქები</button>
+                        <button type="button" class="city-btn" data-value="sazgvargaret">საზღვარგარეთ</button>
+                    </div>
+                    <input type="hidden" id="city" name="city" required>
+                    <div id="other-city-field" class="mt-2" style="display: none;">
+                        <input type="text" 
+                               id="skhva_qalaqebi" 
+                               name="skhva_qalaqebi" 
+                               placeholder="ჩაწერეთ ქალაქი"
+                               class="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div id="sazgvargaret-field" class="mt-2" style="display: none;">
+                        <input type="text" 
+                               id="sazgvargaret" 
+                               name="sazgvargaret" 
+                               placeholder="ჩაწერეთ ქვეყანა"
+                               class="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                </div>
                 <div class="mt-4 grid grid-cols-1 gap-4">
                     <div>
                         <label for="start_date" class="block text-sm font-medium text-gray-700">დაწყების თარიღი</label>
                         <input type="datetime-local" id="start_date" name="start_date" required class="settings-field-style mt-1 block w-full">
-                    </div>
-                    <div>
-                        <label for="city" class="block text-sm font-medium text-gray-700">ქალაქი</label>
-                        <input type="text" id="city" name="city" required class="settings-field-style mt-1 block w-full">
                     </div>
                     <div>
                         <label for="ticket_price" class="block text-sm font-medium text-gray-700">ბილეთის ფასი</label>
@@ -458,7 +502,7 @@ function dashboard_content() {
             const auctionPrice = document.getElementById('auction_price')?.value;
 
             const categoryNames = {
-                cinema_theater: 'კინო & თ���ატრი',
+                cinema_theater: 'კინო & თატრი',
                 events: 'ივენთები',
                 sport: 'სპორტი',
                 travel: 'მოგზაურობა'
@@ -505,6 +549,75 @@ function dashboard_content() {
 
         // Initial preview
         updatePreview();
+
+        function initializeCityButtons() {
+            const cityButtons = document.querySelectorAll('.city-btn');
+            const cityInput = document.getElementById('city');
+            const otherCityField = document.getElementById('other-city-field');
+            const sazgvargaretField = document.getElementById('sazgvargaret-field');
+            const skhvaQalaqebiInput = document.getElementById('skhva_qalaqebi');
+            const sazgvargaretInput = document.getElementById('sazgvargaret');
+            
+            // Get current values from database
+            const currentCity = '<?php echo esc_attr(get_post_meta($auction_id, "city", true)); ?>';
+            const currentSkhvaQalaqebi = '<?php echo esc_attr(get_post_meta($auction_id, "skhva_qalaqebi", true)); ?>';
+            const currentSazgvargaret = '<?php echo esc_attr(get_post_meta($auction_id, "sazgvargaret", true)); ?>';
+
+            cityButtons.forEach(button => {
+                // Set initial active state based on saved value
+                if (currentCity === 'skhva_qalaqebi') {
+                    if (button.dataset.value === 'skhva_qalaqebi') {
+                        button.classList.add('active');
+                        otherCityField.style.display = 'block';
+                        skhvaQalaqebiInput.value = currentSkhvaQalaqebi;
+                        skhvaQalaqebiInput.required = true;
+                        cityInput.value = 'skhva_qalaqebi';
+                    }
+                } else if (currentCity === 'sazgvargaret') {
+                    if (button.dataset.value === 'sazgvargaret') {
+                        button.classList.add('active');
+                        sazgvargaretField.style.display = 'block';
+                        sazgvargaretInput.value = currentSazgvargaret;
+                        sazgvargaretInput.required = true;
+                        cityInput.value = 'sazgvargaret';
+                    }
+                } else if (button.dataset.value === currentCity) {
+                    button.classList.add('active');
+                    cityInput.value = currentCity;
+                }
+
+                button.addEventListener('click', () => {
+                    cityButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    cityInput.value = button.dataset.value;
+
+                    // Hide both fields first
+                    otherCityField.style.display = 'none';
+                    sazgvargaretField.style.display = 'none';
+                    skhvaQalaqebiInput.required = false;
+                    sazgvargaretInput.required = false;
+                    
+                    // Show appropriate field based on selection
+                    if (button.dataset.value === 'skhva_qalaqebi') {
+                        otherCityField.style.display = 'block';
+                        skhvaQalaqebiInput.required = true;
+                    } else if (button.dataset.value === 'sazgvargaret') {
+                        sazgvargaretField.style.display = 'block';
+                        sazgvargaretInput.required = true;
+                    }
+
+                    updatePreview();
+                });
+            });
+
+            // Add input event listeners
+            if (skhvaQalaqebiInput) {
+                skhvaQalaqebiInput.addEventListener('input', updatePreview);
+            }
+            if (sazgvargaretInput) {
+                sazgvargaretInput.addEventListener('input', updatePreview);
+            }
+        }
     });
     </script>
 

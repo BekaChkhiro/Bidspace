@@ -70,6 +70,16 @@ function dashboard_content() {
             update_post_meta($post_id, 'buy_now', $buy_now);
             update_post_meta($post_id, 'min_bid_price', $min_bid_price);
 
+            // Add skhva_qalaqebi if city is 'skhva_qalaqebi'
+            if ($_POST['city'] === 'skhva_qalaqebi' && isset($_POST['skhva_qalaqebi'])) {
+                update_post_meta($post_id, 'skhva_qalaqebi', sanitize_text_field($_POST['skhva_qalaqebi']));
+            }
+
+            // Add sazgvargaret if city is 'sazgvargaret'
+            if ($_POST['city'] === 'sazgvargaret' && isset($_POST['sazgvargaret'])) {
+                update_post_meta($post_id, 'sazgvargaret', sanitize_text_field($_POST['sazgvargaret']));
+            }
+
             // Handle featured image upload
             if (!empty($_FILES['featured_image']['name'])) {
                 require_once(ABSPATH . 'wp-admin/includes/image.php');
@@ -152,6 +162,18 @@ function dashboard_content() {
         }
         .scrollable-content::-webkit-scrollbar-thumb:hover {
             background: #555;
+        }
+        .city-btn {
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .city-btn.active {
+            background-color: #00AEEF;
+            color: white;
         }
     </style>
 
@@ -343,12 +365,33 @@ function dashboard_content() {
         function getCategoryFields(category) {
             const commonFields = `
                 <div>
-                    <label for="start_date" class="block text-sm font-medium text-gray-700">დაწყების თარიღი</label>
-                    <input type="datetime-local" id="start_date" name="start_date" required class="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ქალაქი</label>
+                    <div class="city-buttons flex flex-wrap gap-2">
+                        <button type="button" class="city-btn" data-value="tbilisi">თბილისი</button>
+                        <button type="button" class="city-btn" data-value="batumi">ბათუმი</button>
+                        <button type="button" class="city-btn" data-value="kutaisi">ქუთაისი</button>
+                        <button type="button" class="city-btn" data-value="skhva_qalaqebi">სხვა ქალაქები</button>
+                        <button type="button" class="city-btn" data-value="sazgvargaret">საზღვარგარეთ</button>
+                    </div>
+                    <input type="hidden" id="city" name="city" required>
+                    <div id="other-city-field" class="mt-2" style="display: none;">
+                        <input type="text" 
+                               id="skhva_qalaqebi" 
+                               name="skhva_qalaqebi" 
+                               placeholder="ჩაწერეთ ქალაქი"
+                               class="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div id="sazgvargaret-field" class="mt-2" style="display: none;">
+                        <input type="text" 
+                               id="sazgvargaret" 
+                               name="sazgvargaret" 
+                               placeholder="ჩაწერეთ ქვეყანა"
+                               class="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
                 </div>
                 <div>
-                    <label for="city" class="block text-sm font-medium text-gray-700">ქალაქი</label>
-                    <input type="text" id="city" name="city" required class="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <label for="start_date" class="block text-sm font-medium text-gray-700">დაწყების თარიღი</label>
+                    <input type="datetime-local" id="start_date" name="start_date" required class="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                 </div>
                 <div>
                     <label for="ticket_price" class="block text-sm font-medium text-gray-700">ბილეთის ფასი</label>
@@ -461,6 +504,51 @@ function dashboard_content() {
 
         // Initial preview update
         updatePreview();
+
+        function initializeCityButtons() {
+            const cityButtons = document.querySelectorAll('.city-btn');
+            const cityInput = document.getElementById('city');
+            const otherCityField = document.getElementById('other-city-field');
+            const sazgvargaretField = document.getElementById('sazgvargaret-field');
+            const skhvaQalaqebiInput = document.getElementById('skhva_qalaqebi');
+            const sazgvargaretInput = document.getElementById('sazgvargaret');
+
+            cityButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    cityButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    // Update hidden input value
+                    cityInput.value = button.dataset.value;
+
+                    // Hide both fields first
+                    otherCityField.style.display = 'none';
+                    sazgvargaretField.style.display = 'none';
+                    skhvaQalaqebiInput.required = false;
+                    sazgvargaretInput.required = false;
+
+                    // Show appropriate field based on selection
+                    if (button.dataset.value === 'skhva_qalaqebi') {
+                        otherCityField.style.display = 'block';
+                        skhvaQalaqebiInput.required = true;
+                    } else if (button.dataset.value === 'sazgvargaret') {
+                        sazgvargaretField.style.display = 'block';
+                        sazgvargaretInput.required = true;
+                    }
+
+                    // Trigger field completion check
+                    checkCategoryFieldsCompletion();
+                });
+            });
+        }
+
+        // Modify showCategoryFields function to initialize city buttons
+        const originalShowCategoryFields = showCategoryFields;
+        showCategoryFields = function(category) {
+            originalShowCategoryFields(category);
+            initializeCityButtons();
+        };
     });
     </script>
 
