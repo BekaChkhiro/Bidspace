@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import profileIcon from '../../../assets/icons/dashboard/profile_icon.svg';
@@ -11,40 +11,137 @@ import settingsIcon from '../../../assets/icons/dashboard/setting_icon.svg';
 import logoutIcon from '../../../assets/icons/dashboard/logout_icon.svg';
 import bidspaceLogo from '../../../assets/images/bidspace_logo.png';
 
-
 const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [auctions, setAuctions] = useState([]);
+  const [filteredAuctions, setFilteredAuctions] = useState([]);
+  const [showResults, setShowResults] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [featuredImages, setFeaturedImages] = useState({});
+
+  useEffect(() => {
+    const fetchAllAuctions = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const initialResponse = await fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=1`);
+        const totalPagesCount = parseInt(initialResponse.headers.get('X-WP-TotalPages'));
+
+        const allAuctionsPromises = [];
+        for (let page = 1; page <= totalPagesCount; page++) {
+          const promise = fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=${page}`)
+            .then(response => response.json());
+          allAuctionsPromises.push(promise);
+        }
+
+        const allPagesResults = await Promise.all(allAuctionsPromises);
+        const combinedAuctions = allPagesResults.flat();
+        setAuctions(combinedAuctions);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAllAuctions();
+  }, []);
+
+  useEffect(() => {
+    const fetchFeaturedImages = async (auctions) => {
+      const imagePromises = auctions.map(async (auction) => {
+        if (auction.featured_media) {
+          const response = await fetch(`${window.location.origin}/wp-json/wp/v2/media/${auction.featured_media}`);
+          const data = await response.json();
+          return { id: auction.id, imageUrl: data.source_url };
+        }
+        return { id: auction.id, imageUrl: '' };
+      });
+
+      const images = await Promise.all(imagePromises);
+      const imagesMap = {};
+      images.forEach(img => {
+        imagesMap[img.id] = img.imageUrl;
+      });
+      setFeaturedImages(imagesMap);
+    };
+
+    if (auctions.length > 0) {
+      fetchFeaturedImages(auctions);
+    }
+  }, [auctions]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      const filtered = auctions.filter(auction =>
+        auction.title.rendered.toLowerCase().includes(searchQuery.toLowerCase().trim())
+      );
+      setFilteredAuctions(filtered);
+      setShowResults(true);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    
+    if (!value.trim()) {
+      setFilteredAuctions([]);
+      setShowResults(false);
+    } else {
+      const filtered = auctions.filter(auction =>
+        auction.title.rendered.toLowerCase().includes(value.toLowerCase().trim())
+      );
+      setFilteredAuctions(filtered);
+      setShowResults(true);
+    }
+  };
+
+  const handleAuctionClick = () => {
+    setShowResults(false);
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const months = {
+      'January': 'იანვარი',
+      'February': 'თებერვალი',
+      'March': 'მარტი',
+      'April': 'აპრილი',
+      'May': 'მაისი',
+      'June': 'ივნისი',
+      'July': 'ივლისი',
+      'August': 'აგვისტო',
+      'September': 'სექტემბერი',
+      'October': 'ოქტომბერი',
+      'November': 'ნოემბერი',
+      'December': 'დეკემბერი'
+    };
+
+    const englishDate = date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    let [month, day, year] = englishDate.split(' ');
+    month = month.replace(',', '');
+    day = day.replace(',', '');
+    
+    return `${day} ${months[month]}, ${year}`;
+  };
 
   const getMenuItemClasses = (path) => {
     return location.pathname === path
       ? 'dashboard-menu-item-active w-full flex gap-2 items-center px-6 py-3 border-l-4 border-[#3B82F6] bg-[#F0F7FF]'
       : 'dashboard-menu-item w-full flex gap-2 items-center px-6 py-3 hover:border-l-4 hover:border-[#3B82F6] hover:bg-[#F0F7FF]';
-  };
-
-  const handleSearch = async (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-
-    if (query.length > 2) {
-      setIsSearching(true);
-      try {
-        const response = await fetch(`/wp-json/wp/v2/search?search=${query}&type=post&subtype=auction`);
-        const data = await response.json();
-        setSearchResults(data);
-      } catch (error) {
-        console.error('Error searching:', error);
-      } finally {
-        setIsSearching(false);
-      }
-    } else {
-      setSearchResults([]);
-    }
   };
 
   const handleLogout = async () => {
@@ -115,7 +212,7 @@ const DashboardLayout = ({ children }) => {
         <div className="flex justify-center items-center">
           <button onClick={handleLogout} className="flex gap-2 items-center px-6 py-3 hover:bg-[#F0F7FF] w-full">
             <img src={logoutIcon} alt="Logout Icon" />
-            <span className="font-normal text-base text-[#6F7181]">გასვლა</span>
+            <span className="font-normal text-base text-[#FB6B63]">გასვლა</span>
           </button>
         </div>
       </div>
@@ -126,32 +223,78 @@ const DashboardLayout = ({ children }) => {
         <div className="w-full p-6 border-b border-[#E5E5E5] flex justify-end items-center gap-6" style={{ height: '10%' }}>
           {/* Search Input */}
           <div className="relative w-1/3">
-            <input
-              type="text"
-              placeholder="ძებნა"
-              value={searchQuery}
-              onChange={handleSearch}
-              className="w-full px-4 py-2 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
-            />
-            {searchResults.length > 0 && (
-              <div className="absolute w-full mt-2 bg-white border border-[#E5E5E5] rounded-lg shadow-lg z-10">
-                {searchResults.map((result) => (
-                  <Link
-                    key={result.id}
-                    to={`/auction/${result.id}`}
-                    className="block px-4 py-4 hover:bg-[#F0F7FF] flex items-center"
-                  >
-                    <img src={result.image} alt={result.title} className="w-16 h-16 rounded-lg mr-4" />
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-[#333]">{result.title}</span>
-                      <div className="flex items-center text-sm text-[#6F7181]">
-                        <span className="mr-2">📅 {result.date}</span>
-                        <span>📍 {result.location}</span>
-                      </div>
-                      <span className="text-sm text-[#333]">ბილეთის ფასი: {result.price}₾</span>
-                    </div>
-                  </Link>
-                ))}
+            <form onSubmit={handleSearch}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleInputChange}
+                onFocus={() => {
+                  if (searchQuery.trim()) {
+                    setShowResults(true);
+                  }
+                }}
+                placeholder="ძებნა"
+                className="w-full bg-white px-4 py-2 pr-10 rounded-full focus:outline-none"
+              />
+              <button 
+                type="submit"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-5 w-5 text-gray-400"
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                  />
+                </svg>
+              </button>
+            </form>
+
+            {showResults && searchQuery && (
+              <div className="absolute mt-2 w-full bg-white rounded-lg shadow-lg max-h-96 overflow-y-auto z-[9999]">
+                {isLoading ? (
+                  <div className="px-4 py-3 text-gray-500 text-center">
+                    იტვირთება...
+                  </div>
+                ) : error ? (
+                  <div className="px-4 py-3 text-red-500 text-center">
+                    {error}
+                  </div>
+                ) : filteredAuctions.length > 0 ? (
+                  <div>
+                    {filteredAuctions.map((auction) => (
+                      <Link
+                        key={auction.id}
+                        to={`/auction/${auction.id}`}
+                        className="search-result-card block p-3 border-b hover:bg-gray-100"
+                        onClick={handleAuctionClick}
+                      >
+                        <div className="flex items-center">
+                          <img src={featuredImages[auction.id]} alt={auction.title.rendered} className="w-16 h-16 rounded-lg mr-4" />
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-[#333]">{auction.title.rendered}</span>
+                            <div className="flex items-center text-sm text-[#6F7181]">
+                              <span className="mr-2">📅 {formatDate(auction.date)}</span>
+                              <span>📍 {auction.location}</span>
+                            </div>
+                            <span className="text-sm text-[#333]">ბილეთის ფასი: {auction.price}₾</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-4 py-3 text-gray-500 text-center">
+                    შედეგები არ მოიძებნა
+                  </div>
+                )}
               </div>
             )}
           </div>
