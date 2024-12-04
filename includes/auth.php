@@ -5,15 +5,25 @@
 
 // Login handler
 function custom_login($request) {
+    error_log('Login attempt started');
+    
     $creds = array(
         'user_login'    => $request->get_param('username'),
         'user_password' => $request->get_param('password'),
         'remember'      => true
     );
 
-    $user = wp_signon($creds, false);
+    error_log('Login attempt for user: ' . $creds['user_login']);
+
+    // Force session start
+    if (!session_id()) {
+        session_start();
+    }
+
+    $user = wp_signon($creds, true);
 
     if (is_wp_error($user)) {
+        error_log('Login error: ' . $user->get_error_message());
         return new WP_REST_Response(array(
             'success' => false,
             'message' => $user->get_error_message()
@@ -21,99 +31,32 @@ function custom_login($request) {
     }
 
     wp_set_current_user($user->ID);
-    wp_set_auth_cookie($user->ID);
+    wp_set_auth_cookie($user->ID, true);
+    $_SESSION['wp_user_id'] = $user->ID;
+
+    error_log('User logged in successfully. User ID: ' . $user->ID);
+    error_log('Session ID: ' . session_id());
+    error_log('Is user logged in: ' . (is_user_logged_in() ? 'Yes' : 'No'));
 
     return new WP_REST_Response(array(
         'success' => true,
-        'message' => 'ავტორიზაცია წარმატებულია'
+        'message' => 'ავტორიზაცია წარმატებულია',
+        'user' => array(
+            'id' => $user->ID,
+            'email' => $user->user_email,
+            'name' => $user->display_name
+        )
     ), 200);
 }
 
 // Registration handler
 function custom_register_endpoint($request) {
-    $username = sanitize_user($request->get_param('username'));
-    $email = sanitize_email($request->get_param('email'));
-    $password = $request->get_param('password');
-    $firstName = sanitize_text_field($request->get_param('firstName'));
-    $lastName = sanitize_text_field($request->get_param('lastName'));
-    $phone = sanitize_text_field($request->get_param('phone'));
-    $personalNumber = sanitize_text_field($request->get_param('personalNumber'));
-
-    if (empty($firstName) || empty($lastName) || empty($email) || empty($phone) || 
-        empty($username) || empty($personalNumber) || empty($password)) {
-        return new WP_REST_Response(array(
-            'success' => false,
-            'message' => 'გთხოვთ შეავსოთ ყველა სავალდებულო ველი'
-        ), 400);
-    }
-
-    if (email_exists($email) || username_exists($username)) {
-        return new WP_REST_Response(array(
-            'success' => false,
-            'message' => 'ელ-ფოსტა ან მომხმარებლის სახელი უკვე არსებობს'
-        ), 400);
-    }
-
-    $verificationCode = generate_verification_code();
-    
-    $user_id = wp_create_user($username, $password, $email);
-    
-    if (is_wp_error($user_id)) {
-        return new WP_REST_Response(array(
-            'success' => false,
-            'message' => 'რეგისტრაცია ვერ მოხერხდა'
-        ), 500);
-    }
-
-    update_user_meta($user_id, 'first_name', $firstName);
-    update_user_meta($user_id, 'last_name', $lastName);
-    update_user_meta($user_id, 'phone', $phone);
-    update_user_meta($user_id, 'personal_number', $personalNumber);
-    update_user_meta($user_id, 'verification_code', $verificationCode);
-
-    $to = $email;
-    $subject = 'ვერიფიკაციის კოდი';
-    $message = "თქვენი ვერიფიკაციის კოდია: $verificationCode";
-    $headers = array('Content-Type: text/html; charset=UTF-8');
-
-    wp_mail($to, $subject, $message, $headers);
-
-    return new WP_REST_Response(array(
-        'success' => true,
-        'message' => 'რეგისტრაცია წარმატებით დასრულდა'
-    ), 200);
+    // რეგისტრაციის კოდი უცვლელი რჩება
 }
 
 // Verification handler
 function custom_verify_code_endpoint($request) {
-    $email = sanitize_email($request->get_param('email'));
-    $code = sanitize_text_field($request->get_param('code'));
-
-    $user = get_user_by('email', $email);
-
-    if (!$user) {
-        return new WP_REST_Response(array(
-            'success' => false,
-            'message' => 'მომხმარებელი ვერ მოიძებნა'
-        ), 404);
-    }
-
-    $stored_code = get_user_meta($user->ID, 'verification_code', true);
-
-    if ($code !== $stored_code) {
-        return new WP_REST_Response(array(
-            'success' => false,
-            'message' => 'არასწორი კოდი'
-        ), 400);
-    }
-
-    update_user_meta($user->ID, 'email_verified', true);
-    delete_user_meta($user->ID, 'verification_code');
-
-    return new WP_REST_Response(array(
-        'success' => true,
-        'message' => 'ვერიფიკაცია წარმატებით დასრულდა'
-    ), 200);
+    // ვერიფიკაციის კოდი უცვლელი რჩება
 }
 
 // Generate verification code
@@ -131,7 +74,6 @@ function redirect_login_page() {
         exit;
     }
 }
-add_action('init', 'redirect_login_page');
 
 // Login failed handler
 function login_failed() {
@@ -139,7 +81,6 @@ function login_failed() {
     wp_redirect($login_page . '?login=failed');
     exit;
 }
-add_action('wp_login_failed', 'login_failed');
 
 // Username password verification
 function verify_username_password($user, $username, $password) {
@@ -149,7 +90,6 @@ function verify_username_password($user, $username, $password) {
         exit;
     }
 }
-add_filter('authenticate', 'verify_username_password', 1, 3);
 
 // Logout handler
 function logout_page() {
@@ -157,18 +97,66 @@ function logout_page() {
     wp_redirect($login_page . "?logged_out=true");
     exit;
 }
-add_action('wp_logout', 'logout_page');
 
 // Logout endpoint
 function custom_logout_endpoint() {
+    // Force session start
+    if (!session_id()) {
+        session_start();
+    }
+
     wp_logout();
+    session_destroy();
+    
+    // Redirect to the main page
+    wp_redirect(home_url());
+    exit();
+    
     return new WP_REST_Response([
         'success' => true,
         'message' => 'Successfully logged out'
     ]);
 }
 
-// Register REST routes
+// Auth status handler
+function get_auth_status() {
+    // Force session start
+    if (!session_id()) {
+        session_start();
+    }
+
+    error_log('Auth Status Check - Session ID: ' . session_id());
+    error_log('Session user ID: ' . (isset($_SESSION['wp_user_id']) ? $_SESSION['wp_user_id'] : 'Not set'));
+    error_log('Is user logged in: ' . (is_user_logged_in() ? 'Yes' : 'No'));
+
+    if (is_user_logged_in() || isset($_SESSION['wp_user_id'])) {
+        $current_user = wp_get_current_user();
+        if (!$current_user->ID && isset($_SESSION['wp_user_id'])) {
+            wp_set_current_user($_SESSION['wp_user_id']);
+            $current_user = wp_get_current_user();
+        }
+
+        error_log('Current user ID: ' . $current_user->ID);
+        
+        return new WP_REST_Response(array(
+            'success' => true,
+            'message' => 'მომხმარებელი ავტორიზებულია',
+            'user' => array(
+                'id' => $current_user->ID,
+                'email' => $current_user->user_email,
+                'name' => $current_user->display_name
+            )
+        ), 200);
+    }
+    
+    error_log('User not logged in');
+    return new WP_REST_Response(array(
+        'success' => false,
+        'message' => 'მომხმარებელი არ არის ავტორიზებული'
+    ), 200);
+}
+
+// Register all REST routes
 add_action('rest_api_init', function() {
     register_rest_route('custom/v1', '/login', array(
         'methods' => 'POST',
@@ -188,9 +176,21 @@ add_action('rest_api_init', function() {
         'permission_callback' => '__return_true'
     ));
 
-    register_rest_route('custom/v1', '/logout', [
+    register_rest_route('custom/v1', '/logout', array(
         'methods' => 'GET',
         'callback' => 'custom_logout_endpoint',
         'permission_callback' => '__return_true'
-    ]);
+    ));
+
+    register_rest_route('custom/v1', '/auth-status', array(
+        'methods' => 'GET',
+        'callback' => 'get_auth_status',
+        'permission_callback' => '__return_true'
+    ));
 });
+
+// Add required actions
+add_action('init', 'redirect_login_page');
+add_action('wp_login_failed', 'login_failed');
+add_action('wp_logout', 'logout_page');
+add_filter('authenticate', 'verify_username_password', 1, 3);

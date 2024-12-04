@@ -282,3 +282,15 @@ register_rest_field('auction', 'auction_meta', array(
     'update_callback' => null,
     'schema' => null,
 ));
+
+function register_auction_post_type() {
+    $args = array(
+        'public' => true,
+        'label'  => 'Auctions',
+        'show_in_rest' => true,
+        'supports' => array('title', 'editor', 'thumbnail', 'custom-fields'),
+        'rest_base' => 'auction'
+    );
+    register_post_type('auction', $args);
+}
+add_action('init', 'register_auction_post_type');
