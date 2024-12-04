@@ -57,7 +57,7 @@ const DashboardLayout = ({ children }) => {
   };
 
   return (
-    <div className="w-full h-full flex justify-center bg-[#F9F9F9]">
+    <div className="w-full h-[100vh] flex justify-center bg-[#F9F9F9]">
       {/* Left Sidebar */}
       <div className="w-1/6 h-full bg-white flex flex-col justify-between border-r border-[#E5E5E5] pb-6">
         <div className="flex flex-col gap-11">

@@ -94,7 +94,7 @@ function App() {
           <div className={`app-container ${isDashboardRoute ? 'dashboard-mode' : ''}`}>
             <ScrollToTop />
             {!isDashboardRoute && <Header onLoginClick={() => setShowLoginModal(true)} />}
-            <main className="flex-grow w-full h-[100vh]">
+            <main className="flex-grow w-full">
               <ErrorBoundary>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
