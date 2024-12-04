@@ -3,7 +3,6 @@ import CalendarIcon from '../../icons/search/mdi_calendar.svg';
 import LocationIcon from '../../icons/search/mdi_location.svg';
 import { Link } from 'react-router-dom';
 
-
 const SearchInput = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [auctions, setAuctions] = useState([]);
@@ -69,6 +68,24 @@ const SearchInput = () => {
     }
   }, [auctions]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.search-result-card') && !event.target.closest('form')) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleAuctionClick = () => {
+    setShowResults(false);
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -133,6 +150,11 @@ const SearchInput = () => {
           type="text"
           value={searchQuery}
           onChange={handleInputChange}
+          onFocus={() => {
+            if (searchQuery.trim()) {
+              setShowResults(true);
+            }
+          }}
           placeholder="ძიება"
           className="w-full bg-white px-4 py-2 pr-10 rounded-full focus:outline-none"
         />
@@ -173,17 +195,18 @@ const SearchInput = () => {
                 <Link
                   key={auction.id}
                   to={`/auction/${auction.id}`}
-                  className="block p-3 border-b hover:bg-gray-100"
+                  className="search-result-card block p-3 border-b hover:bg-gray-100"
+                  onClick={handleAuctionClick}
                 >
                   <div className="flex items-center">
                     <img 
                       src={featuredImages[auction.id]} 
                       alt={auction.title.rendered} 
-                      className="w-3/12 h-16 object-cover rounded mr-4"
+                      className="w-16 h-16 object-cover rounded mr-4"
                     />
-                    <div className="flex flex-col gap-1">
-                      <h3 className="font-bold">{auction.title.rendered}</h3>
-                      <div className="text-sm text-gray-600 flex gap-2">
+                    <div className="details flex flex-col gap-1">
+                      <h3 className="title font-bold">{auction.title.rendered}</h3>
+                      <div className="info flex gap-2">
                         <div className="flex gap-1">
                           <img 
                             src={CalendarIcon}
@@ -201,7 +224,7 @@ const SearchInput = () => {
                           <span>{auction.meta.city}</span>
                         </div>
                       </div>
-                      <div className="text-sm font-semibold">
+                      <div className="price text-sm font-semibold">
                         მიმდინარე ფასი: {auction.meta.auction_price}₾
                       </div>
                     </div>

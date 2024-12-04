@@ -139,9 +139,17 @@ const DashboardLayout = ({ children }) => {
                   <Link
                     key={result.id}
                     to={`/auction/${result.id}`}
-                    className="block px-4 py-2 hover:bg-[#F0F7FF]"
+                    className="block px-4 py-4 hover:bg-[#F0F7FF] flex items-center"
                   >
-                    {result.title}
+                    <img src={result.image} alt={result.title} className="w-16 h-16 rounded-lg mr-4" />
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-[#333]">{result.title}</span>
+                      <div className="flex items-center text-sm text-[#6F7181]">
+                        <span className="mr-2">📅 {result.date}</span>
+                        <span>📍 {result.location}</span>
+                      </div>
+                      <span className="text-sm text-[#333]">ბილეთის ფასი: {result.price}₾</span>
+                    </div>
                   </Link>
                 ))}
               </div>
