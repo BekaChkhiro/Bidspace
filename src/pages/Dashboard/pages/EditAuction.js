@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import DashboardNav from './components/DashboardNav';
-import { useAuth } from '../../context/AuthContext';
+import DashboardNav from '../components/DashboardNav';
+import { useAuth } from '../../../context/AuthContext';
 
 const EditAuction = () => {
   const { id } = useParams();

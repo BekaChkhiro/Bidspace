@@ -1,6 +1,7 @@
-import React from 'react';
-import DashboardNav from './components/DashboardNav';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DashboardNav from '../components/DashboardNav';
+import { useAuth } from '../../../context/AuthContext';
 
 const Profile = () => {
   const { user } = useAuth();

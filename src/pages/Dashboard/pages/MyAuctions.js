@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import DashboardLayout from './components/DashboardLayout';
-import { useAuth } from '../../context/AuthContext';
+import DashboardLayout from '../components/DashboardLayout';
+import { useAuth } from '../../../context/AuthContext';
 
 const MyAuctions = () => {
   const [auctions, setAuctions] = useState([]);
