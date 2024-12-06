@@ -84,10 +84,43 @@ body.dashboard-mode {
 /* Ensure body allows scrolling */
 body {
   overflow-y: auto;
+  background-color: #e6e6e6;
 }
 
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+/* Page Transition Animation */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(20px);
+  background-color: #e6e6e6;
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  background-color: #e6e6e6;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+  background-color: #e6e6e6;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+  background-color: #e6e6e6;
+}
+
+/* Add background color to the main container */
+.flex-grow {
+  background-color: #e6e6e6;
 }

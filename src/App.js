@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import LoadingSpinner from './components/LoadingSpinner';
 import Header from './components/HeaderComponents/Header';
 import LoginModal from './components/HeaderComponents/LoginModal';
@@ -91,26 +92,33 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <AuctionProvider>
-          <div className={`app-container ${isDashboardRoute ? 'dashboard-mode' : ''}`}>
-            <ScrollToTop />
+          <div className="flex flex-col min-h-screen">
             {!isDashboardRoute && <Header onLoginClick={() => setShowLoginModal(true)} />}
-            <main className="flex-grow w-full">
-              <ErrorBoundary>
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/instruction" element={<InstructioPage />} />
-                  <Route path="/questions" element={<QuestionsPage />} />
-                  <Route path="/auction" element={<AuctionArchivePage />} />
-                  <Route path="/auction/:id" element={<SingleAuction />} />
-                  <Route path="/sport" element={<AuctionSportPage />} />
-                  <Route path="/travel" element={<AuctionTravelPage />} />
-                  <Route path="/events" element={<AuctionEventPage />} />
-                  <Route path="/theater_cinema" element={<AuctionTheaterCinemaPage />} />
-                  <Route path="/dashboard/*" element={<DashboardRoutes />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </ErrorBoundary>
-            </main>
+            <TransitionGroup component={null}>
+              <CSSTransition
+                key={location.key}
+                timeout={300}
+                classNames="page-transition"
+                unmountOnExit
+              >
+                <main className="flex-grow">
+                  <ScrollToTop />
+                  <Routes location={location}>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/instruction" element={<InstructioPage />} />
+                    <Route path="/questions" element={<QuestionsPage />} />
+                    <Route path="/auction" element={<AuctionArchivePage />} />
+                    <Route path="/auction/:id" element={<SingleAuction />} />
+                    <Route path="/sport" element={<AuctionSportPage />} />
+                    <Route path="/travel" element={<AuctionTravelPage />} />
+                    <Route path="/events" element={<AuctionEventPage />} />
+                    <Route path="/theater_cinema" element={<AuctionTheaterCinemaPage />} />
+                    <Route path="/dashboard/*" element={<DashboardRoutes />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+              </CSSTransition>
+            </TransitionGroup>
             {!isDashboardRoute && <Footer />}
             <LoginModal 
               isOpen={showLoginModal} 

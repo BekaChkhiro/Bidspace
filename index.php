@@ -6,7 +6,7 @@
     <?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
-    <div id="app"></div>
+    <div id="app" style="background-color: #e6e6e6"></div>
     <?php wp_footer(); ?>
 </body>
 </html>
