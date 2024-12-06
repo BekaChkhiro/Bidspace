@@ -8,11 +8,13 @@ import AuctionBidsList from '../components/single-auction/AuctionBidsList';
 import AuctionComments from '../components/single-auction/AuctionComments';
 import { useAuction } from '../context/AuctionContext';
 import { useAuctionPolling } from '../hooks/useAuctionPolling';
+import { useWebSocket } from '../hooks/useWebSocket';
 import RelatedAuctions from '../components/single-auction/RelatedAuctions';
 
 function SingleAuction() {
   const { id } = useParams();
   const { auctions, bidsList, updateAuction } = useAuction();
+  const { sendBid } = useWebSocket(id);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -131,6 +133,44 @@ function SingleAuction() {
     }
   };
 
+  const handleBidSubmit = async (bidAmount) => {
+    try {
+      // Send bid to server via REST API
+      const response = await fetch(`${window.location.origin}/wp-json/wp/v2/auction/${id}/bid`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': window.bidspaceSettings.restNonce
+        },
+        body: JSON.stringify({ bid_amount: bidAmount })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit bid');
+      }
+
+      const bidData = await response.json();
+      
+      // Send bid update via WebSocket
+      sendBid({
+        bid_amount: bidAmount,
+        user_id: currentUserId,
+        user_name: currentUserName,
+        timestamp: new Date().toISOString()
+      });
+
+      // Update local state
+      updateAuction({
+        ...auction,
+        current_bid: bidAmount
+      });
+
+    } catch (error) {
+      console.error('Bid submission error:', error);
+      throw error;
+    }
+  };
+
   // Loading ინდიკატორი
   if (isLoading) {
     return (
@@ -208,7 +248,7 @@ function SingleAuction() {
             startTime={auction.meta?.start_time}
             dueTime={auction.meta?.due_time}
             currentUserId={currentUserId}
-            onBidPlaced={() => {}}
+            onBidPlaced={handleBidSubmit}
           />
         </div>
       </div>
