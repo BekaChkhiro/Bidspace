@@ -16,6 +16,22 @@ require_once get_template_directory() . '/includes/rest-api.php';
 // Register Custom Post Types
 require_once get_template_directory() . '/includes/custom-post-types.php';
 
+// Include Custom Fonts Management
+require_once get_template_directory() . '/includes/custom-fonts.php';
+
+// Make sure we have required plugin functions
+if (!function_exists('is_plugin_active')) {
+    include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+}
+
+// Deactivate Use Any Font plugin if active
+function deactivate_use_any_font() {
+    if (function_exists('is_plugin_active') && is_plugin_active('use-any-font/use-any-font.php')) {
+        deactivate_plugins('use-any-font/use-any-font.php');
+    }
+}
+add_action('admin_init', 'deactivate_use_any_font');
+
 // Enable WordPress REST API CORS
 function add_cors_http_header() {
     header("Access-Control-Allow-Origin: *");
