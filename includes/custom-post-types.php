@@ -49,7 +49,7 @@ if (!function_exists('bidspace_register_auction_post_type')) {
             'has_archive'        => true,
             'hierarchical'       => false,
             'menu_position'      => 5,
-            'menu_icon'          => 'dashicons-hammer',
+            'menu_icon'          => 'dashicons-tag',
             'supports'           => array('title', 'editor', 'thumbnail', 'author'),
             'show_in_rest'       => true,
             'rest_base'          => 'auction',
@@ -133,6 +133,8 @@ function render_auction_details_meta_box($post) {
     $ticket_information = get_post_meta($post->ID, 'ticket_information', true);
     $comments_list = get_post_meta($post->ID, 'comments_list', true);
     $ticket_category = get_post_meta($post->ID, 'ticket_category', true);
+    $phone_number = get_post_meta($post->ID, 'phone_number', true);
+    $piradi_nomeri = get_post_meta($post->ID, 'piradi_nomeri', true);
     
     if (empty($ticket_status)) {
         $ticket_status = 'დაგეგმილი';
@@ -156,6 +158,7 @@ function render_auction_details_meta_box($post) {
             <button type="button" class="tab-button" onclick="openTab(event, 'ticket-info')">Ticket Info</button>
             <button type="button" class="tab-button" onclick="openTab(event, 'comments-tab')">Comments</button>
             <button type="button" class="tab-button" onclick="openTab(event, 'ticket-category-tab')">Ticket Category</button>
+            <button type="button" class="tab-button" onclick="openTab(event, 'user-info')">User Info</button>
         </div>
 
         <div id="auction-info" class="tab-content" style="display: block;">
@@ -415,6 +418,20 @@ function render_auction_details_meta_box($post) {
                 </p>
             </div>
         </div>
+
+        <div id="user-info" class="tab-content">
+            <h3>User Information</h3>
+            <p>
+                <label for="phone_number">Phone Number:</label>
+                <input type="text" id="phone_number" name="phone_number" 
+                       value="<?php echo esc_attr($phone_number); ?>" class="widefat">
+            </p>
+            <p>
+                <label for="piradi_nomeri">Personal ID Number:</label>
+                <input type="text" id="piradi_nomeri" name="piradi_nomeri" 
+                       value="<?php echo esc_attr($piradi_nomeri); ?>" class="widefat">
+            </p>
+        </div>
     </div>
 
     <style>
@@ -560,7 +577,9 @@ function save_auction_meta($post_id) {
         'place',
         'sector',
         'ticket_information',
-        'ticket_category'
+        'ticket_category',
+        'phone_number',
+        'piradi_nomeri'
     );
 
     foreach ($fields as $field) {
@@ -760,6 +779,16 @@ function bidspace_register_auction_meta() {
             'single' => true,
             'enum' => array('თეატრი-კინო', 'ივენთები', 'სპორტი', 'მოგზაურობა')
         ),
+        'phone_number' => array(
+            'type' => 'string',
+            'description' => 'User phone number',
+            'single' => true
+        ),
+        'piradi_nomeri' => array(
+            'type' => 'string',
+            'description' => 'User personal ID number',
+            'single' => true
+        ),
         'comments_list' => array(
             'type' => 'array',
             'description' => 'List of comments',
@@ -823,3 +852,144 @@ function bidspace_rest_prepare_auction($response, $post, $request) {
     return $response;
 }
 add_filter('rest_prepare_auction', 'bidspace_rest_prepare_auction', 10, 3);
+
+// Register user meta fields
+function bidspace_register_user_meta() {
+    register_meta('user', 'phone_number', array(
+        'type' => 'string',
+        'description' => 'User phone number',
+        'single' => true,
+        'show_in_rest' => true,
+        'auth_callback' => function() {
+            return current_user_can('edit_user');
+        }
+    ));
+
+    register_meta('user', 'piradi_nomeri', array(
+        'type' => 'string',
+        'description' => 'User personal ID number',
+        'single' => true,
+        'show_in_rest' => true,
+        'auth_callback' => function() {
+            return current_user_can('edit_user');
+        }
+    ));
+}
+add_action('init', 'bidspace_register_user_meta');
+
+// Add extra fields to user profile
+function bidspace_extra_user_profile_fields($user) {
+    ?>
+    <h3><?php _e("დამატებითი ინფორმაცია", "bidspace"); ?></h3>
+    <table class="form-table">
+        <tr>
+            <th>
+                <label for="phone_number"><?php _e("ტელეფონის ნომერი", "bidspace"); ?></label>
+            </th>
+            <td>
+                <input type="text" name="phone_number" id="phone_number" 
+                       value="<?php echo esc_attr(get_user_meta($user->ID, 'phone_number', true)); ?>" 
+                       class="regular-text" />
+            </td>
+        </tr>
+        <tr>
+            <th>
+                <label for="piradi_nomeri"><?php _e("პირადი ნომერი", "bidspace"); ?></label>
+            </th>
+            <td>
+                <input type="text" name="piradi_nomeri" id="piradi_nomeri" 
+                       value="<?php echo esc_attr(get_user_meta($user->ID, 'piradi_nomeri', true)); ?>" 
+                       class="regular-text" />
+            </td>
+        </tr>
+    </table>
+    <?php
+}
+
+// Save extra user profile fields
+function bidspace_save_extra_user_profile_fields($user_id) {
+    if (!current_user_can('edit_user', $user_id)) {
+        return false;
+    }
+
+    if (isset($_POST['phone_number'])) {
+        update_user_meta($user_id, 'phone_number', sanitize_text_field($_POST['phone_number']));
+    }
+
+    if (isset($_POST['piradi_nomeri'])) {
+        update_user_meta($user_id, 'piradi_nomeri', sanitize_text_field($_POST['piradi_nomeri']));
+    }
+}
+
+// Add the fields to user profile
+add_action('show_user_profile', 'bidspace_extra_user_profile_fields');
+add_action('edit_user_profile', 'bidspace_extra_user_profile_fields');
+add_action('user_new_form', 'bidspace_extra_user_profile_fields');
+
+// Save the fields
+add_action('personal_options_update', 'bidspace_save_extra_user_profile_fields');
+add_action('edit_user_profile_update', 'bidspace_save_extra_user_profile_fields');
+add_action('user_register', 'bidspace_save_extra_user_profile_fields');
+
+// Register REST API fields for users
+function bidspace_register_user_rest_fields() {
+    register_rest_field('user', 'first_name', array(
+        'get_callback' => function($user) {
+            return get_user_meta($user['id'], 'first_name', true);
+        },
+        'update_callback' => function($value, $user) {
+            return update_user_meta($user->ID, 'first_name', $value);
+        },
+        'schema' => array(
+            'type' => 'string',
+            'context' => array('view', 'edit')
+        )
+    ));
+
+    register_rest_field('user', 'last_name', array(
+        'get_callback' => function($user) {
+            return get_user_meta($user['id'], 'last_name', true);
+        },
+        'update_callback' => function($value, $user) {
+            return update_user_meta($user->ID, 'last_name', $value);
+        },
+        'schema' => array(
+            'type' => 'string',
+            'context' => array('view', 'edit')
+        )
+    ));
+
+    register_rest_field('user', 'nickname', array(
+        'get_callback' => function($user) {
+            return get_user_meta($user['id'], 'nickname', true);
+        },
+        'update_callback' => function($value, $user) {
+            return update_user_meta($user->ID, 'nickname', $value);
+        },
+        'schema' => array(
+            'type' => 'string',
+            'context' => array('view', 'edit')
+        )
+    ));
+
+    // Make sure email is exposed in the REST API
+    register_rest_field('user', 'email', array(
+        'get_callback' => function($user) {
+            $userdata = get_userdata($user['id']);
+            return $userdata ? $userdata->user_email : '';
+        },
+        'update_callback' => function($value, $user) {
+            $userdata = array(
+                'ID' => $user->ID,
+                'user_email' => $value
+            );
+            return wp_update_user($userdata);
+        },
+        'schema' => array(
+            'type' => 'string',
+            'format' => 'email',
+            'context' => array('view', 'edit')
+        )
+    ));
+}
+add_action('rest_api_init', 'bidspace_register_user_rest_fields');

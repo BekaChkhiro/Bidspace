@@ -8,8 +8,8 @@
 // Add Font Management Menu to WordPress Admin
 function add_font_management_menu() {
     add_menu_page(
-        'შრიფტის მართვა',
-        'შრიფტის მართვა',
+        'Font Management',
+        'Font Management',
         'manage_options',
         'font-management',
         'render_font_management_page',
@@ -121,11 +121,29 @@ function apply_custom_font() {
                 font-style: normal;
                 font-display: swap;
             }
-            body, h1, h2, h3, h4, h5, h6, p, span, div {
+            
+            /* ყველა ტექსტისთვის ფონტის გამოყენება */
+            :not(.dashicons):not(.dashicons-before):not([class^="dashicons-"]):not([class*=" dashicons-"]) {
                 font-family: 'CustomFont', sans-serif !important;
+            }
+
+            /* WordPress ადმინ აიქონების გამონაკლისი */
+            .dashicons,
+            .dashicons-before:before,
+            [class^="dashicons-"]:before,
+            [class*=" dashicons-"]:before,
+            #wpadminbar *:before,
+            .wp-admin select,
+            #adminmenu .wp-menu-image:before {
+                font-family: dashicons !important;
             }
         </style>
         <?php
     }
 }
+
+// ფრონტენდზე ფონტის გამოყენება
 add_action('wp_head', 'apply_custom_font');
+
+// ადმინ პანელში ფონტის გამოყენება
+add_action('admin_head', 'apply_custom_font');

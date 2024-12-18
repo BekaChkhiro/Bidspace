@@ -13,6 +13,9 @@ require_once get_template_directory() . '/includes/comments.php';
 require_once get_template_directory() . '/includes/admin.php';
 require_once get_template_directory() . '/includes/rest-api.php';
 
+// Include password reset functionality
+require_once get_template_directory() . '/includes/password-reset.php';
+
 // Register Custom Post Types
 require_once get_template_directory() . '/includes/custom-post-types.php';
 

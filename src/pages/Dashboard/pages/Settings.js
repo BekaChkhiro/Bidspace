@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
+import PasswordChange from '../components/PasswordChange';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -10,20 +11,22 @@ const Settings = () => {
     email: '',
     phone_number: '',
     nickname: '',
-    piradi_nomeri: '',
-    password: '',
-    password_confirm: ''
+    piradi_nomeri: ''
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
+      console.log('User object available:', user);
       fetchUserData();
+    } else {
+      console.log('No user object available');
     }
   }, [user]);
 
   const fetchUserData = async () => {
     try {
+      console.log('Fetching user data...');
       const response = await fetch(`/wp-json/wp/v2/users/me`, {
         credentials: 'include',
         headers: {
@@ -38,9 +41,7 @@ const Settings = () => {
         email: data.email || '',
         phone_number: data.meta?.phone_number || '',
         nickname: data.nickname || '',
-        piradi_nomeri: data.meta?.piradi_nomeri || '',
-        password: '',
-        password_confirm: ''
+        piradi_nomeri: data.meta?.piradi_nomeri || ''
       });
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -59,12 +60,6 @@ const Settings = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (userData.password && userData.password !== userData.password_confirm) {
-        alert('პაროლები არ ემთხვევა');
-        setLoading(false);
-        return;
-      }
-
       const response = await fetch(`/wp-json/wp/v2/users/me`, {
         method: 'POST',
         credentials: 'include',
@@ -80,15 +75,13 @@ const Settings = () => {
           meta: {
             phone_number: userData.phone_number,
             piradi_nomeri: userData.piradi_nomeri
-          },
-          password: userData.password || undefined
+          }
         })
       });
 
       if (!response.ok) throw new Error('Update failed');
 
       alert('პროფილი წარმატებით განახლდა');
-      setUserData(prev => ({ ...prev, password: '', password_confirm: '' }));
     } catch (error) {
       console.error('Error updating profile:', error);
       alert('პროფილის განახლება ვერ მოხერხდა');
@@ -131,20 +124,21 @@ const Settings = () => {
               <input type="text" id="piradi_nomeri" name="piradi_nomeri" value={userData.piradi_nomeri} onChange={handleInputChange} className="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">ახალი პაროლი (არ შეავსოთ თუ არ გსურთ შეცვლა)</label>
-              <input type="password" id="password" name="password" value={userData.password} onChange={handleInputChange} className="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-            </div>
-            <div>
-              <label htmlFor="password_confirm" className="block text-sm font-medium text-gray-700">გაიმეორეთ ახალი პაროლი</label>
-              <input type="password" id="password_confirm" name="password_confirm" value={userData.password_confirm} onChange={handleInputChange} className="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-            </div>
-          </div>
-          <div>
-            <input type="submit" value="დამახსოვრება" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-full" style={{ backgroundColor: '#00AEEF', padding: '10px 50px', cursor: 'pointer' }} />
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              style={{ backgroundColor: '#00AEEF' }}
+              disabled={loading}
+            >
+              შენახვა
+            </button>
           </div>
         </form>
+
+        <div className="border-t pt-6">
+          <PasswordChange />
+        </div>
       </div>
     </DashboardLayout>
   );
