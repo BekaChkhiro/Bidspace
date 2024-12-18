@@ -10,6 +10,15 @@ function bidspace_register_password_reset_endpoints() {
         }
     ));
 
+    // Endpoint to verify code only
+    register_rest_route('bidspace/v1', '/verify-code', array(
+        'methods' => 'POST',
+        'callback' => 'bidspace_verify_code',
+        'permission_callback' => function() {
+            return is_user_logged_in();
+        }
+    ));
+
     // Endpoint to verify code and change password
     register_rest_route('bidspace/v1', '/verify-and-reset-password', array(
         'methods' => 'POST',
@@ -60,6 +69,35 @@ function bidspace_request_password_reset($request) {
     return new WP_Error('email_failed', 'Failed to send verification email', array('status' => 500));
 }
 
+function bidspace_verify_code($request) {
+    $user_id = get_current_user_id();
+    $params = $request->get_params();
+    
+    if (!isset($params['code'])) {
+        return new WP_Error('missing_code', 'Verification code is required', array('status' => 400));
+    }
+
+    $code_data = get_user_meta($user_id, 'password_reset_code', true);
+    
+    if (!$code_data || !is_array($code_data)) {
+        return new WP_Error('invalid_code', 'No verification code found', array('status' => 400));
+    }
+
+    if (time() > $code_data['expires']) {
+        delete_user_meta($user_id, 'password_reset_code');
+        return new WP_Error('code_expired', 'Verification code has expired', array('status' => 400));
+    }
+
+    if ($params['code'] !== (string)$code_data['code']) {
+        return new WP_Error('invalid_code', 'Invalid verification code', array('status' => 400));
+    }
+
+    return array(
+        'success' => true,
+        'message' => 'Code verified successfully'
+    );
+}
+
 function bidspace_verify_and_reset_password($request) {
     $user_id = get_current_user_id();
     $params = $request->get_params();
@@ -79,7 +117,7 @@ function bidspace_verify_and_reset_password($request) {
         return new WP_Error('code_expired', 'Verification code has expired', array('status' => 400));
     }
 
-    if ($params['code'] != $code_data['code']) {
+    if ($params['code'] !== (string)$code_data['code']) {
         return new WP_Error('invalid_code', 'Invalid verification code', array('status' => 400));
     }
 
