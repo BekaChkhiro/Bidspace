@@ -1,0 +1,50 @@
+.category-btn {
+  padding: 10px 20px;
+  margin: 5px;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.category-btn.active {
+  background-color: #00AEEF;
+  color: white;
+}
+
+.scrollable-content {
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  padding-right: 20px;
+}
+
+.scrollable-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.city-btn {
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.city-btn.active {
+  background-color: #00AEEF;
+  color: white;
+}

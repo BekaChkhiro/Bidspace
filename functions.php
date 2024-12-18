@@ -11,6 +11,10 @@ require_once get_template_directory() . '/includes/auth.php';
 require_once get_template_directory() . '/includes/auction.php';
 require_once get_template_directory() . '/includes/comments.php';
 require_once get_template_directory() . '/includes/admin.php';
+require_once get_template_directory() . '/includes/rest-api.php';
+
+// Register Custom Post Types
+require_once get_template_directory() . '/includes/custom-post-types.php';
 
 // Enable WordPress REST API CORS
 function add_cors_http_header() {

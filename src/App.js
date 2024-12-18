@@ -19,6 +19,7 @@ import ScrollToTop from './components/ScrollToTop';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardRoutes from './pages/Dashboard/DashboardRoutes';
+import { Toaster } from './components/ui/use-toast';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -71,8 +72,12 @@ function App() {
   const isDashboardRoute = location.pathname.startsWith('/dashboard');
 
   React.useEffect(() => {
-    setTimeout(() => setIsLoading(false), 500);
-  }, []);
+    if (!isDashboardRoute) {
+      setTimeout(() => setIsLoading(false), 500);
+    } else {
+      setIsLoading(false);
+    }
+  }, [isDashboardRoute]);
 
   React.useEffect(() => {
     if (isDashboardRoute) {
@@ -93,6 +98,7 @@ function App() {
       <AuthProvider>
         <AuctionProvider>
           <div className="flex flex-col min-h-screen">
+            <Toaster />
             {!isDashboardRoute && <Header onLoginClick={() => setShowLoginModal(true)} />}
             <TransitionGroup component={null}>
               <CSSTransition

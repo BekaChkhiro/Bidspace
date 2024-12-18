@@ -16,6 +16,7 @@ const MyAuctions = () => {
     try {
       const response = await fetch(`/wp-json/wp/v2/auction?author=${user.id}`);
       const data = await response.json();
+      console.log('Received auctions data:', data);
       setAuctions(data);
     } catch (error) {
       console.error('Error fetching auctions:', error);

@@ -6,6 +6,7 @@ import Profile from './pages/Profile';
 import MyAuctions from './pages/MyAuctions';
 import AddAuction from './pages/AddAuction';
 import EditAuction from './pages/EditAuction';
+import Settings from './pages/Settings';
 
 const DashboardRoutes = () => {
   return (
@@ -47,6 +48,14 @@ const DashboardRoutes = () => {
         element={
           <ProtectedRoute>
             <EditAuction />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         }
       />

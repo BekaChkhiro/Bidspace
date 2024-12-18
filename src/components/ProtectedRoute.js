@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import LoadingSpinner from './LoadingSpinner'
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading, checkAuthStatus } = useAuth()
@@ -12,9 +11,9 @@ const ProtectedRoute = ({ children }) => {
     checkAuthStatus()
   }, [location.pathname])
 
-  // თუ ჯერ კიდევ მოწმდება ავტორიზაციის სტატუსი, ვაჩვენოთ ლოადინგი
+  // თუ ჯერ კიდევ მოწმდება ავტორიზაციის სტატუსი, არაფერი არ ჩატვირთოს
   if (loading) {
-    return <LoadingSpinner />
+    return null;
   }
 
   // თუ არ არის ავტორიზებული, გადავამისამართოთ მთავარ გვერდზე
