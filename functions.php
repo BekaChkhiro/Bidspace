@@ -87,3 +87,52 @@ function show_admin_bar_for_admins() {
         add_filter('show_admin_bar', '__return_false');
     }
 }
+
+// Add Twilio settings to the Customizer
+function bidspace_customize_register($wp_customize) {
+    // Add Twilio section
+    $wp_customize->add_section('twilio_settings', array(
+        'title' => 'Twilio SMS Settings',
+        'priority' => 120,
+    ));
+
+    // Add Account SID setting
+    $wp_customize->add_setting('twilio_account_sid', array(
+        'default' => '',
+        'type' => 'option',
+        'capability' => 'manage_options'
+    ));
+
+    $wp_customize->add_control('twilio_account_sid', array(
+        'label' => 'Account SID',
+        'section' => 'twilio_settings',
+        'type' => 'text'
+    ));
+
+    // Add Auth Token setting
+    $wp_customize->add_setting('twilio_auth_token', array(
+        'default' => '',
+        'type' => 'option',
+        'capability' => 'manage_options'
+    ));
+
+    $wp_customize->add_control('twilio_auth_token', array(
+        'label' => 'Auth Token',
+        'section' => 'twilio_settings',
+        'type' => 'text'
+    ));
+
+    // Add Phone Number setting
+    $wp_customize->add_setting('twilio_phone_number', array(
+        'default' => '',
+        'type' => 'option',
+        'capability' => 'manage_options'
+    ));
+
+    $wp_customize->add_control('twilio_phone_number', array(
+        'label' => 'Twilio Phone Number',
+        'section' => 'twilio_settings',
+        'type' => 'text'
+    ));
+}
+add_action('customize_register', 'bidspace_customize_register');

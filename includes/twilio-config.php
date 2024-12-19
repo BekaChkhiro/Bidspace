@@ -3,13 +3,15 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Twilio\Rest\Client;
 
 function get_twilio_client() {
-    // Credentials should be defined in wp-config.php
-    if (!defined('TWILIO_ACCOUNT_SID') || !defined('TWILIO_AUTH_TOKEN') || !defined('TWILIO_PHONE_NUMBER')) {
-        error_log('Twilio credentials are not configured in wp-config.php');
+    $account_sid = get_option('twilio_account_sid', '');
+    $auth_token = get_option('twilio_auth_token', '');
+    
+    if (empty($account_sid) || empty($auth_token)) {
+        error_log('Twilio credentials are not configured in WordPress settings');
         return null;
     }
     
-    return new Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+    return new Client($account_sid, $auth_token);
 }
 
 function send_sms_verification($to_number, $code) {
@@ -19,10 +21,16 @@ function send_sms_verification($to_number, $code) {
             return false;
         }
 
+        $phone_number = get_option('twilio_phone_number', '');
+        if (empty($phone_number)) {
+            error_log('Twilio phone number is not configured in WordPress settings');
+            return false;
+        }
+
         $message = $client->messages->create(
             $to_number,
             [
-                'from' => TWILIO_PHONE_NUMBER,
+                'from' => $phone_number,
                 'body' => "თქვენი დადასტურების კოდია: $code"
             ]
         );
