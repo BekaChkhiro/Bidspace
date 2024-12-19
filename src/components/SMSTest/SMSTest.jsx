@@ -8,42 +8,44 @@ const SMSTest = () => {
     const [verificationId, setVerificationId] = useState(null);
     const [message, setMessage] = useState('');
     const [debug, setDebug] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Phone number validation and formatting
+    // ტელეფონის ნომრის ფორმატირება
     const formatPhoneNumber = (number) => {
-        // Remove all non-digit characters
+        // არა-ციფრების წაშლა
         let cleaned = number.replace(/\D/g, '');
         
-        // Remove 995 prefix if exists
+        // თუ იწყება 995-ით, წაშალე
         if (cleaned.startsWith('995')) {
             cleaned = cleaned.slice(3);
         }
         
-        // Only allow max 9 digits
+        // მაქსიმუმ 9 ციფრი
         cleaned = cleaned.slice(0, 9);
         
         return cleaned;
     };
 
-    // Phone number validation
+    // ტელეფონის ნომრის ვალიდაცია
     const isValidPhoneNumber = (number) => {
-        // Remove any non-digit characters first
+        // არა-ციფრების წაშლა
         const cleaned = number.replace(/\D/g, '');
         
-        // If it has the country code, remove it
+        // ქვეყნის კოდის მოშორება თუ არის
         const numberWithoutCountry = cleaned.startsWith('995') ? 
             cleaned.slice(3) : cleaned;
         
-        // Check if it's exactly 9 digits and starts with 5
+        // უნდა იყოს 9 ციფრი და იწყებოდეს 5-ით
         return /^5\d{8}$/.test(numberWithoutCountry);
     };
 
     useEffect(() => {
+        console.log('Auth object:', auth);
         if (!auth) {
-            setDebug('Auth is not initialized!');
+            setDebug('Auth არ არის ინიციალიზებული!');
             return;
         }
-        setDebug('Auth is initialized successfully');
+        setDebug('Auth წარმატებით ინიციალიზდა');
 
         return () => {
             if (window.recaptchaVerifier) {
@@ -53,53 +55,67 @@ const SMSTest = () => {
         };
     }, []);
 
-    // Handle phone number input
+    // ინფუთის ჰენდლერი
     const handlePhoneChange = (e) => {
         const formatted = formatPhoneNumber(e.target.value);
         setPhoneNumber(formatted);
         setMessage('');
     };
 
-    // Form submit handler
+    // ფორმის საბმითის ჰენდლერი
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setDebug(prev => prev + '\nStarting SMS send process');
-        setDebug(prev => prev + '\nChecking phone number: ' + phoneNumber);
+        setIsLoading(true);
+        setDebug(prev => prev + '\nSMS გაგზავნის პროცესი დაიწყო');
+        setDebug(prev => prev + '\nმოწმდება ნომერი: ' + phoneNumber);
 
         if (!isValidPhoneNumber(phoneNumber)) {
-            const error = 'Please enter a valid Georgian mobile number (e.g., 555123456)';
+            const error = 'გთხოვთ შეიყვანოთ ვალიდური ქართული მობილურის ნომერი (მაგ: 555123456)';
             setMessage(error);
-            setDebug(prev => prev + '\nValidation failed: ' + error);
+            setDebug(prev => prev + '\nვალიდაცია ვერ გაიარა: ' + error);
+            setIsLoading(false);
             return;
         }
 
         try {
-            // Initialize RecaptchaVerifier if not exists
-            if (!window.recaptchaVerifier) {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-code-button', {
-                    size: 'invisible',
-                    callback: async (response) => {
-                        setDebug(prev => prev + '\nRecaptcha verified successfully: ' + response);
-                        await handleSendSMS();
-                    }
-                });
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.clear();
+                window.recaptchaVerifier = null;
             }
+
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-code-button', {
+                size: 'invisible',
+                callback: async (response) => {
+                    setDebug(prev => prev + '\nRecaptcha წარმატებით გაიარა: ' + response);
+                    await handleSendSMS();
+                },
+                'expired-callback': () => {
+                    setMessage('Recaptcha-ს ვადა გავიდა. სცადეთ თავიდან.');
+                    setDebug(prev => prev + '\nRecaptcha-ს ვადა გავიდა');
+                    if (window.recaptchaVerifier) {
+                        window.recaptchaVerifier.clear();
+                        window.recaptchaVerifier = null;
+                    }
+                    setIsLoading(false);
+                }
+            });
             
             await window.recaptchaVerifier.verify();
         } catch (error) {
-            handleError('Recaptcha error', error);
+            handleError('Recaptcha შეცდომა', error);
+            setIsLoading(false);
         }
     };
 
-    // Handle SMS sending
+    // SMS-ის გაგზავნის ჰენდლერი
     const handleSendSMS = async () => {
         try {
-            // Ensure the number starts with +995
+            // ნომრის ფორმატირება +995-ით
             const formattedNumber = phoneNumber.startsWith('995') ? 
                 `+${phoneNumber}` : 
                 `+995${phoneNumber}`;
             
-            setDebug(prev => prev + '\nFormatted phone number: ' + formattedNumber);
+            setDebug(prev => prev + '\nფორმატირებული ნომერი: ' + formattedNumber);
             
             const confirmationResult = await signInWithPhoneNumber(
                 auth,
@@ -108,18 +124,43 @@ const SMSTest = () => {
             );
             
             setVerificationId(confirmationResult);
-            setMessage('Verification code has been sent!');
-            setDebug(prev => prev + '\nSMS sent successfully');
+            setMessage('ვერიფიკაციის კოდი გამოგზავნილია!');
+            setDebug(prev => prev + '\nSMS წარმატებით გაიგზავნა');
         } catch (error) {
-            handleError('SMS send error', error);
+            // დეტალური error logging
+            console.error('Full error object:', error);
+            setDebug(prev => prev + '\nError code: ' + (error.code || 'unknown'));
+            setDebug(prev => prev + '\nError message: ' + error.message);
+            setDebug(prev => prev + '\nError details: ' + JSON.stringify(error));
+            
+            if (error.customData) {
+                setDebug(prev => prev + '\nCustom data: ' + JSON.stringify(error.customData));
+            }
+
+            handleError('SMS გაგზავნის შეცდომა', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // Error handler
+    // შეცდომების ჰენდლერი
     const handleError = (context, error) => {
         console.error(`${context}:`, error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        setMessage(`Error: ${errorMessage}`);
+        const errorMessage = error.message || 'უცნობი შეცდომა';
+        
+        // მომხმარებლისთვის გასაგები შეცდომის მესიჯები
+        let userMessage = 'დაფიქსირდა შეცდომა';
+        if (error.code === 'auth/invalid-phone-number') {
+            userMessage = 'არასწორი ტელეფონის ნომერი';
+        } else if (error.code === 'auth/too-many-requests') {
+            userMessage = 'ძალიან ბევრი მცდელობა. გთხოვთ სცადოთ მოგვიანებით';
+        } else if (error.code === 'auth/quota-exceeded') {
+            userMessage = 'დღიური ლიმიტი ამოწურულია. სცადეთ ხვალ';
+        } else if (error.code === 'auth/error-code:-39') {
+            userMessage = 'ტექნიკური ხარვეზი. გთხოვთ სცადოთ მოგვიანებით';
+        }
+        
+        setMessage(`შეცდომა: ${userMessage}`);
         setDebug(prev => prev + `\n${context}: ${errorMessage}`);
         
         if (window.recaptchaVerifier) {
@@ -128,33 +169,36 @@ const SMSTest = () => {
         }
     };
 
-    // Verify SMS code
+    // კოდის ვერიფიკაცია
     const verifyCode = async (e) => {
         e.preventDefault();
         if (!verificationId) {
-            setMessage('Please send SMS first');
+            setMessage('ჯერ გააგზავნეთ SMS');
             return;
         }
         
+        setIsLoading(true);
         try {
-            setDebug(prev => prev + '\nStarting code verification');
+            setDebug(prev => prev + '\nკოდის ვერიფიკაცია დაიწყო');
             const result = await verificationId.confirm(verificationCode);
-            setMessage('Phone number verified successfully!');
-            setDebug(prev => prev + '\nCode verified successfully');
-            console.log('Verification result:', result);
+            setMessage('ნომერი წარმატებით დადასტურდა!');
+            setDebug(prev => prev + '\nკოდი წარმატებით დადასტურდა');
+            console.log('ვერიფიკაციის შედეგი:', result);
         } catch (error) {
-            handleError('Code verification error', error);
+            handleError('კოდის ვერიფიკაციის შეცდომა', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
         <div className="max-w-2xl mx-auto p-5">
-            <h2 className="text-2xl font-bold mb-6">SMS Verification Test</h2>
+            <h2 className="text-2xl font-bold mb-6">SMS ვერიფიკაცია</h2>
             
             <form onSubmit={handleSubmit} className="mb-6">
                 <div className="mb-4">
                     <label className="block mb-2">
-                        Phone Number
+                        ტელეფონის ნომერი
                     </label>
                     <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">
@@ -166,48 +210,57 @@ const SMSTest = () => {
                             onChange={handlePhoneChange}
                             placeholder="555123456"
                             className="w-full px-16 py-2 border rounded text-lg"
+                            disabled={isLoading}
                         />
                     </div>
                     <small className="text-gray-600 mt-1 block">
-                        Enter your 9-digit mobile number (e.g., 555123456)
+                        შეიყვანეთ 9-ნიშნა მობილურის ნომერი (მაგ: 555123456)
                     </small>
                 </div>
                 <button 
                     id="send-code-button"
                     type="submit"
-                    className="w-full bg-blue-500 text-white py-2 px-4 rounded text-lg hover:bg-blue-600"
+                    disabled={isLoading}
+                    className={`w-full py-2 px-4 rounded text-lg text-white ${
+                        isLoading 
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-blue-500 hover:bg-blue-600'
+                    }`}
                 >
-                    Send Verification Code
+                    {isLoading ? 'იგზავნება...' : 'კოდის გაგზავნა'}
                 </button>
             </form>
 
             <form onSubmit={verifyCode} className="mb-6">
                 <div className="mb-4">
                     <label className="block mb-2">
-                        Verification Code
+                        ვერიფიკაციის კოდი
                     </label>
                     <input
                         type="text"
                         value={verificationCode}
                         onChange={(e) => setVerificationCode(e.target.value)}
-                        placeholder="Enter 6-digit code"
+                        placeholder="შეიყვანეთ 6-ნიშნა კოდი"
                         className="w-full px-4 py-2 border rounded text-lg"
+                        disabled={isLoading}
                     />
                 </div>
                 <button 
                     type="submit" 
-                    disabled={!verificationId}
+                    disabled={!verificationId || isLoading}
                     className={`w-full py-2 px-4 rounded text-lg text-white ${
-                        verificationId ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-400 cursor-not-allowed'
+                        !verificationId || isLoading
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-blue-500 hover:bg-blue-600'
                     }`}
                 >
-                    Verify Code
+                    {isLoading ? 'მოწმდება...' : 'კოდის შემოწმება'}
                 </button>
             </form>
 
             {message && (
                 <div className={`p-4 rounded mb-4 ${
-                    message.includes('Error') || message.includes('Invalid')
+                    message.includes('შეცდომა') || message.includes('არასწორი')
                         ? 'bg-red-100 border border-red-200'
                         : 'bg-green-100 border border-green-200'
                 }`}>
@@ -216,7 +269,7 @@ const SMSTest = () => {
             )}
 
             <div className="bg-gray-100 p-4 rounded">
-                <h3 className="font-bold mb-2">Debug Information:</h3>
+                <h3 className="font-bold mb-2">დებაგ ინფორმაცია:</h3>
                 <pre className="whitespace-pre-wrap break-words text-sm">
                     {debug}
                 </pre>
