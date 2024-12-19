@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const LoginForm = ({ formData, handleInputChange, handleLogin, errorMessage, setIsRegistration }) => {
+const LoginForm = ({ formData, handleInputChange, handleLogin, errorMessage, setIsRegistration, setIsPasswordReset }) => {
   return (
     <div className="px-9 pb-9 pt-12 flex flex-col gap-4">
       <h3 className="text-xl font-semibold text-center">ავტორიზაცია</h3>
@@ -37,9 +37,13 @@ const LoginForm = ({ formData, handleInputChange, handleLogin, errorMessage, set
         )}
 
         <div className="flex justify-end">
-          <Link to="/wp-login.php?action=lostpassword" className="text-sm text-black hover:underline">
+          <button 
+            type="button"
+            onClick={() => setIsPasswordReset(true)}
+            className="text-sm text-black hover:underline"
+          >
             დაგავიწყდა პაროლი?
-          </Link>
+          </button>
         </div>
 
         <button 

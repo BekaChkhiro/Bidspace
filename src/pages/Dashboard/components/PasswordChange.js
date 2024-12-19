@@ -5,14 +5,16 @@ const PasswordChange = () => {
   const [userData, setUserData] = useState({
     password: '',
     password_confirm: '',
-    verification_code: ''
+    verification_code: '',
+    phone: '',
+    verificationMethod: 'email' // Default to email
   });
   const [loading, setLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [alert, setAlert] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(60); // 60 seconds = 1 minute
+  const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
 
   useEffect(() => {
@@ -69,7 +71,11 @@ const PasswordChange = () => {
         headers: {
           'Content-Type': 'application/json',
           'X-WP-Nonce': wpApiSettings.nonce
-        }
+        },
+        body: JSON.stringify({
+          verification_method: userData.verificationMethod,
+          phone: userData.phone
+        })
       });
 
       if (!response.ok) throw new Error('Failed to send verification code');
@@ -77,7 +83,12 @@ const PasswordChange = () => {
       setVerificationSent(true);
       setShowVerification(true);
       setShowPasswordFields(false);
-      showAlert('დადასტურების კოდი გამოგზავნილია თქვენს ელ-ფოსტაზე', 'success');
+      showAlert(
+        userData.verificationMethod === 'email' 
+          ? 'დადასტურების კოდი გამოგზავნილია თქვენს ელ-ფოსტაზე'
+          : 'დადასტურების კოდი გამოგზავნილია SMS-ით',
+        'success'
+      );
       startTimer();
     } catch (error) {
       console.error('Error requesting password reset:', error);
@@ -169,8 +180,8 @@ const PasswordChange = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-medium">პაროლის შეცვლა</h3>
+    <div className="px-9 pb-9 pt-12 flex flex-col gap-4">
+      <h3 className="text-xl font-semibold text-center">პაროლის აღდგენა</h3>
       {alert && (
         <Alert
           message={alert.message}
@@ -178,23 +189,63 @@ const PasswordChange = () => {
           onClose={() => setAlert(null)}
         />
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="flex flex-col gap-4">
         {!showVerification ? (
-          <div className="col-span-2">
+          <>
+            <div className="flex flex-col gap-2.5">
+              <label className="text-sm text-gray-600">დადასტურების მეთოდი</label>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="verificationMethod"
+                    value="email"
+                    checked={userData.verificationMethod === 'email'}
+                    onChange={handleInputChange}
+                    className="mr-2"
+                  />
+                  ელ-ფოსტა
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="verificationMethod"
+                    value="sms"
+                    checked={userData.verificationMethod === 'sms'}
+                    onChange={handleInputChange}
+                    className="mr-2"
+                  />
+                  SMS
+                </label>
+              </div>
+            </div>
+            {userData.verificationMethod === 'sms' && (
+              <div className="flex flex-col gap-2.5">
+                <label htmlFor="phone" className="text-sm text-gray-600">ტელეფონის ნომერი</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={userData.phone}
+                  onChange={handleInputChange}
+                  placeholder="+995"
+                  className="px-3 py-2 border border-gray-600 rounded-2xl"
+                />
+              </div>
+            )}
             <button
               type="button"
               onClick={requestPasswordReset}
-              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              style={{ backgroundColor: '#00AEEF' }}
-              disabled={loading}
+              className="w-full text-sm bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
+              disabled={loading || (userData.verificationMethod === 'sms' && !userData.phone)}
             >
               პაროლის შეცვლის დაწყება
             </button>
-          </div>
+          </>
         ) : (
           <>
-            <div>
-              <label htmlFor="verification_code" className="block text-sm font-medium text-gray-700">
+            <div className="flex flex-col gap-2.5">
+              <label htmlFor="verification_code" className="text-sm text-gray-600">
                 დადასტურების კოდი {timeLeft > 0 && <span className="text-gray-500 ml-2">({timeLeft} წამი)</span>}
               </label>
               <input
@@ -205,55 +256,49 @@ const PasswordChange = () => {
                 onChange={handleInputChange}
                 placeholder="შეიყვანეთ კოდი"
                 maxLength={6}
-                className="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                className="px-3 py-2 border border-gray-600 rounded-2xl"
                 disabled={showPasswordFields}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">&nbsp;</label>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="mt-1 inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                გაუქმება
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="w-full text-sm border border-gray-600 text-gray-600 p-4 rounded-full hover:bg-gray-50 transition-colors"
+            >
+              გაუქმება
+            </button>
             {showPasswordFields && (
               <>
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">ახალი პაროლი</label>
+                <div className="flex flex-col gap-2.5">
+                  <label htmlFor="password" className="text-sm text-gray-600">ახალი პაროლი</label>
                   <input
                     type="password"
                     id="password"
                     name="password"
                     value={userData.password}
                     onChange={handleInputChange}
-                    className="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    className="px-3 py-2 border border-gray-600 rounded-2xl"
                   />
                 </div>
-                <div>
-                  <label htmlFor="password_confirm" className="block text-sm font-medium text-gray-700">გაიმეორეთ ახალი პაროლი</label>
+                <div className="flex flex-col gap-2.5">
+                  <label htmlFor="password_confirm" className="text-sm text-gray-600">გაიმეორეთ ახალი პაროლი</label>
                   <input
                     type="password"
                     id="password_confirm"
                     name="password_confirm"
                     value={userData.password_confirm}
                     onChange={handleInputChange}
-                    className="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    className="px-3 py-2 border border-gray-600 rounded-2xl"
                   />
                 </div>
-                <div className="col-span-2">
-                  <button
-                    type="button"
-                    onClick={verifyAndUpdatePassword}
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    style={{ backgroundColor: '#00AEEF' }}
-                    disabled={loading}
-                  >
-                    პაროლის შეცვლა
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={verifyAndUpdatePassword}
+                  className="w-full text-sm bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
+                  disabled={loading}
+                >
+                  პაროლის შეცვლა
+                </button>
               </>
             )}
           </>
