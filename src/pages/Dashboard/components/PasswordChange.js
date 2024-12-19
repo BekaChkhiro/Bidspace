@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Alert from '../../../components/Alert';
+import { auth } from '../../../firebase-config';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 
 const PasswordChange = () => {
   const [userData, setUserData] = useState({
@@ -62,23 +64,44 @@ const PasswordChange = () => {
     setTimer(newTimer);
   };
 
+  // Firebase Recaptcha-ს ინიციალიზაცია
+  const generateRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': () => {
+          // reCAPTCHA solved
+        }
+      });
+    }
+  };
+
   const requestPasswordReset = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/wp-json/bidspace/v1/request-password-reset', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': wpApiSettings.nonce
-        },
-        body: JSON.stringify({
-          verification_method: userData.verificationMethod,
-          phone: userData.phone
-        })
-      });
+      if (userData.verificationMethod === 'email') {
+        const response = await fetch('/wp-json/bidspace/v1/request-password-reset', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': wpApiSettings.nonce
+          },
+          body: JSON.stringify({
+            verification_method: 'email'
+          })
+        });
 
-      if (!response.ok) throw new Error('Failed to send verification code');
+        if (!response.ok) throw new Error('Failed to send verification code');
+      } else {
+        // Firebase SMS ვერიფიკაცია
+        generateRecaptcha();
+        const formattedPhone = userData.phone.startsWith('+') ? userData.phone : `+${userData.phone}`;
+        const appVerifier = window.recaptchaVerifier;
+        
+        const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+        window.confirmationResult = confirmationResult;
+      }
 
       setVerificationSent(true);
       setShowVerification(true);
@@ -93,6 +116,10 @@ const PasswordChange = () => {
     } catch (error) {
       console.error('Error requesting password reset:', error);
       showAlert('დადასტურების კოდის გაგზავნა ვერ მოხერხდა', 'error');
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
     }
     setLoading(false);
   };
@@ -102,17 +129,25 @@ const PasswordChange = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('/wp-json/bidspace/v1/verify-code', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': wpApiSettings.nonce
-        },
-        body: JSON.stringify({ code })
-      });
+      if (userData.verificationMethod === 'email') {
+        const response = await fetch('/wp-json/bidspace/v1/verify-code', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': wpApiSettings.nonce
+          },
+          body: JSON.stringify({ code })
+        });
 
-      if (!response.ok) throw new Error('Invalid code');
+        if (!response.ok) throw new Error('Invalid code');
+      } else {
+        // Firebase კოდის ვერიფიკაცია
+        if (!window.confirmationResult) {
+          throw new Error('No verification in progress');
+        }
+        await window.confirmationResult.confirm(code);
+      }
 
       showAlert('კოდი სწორია', 'success');
       setShowPasswordFields(true);
@@ -181,6 +216,7 @@ const PasswordChange = () => {
 
   return (
     <div className="px-9 pb-9 pt-12 flex flex-col gap-4">
+      <div id="recaptcha-container"></div>
       <h3 className="text-xl font-semibold text-center">პაროლის აღდგენა</h3>
       {alert && (
         <Alert

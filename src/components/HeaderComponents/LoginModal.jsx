@@ -2,26 +2,26 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoginForm from './LoginForm';
 import RegistrationForm from './RegistrationForm';
-import PasswordResetForm from './PasswordResetForm';
 
 const LoginModal = ({ isOpen, onClose }) => {
   const [isRegistration, setIsRegistration] = useState(false);
-  const [isPasswordReset, setIsPasswordReset] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
+    regFirstName: '',
+    regLastName: '',
     regEmail: '',
-    phone: '',
-    piradi_nomeri: '',
+    regPhone: '',
+    regUsername: '',
+    regPersonalNumber: '',
     regPassword: '',
     regConfirmPassword: '',
-    terms: false,
+    regTermsAgreed: false,
     verificationCode: ''
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [verificationError, setVerificationError] = useState('');
-  const [registrationError, setRegistrationError] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -68,118 +68,91 @@ const LoginModal = ({ isOpen, onClose }) => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setRegistrationError('');
-    console.log('Starting registration validation...');
-
-    const validationErrors = [];
     
-    // Email validation
+    const requiredFields = {
+      regFirstName: 'სახელი',
+      regLastName: 'გვარი',
+      regEmail: 'ელ-ფოსტა',
+      regPhone: 'ტელეფონი',
+      regUsername: 'მომხმარებლის სახელი',
+      regPersonalNumber: 'პირადი ნომერი',
+      regPassword: 'პაროლი',
+      regConfirmPassword: 'პაროლის დადასტურება'
+    };
+
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!formData[field]) {
+        alert(`გთხოვთ შეავსოთ ${label}`);
+        return;
+      }
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.regEmail || !emailRegex.test(formData.regEmail)) {
-      validationErrors.push('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტა');
+    if (!emailRegex.test(formData.regEmail)) {
+      alert('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტის მისამართი');
+      return;
     }
 
-    // Password validation
-    if (!formData.regPassword || formData.regPassword.length < 8) {
-      validationErrors.push('პაროლი უნდა შეიცავდეს მინიმუმ 8 სიმბოლოს');
+    const phoneRegex = /^5\d{8}$/;
+    if (!phoneRegex.test(formData.regPhone)) {
+      alert('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი');
+      return;
     }
 
-    // Password confirmation validation
+    if (!/^\d{11}$/.test(formData.regPersonalNumber)) {
+      alert('პირადი ნომერი უნდა შედგებოდეს 11 ციფრისგან');
+      return;
+    }
+
+    if (formData.regPassword.length < 8) {
+      alert('პაროლი უნდა შეიცავდეს მინიმუმ 8 სიმბოლოს');
+      return;
+    }
+
     if (formData.regPassword !== formData.regConfirmPassword) {
-      validationErrors.push('პაროლები არ ემთხვევა');
+      alert('პაროლები არ ემთხვევა');
+      return;
     }
 
-    // Phone number validation
-    const phoneRegex = /^[0-9]{9}$/;
-    if (!formData.phone || !phoneRegex.test(formData.phone)) {
-      validationErrors.push('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი (9 ციფრი)');
-    }
-
-    // Personal number validation
-    const personalNumberRegex = /^[0-9]{11}$/;
-    if (!formData.piradi_nomeri || !personalNumberRegex.test(formData.piradi_nomeri)) {
-      validationErrors.push('გთხოვთ შეიყვანოთ სწორი პირადი ნომერი (11 ციფრი)');
-    }
-
-    // Terms validation
-    if (!formData.terms) {
-      validationErrors.push('გთხოვთ დაეთანხმოთ წესებს და პირობებს');
-    }
-
-    console.log('Validation errors:', validationErrors);
-
-    if (validationErrors.length > 0) {
-      setRegistrationError(validationErrors.join(', '));
+    if (!formData.regTermsAgreed) {
+      alert('გთხოვთ დაეთანხმოთ წესებსა და პირობებს');
       return;
     }
 
     try {
-      console.log('Sending registration request...');
-      console.log('Registration data:', {
-        email: formData.regEmail,
-        password: formData.regPassword,
-        phone_number: formData.phone,
-        piradi_nomeri: formData.piradi_nomeri
-      });
-
       const response = await fetch('/wp-json/custom/v1/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
+          username: formData.regUsername,
           email: formData.regEmail,
           password: formData.regPassword,
-          phone_number: formData.phone,
-          piradi_nomeri: formData.piradi_nomeri
+          firstName: formData.regFirstName,
+          lastName: formData.regLastName,
+          phone: formData.regPhone,
+          personalNumber: formData.regPersonalNumber
         })
       });
 
-      console.log('Response status:', response.status);
-      const responseText = await response.text();
-      console.log('Raw response:', responseText);
-
-      if (!response.ok) {
-        console.error('Registration failed:', responseText);
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = JSON.parse(responseText);
-      console.log('Parsed response:', data);
+      const data = await response.json();
 
       if (data.success) {
-        console.log('Registration successful');
         setShowVerification(true);
       } else {
-        console.log('Registration failed:', data.message);
-        setRegistrationError(data.message || 'რეგისტრაცია ვერ მოხერხდა');
+        alert(data.message || 'რეგისტრაცია ვერ მოხერხდა');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      setRegistrationError('დაფიქსირდა შეცდომა, სცადეთ თავიდან');
+      alert('დაფიქსირდა შეცდომა, სცადეთ თავიდან');
     }
   };
 
   const handleVerification = async (e) => {
     e.preventDefault();
-    setVerificationError('');
-    console.log('Starting verification...');
-
-    // Validate verification code format
-    const codeRegex = /^\d{6}$/;
-    if (!codeRegex.test(formData.verificationCode)) {
-      console.log('Invalid verification code format');
-      setVerificationError('კოდი უნდა შედგებოდეს 6 ციფრისგან');
-      return;
-    }
-
     try {
-      console.log('Sending verification request...');
-      console.log('Verification data:', {
-        email: formData.regEmail,
-        code: formData.verificationCode
-      });
-
       const response = await fetch('/wp-json/custom/v1/verify-code', {
         method: 'POST',
         headers: {
@@ -192,25 +165,13 @@ const LoginModal = ({ isOpen, onClose }) => {
         })
       });
 
-      console.log('Response status:', response.status);
-      const responseText = await response.text();
-      console.log('Raw response:', responseText);
-
-      if (!response.ok) {
-        console.error('Verification failed:', responseText);
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = JSON.parse(responseText);
-      console.log('Parsed response:', data);
+      const data = await response.json();
 
       if (data.success) {
-        console.log('Verification successful');
         alert('ვერიფიკაცია წარმატებით დასრულდა');
         onClose();
         window.location.reload();
       } else {
-        console.log('Verification failed:', data.message);
         setVerificationError(data.message || 'ვერიფიკაცია ვერ მოხერხდა');
       }
     } catch (error) {
@@ -240,29 +201,71 @@ const LoginModal = ({ isOpen, onClose }) => {
           </svg>
         </button>
 
-        {!isRegistration && !isPasswordReset ? (
+        {!isRegistration ? (
           <LoginForm 
             formData={formData}
             handleInputChange={handleInputChange}
             handleLogin={handleLogin}
             errorMessage={errorMessage}
             setIsRegistration={setIsRegistration}
-            setIsPasswordReset={setIsPasswordReset}
           />
-        ) : isRegistration ? (
+        ) : !showVerification ? (
           <RegistrationForm
             formData={formData}
             handleInputChange={handleInputChange}
             handleRegister={handleRegister}
-            errorMessage={registrationError}
+            errorMessage={errorMessage}
             setIsRegistration={setIsRegistration}
           />
         ) : (
-          <PasswordResetForm
-            formData={formData}
-            handleInputChange={handleInputChange}
-            setIsPasswordReset={setIsPasswordReset}
-          />
+          <div className="px-9 pb-9 pt-12 flex flex-col gap-4">
+            <h3 className="text-xl font-semibold text-center">დაადასტურე კოდი</h3>
+            <p className="text-center">შეიყვანე ელ-ფოსტაზე გამოგზავნილი 6-ციფრიანი კოდი:</p>
+            
+            <form onSubmit={handleVerification} className="flex flex-col items-center gap-4">
+              <input
+                name="verificationCode"
+                type="text"
+                value={formData.verificationCode}
+                onChange={handleInputChange}
+                maxLength={6}
+                className="px-3 py-2 border border-gray-600 rounded-2xl w-48 text-center text-2xl tracking-wider"
+                placeholder="000000"
+              />
+              
+              {verificationError && (
+                <div className="text-red-500 text-sm">{verificationError}</div>
+              )}
+              <button 
+                type="submit" 
+                className="w-full bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
+              >
+                დადასტურება
+              </button>
+              
+              <p className="text-sm text-gray-600 text-center mt-4">
+                არ მიგიღია კოდი? {' '}
+                <button 
+                  type="button"
+                  onClick={() => handleRegister()}
+                  className="font-bold hover:underline"
+                >
+                  ხელახლა გაგზავნა
+                </button>
+              </p>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVerification(false);
+                  setVerificationError('');
+                }}
+                className="text-sm text-gray-600 hover:underline mt-2"
+              >
+                უკან დაბრუნება
+              </button>
+            </form>
+          </div>
         )}
       </div>
     </div>

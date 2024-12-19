@@ -7,6 +7,7 @@ import MyAuctions from './pages/MyAuctions';
 import AddAuction from './pages/AddAuction';
 import EditAuction from './pages/EditAuction';
 import Settings from './pages/Settings';
+import SMSTest from '../../components/SMSTest/SMSTest';
 
 const DashboardRoutes = () => {
   return (
@@ -56,6 +57,14 @@ const DashboardRoutes = () => {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sms-test"
+        element={
+          <ProtectedRoute>
+            <SMSTest />
           </ProtectedRoute>
         }
       />
