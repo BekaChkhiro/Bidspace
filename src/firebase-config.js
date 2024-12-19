@@ -2,22 +2,25 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDyrQwCo_U2l70hvJvj_1pyK4t3Eqxb41Y",
-  authDomain: "bidspace-cc967.firebaseapp.com",
-  projectId: "bidspace-cc967",
-  storageBucket: "bidspace-cc967.firebasestorage.app",
-  messagingSenderId: "1054946622736",
-  appId: "1:1054946622736:web:e65c407f068fdb91607995",
-  measurementId: "G-FWG21ZQ9RC"
+  apiKey: "AIzaSyCOp6Z8ws4e6XSk1CTyVPqdDkAoe7Slldc",
+  authDomain: "bidspace-86337.firebaseapp.com",
+  projectId: "bidspace-86337",
+  storageBucket: "bidspace-86337.firebasestorage.app",
+  messagingSenderId: "242580753474",
+  appId: "1:242580753474:web:d158b2b472c5cd74b931db",
+  measurementId: "G-G2TT39HFNP"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Initialize Analytics and Auth
 const analytics = getAnalytics(app);
-export const auth = getAuth(app);
+const auth = getAuth(app);
+
+// Export auth instance
+export { auth };

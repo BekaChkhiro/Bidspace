@@ -10,39 +10,51 @@ const SMSTest = () => {
     const [debug, setDebug] = useState('');
 
     useEffect(() => {
-        // Firebase ინიციალიზაციის შემოწმება
+        // Log auth object on component mount
         console.log('Auth object:', auth);
-        setDebug(prev => prev + '\nAuth object: ' + JSON.stringify(auth));
-    }, []);
+        if (!auth) {
+            setDebug('Auth is not initialized!');
+            return;
+        }
+        setDebug('Auth is initialized successfully');
 
-    // Recaptcha-ს ინიციალიზაცია
-    const setupRecaptcha = () => {
-        try {
-            if (!window.recaptchaVerifier) {
+        // Initialize RecaptchaVerifier
+        if (!window.recaptchaVerifier) {
+            try {
                 window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    'size': 'normal',
-                    'callback': () => {
-                        setDebug(prev => prev + '\nRecaptcha verified successfully');
+                    size: 'normal',
+                    callback: (response) => {
+                        setDebug(prev => prev + '\nRecaptcha verified successfully: ' + response);
+                        // Automatically trigger SMS send after successful verification
+                        handleSendSMS();
                     },
                     'expired-callback': () => {
                         setMessage('Recaptcha expired. Please try again.');
                         setDebug(prev => prev + '\nRecaptcha expired');
                     }
                 });
+                
+                // Render the reCAPTCHA widget
+                window.recaptchaVerifier.render().then(() => {
+                    setDebug(prev => prev + '\nRecaptcha widget rendered');
+                });
+            } catch (error) {
+                setDebug(prev => prev + '\nRecaptcha init error: ' + error.message);
             }
-            setDebug(prev => prev + '\nRecaptcha setup complete');
-        } catch (error) {
-            setDebug(prev => prev + '\nRecaptcha setup error: ' + error.message);
-            throw error;
         }
-    };
 
-    // SMS-ის გაგზავნა
-    const sendSMS = async (e) => {
-        e.preventDefault();
+        // Cleanup on unmount
+        return () => {
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.clear();
+                window.recaptchaVerifier = null;
+            }
+        };
+    }, []);
+
+    // Handle SMS sending after reCAPTCHA verification
+    const handleSendSMS = async () => {
         try {
-            setDebug(prev => prev + '\nStarting SMS send process');
-            setupRecaptcha();
             const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
             setDebug(prev => prev + '\nFormatted phone number: ' + formattedPhoneNumber);
             
@@ -58,10 +70,22 @@ const SMSTest = () => {
             console.error('Error sending SMS:', error);
             setMessage(`Error: ${error.message}`);
             setDebug(prev => prev + '\nSMS send error: ' + error.message);
+            
+            // Reset recaptcha on error
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.clear();
+                window.recaptchaVerifier = null;
+            }
         }
     };
 
-    // კოდის ვერიფიკაცია
+    // Form submit handler
+    const onSubmit = (e) => {
+        e.preventDefault();
+        setDebug(prev => prev + '\nStarting SMS send process');
+    };
+
+    // Verify SMS code
     const verifyCode = async (e) => {
         e.preventDefault();
         if (!verificationId) {
@@ -85,8 +109,8 @@ const SMSTest = () => {
         <div style={{ maxWidth: '600px', margin: '20px auto', padding: '20px' }}>
             <h2>SMS Verification Test</h2>
             
-            {/* ტელეფონის ნომრის ფორმა */}
-            <form onSubmit={sendSMS} style={{ marginBottom: '20px' }}>
+            {/* Phone number form */}
+            <form onSubmit={onSubmit} style={{ marginBottom: '20px' }}>
                 <input
                     type="text"
                     value={phoneNumber}
@@ -95,12 +119,9 @@ const SMSTest = () => {
                     style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
                 />
                 <div id="recaptcha-container" style={{ marginBottom: '10px' }}></div>
-                <button type="submit" style={{ padding: '8px 16px' }}>
-                    Send Verification Code
-                </button>
             </form>
 
-            {/* ვერიფიკაციის კოდის ფორმა */}
+            {/* Verification code form */}
             <form onSubmit={verifyCode}>
                 <input
                     type="text"
@@ -114,14 +135,14 @@ const SMSTest = () => {
                 </button>
             </form>
 
-            {/* შეტყობინებების გამოსახვა */}
+            {/* Display messages */}
             {message && (
                 <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f0f0f0' }}>
                     {message}
                 </div>
             )}
 
-            {/* დებაგ ინფორმაცია */}
+            {/* Debug information */}
             <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f5f5f5' }}>
                 <h3>Debug Information:</h3>
                 <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
