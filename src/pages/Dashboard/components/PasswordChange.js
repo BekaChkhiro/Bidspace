@@ -18,6 +18,7 @@ const PasswordChange = () => {
   const [alert, setAlert] = useState(null);
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
+  const [debug, setDebug] = useState('');
 
   useEffect(() => {
     return () => {
@@ -25,12 +26,50 @@ const PasswordChange = () => {
     };
   }, [timer]);
 
+  // ტელეფონის ნომრის ფორმატირება
+  const formatPhoneNumber = (number) => {
+    // არა-ციფრების წაშლა
+    let cleaned = number.replace(/\D/g, '');
+    
+    // თუ იწყება 995-ით, წაშალე
+    if (cleaned.startsWith('995')) {
+      cleaned = cleaned.slice(3);
+    }
+    
+    // მაქსიმუმ 9 ციფრი
+    cleaned = cleaned.slice(0, 9);
+    
+    return cleaned;
+  };
+
+  // ტელეფონის ნომრის ვალიდაცია
+  const isValidPhoneNumber = (number) => {
+    // არა-ციფრების წაშლა
+    const cleaned = number.replace(/\D/g, '');
+    
+    // ქვეყნის კოდის მოშორება თუ არის
+    const numberWithoutCountry = cleaned.startsWith('995') ? 
+      cleaned.slice(3) : cleaned;
+    
+    // უნდა იყოს 9 ციფრი და იწყებოდეს 5-ით
+    return /^5\d{8}$/.test(numberWithoutCountry);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'phone') {
+      const formattedPhone = formatPhoneNumber(value);
+      setUserData(prev => ({
+        ...prev,
+        [name]: formattedPhone
+      }));
+    } else {
+      setUserData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
 
     // If entering verification code, check if it's correct
     if (name === 'verification_code' && value.length === 6) {
@@ -94,13 +133,47 @@ const PasswordChange = () => {
 
         if (!response.ok) throw new Error('Failed to send verification code');
       } else {
-        // Firebase SMS ვერიფიკაცია
-        generateRecaptcha();
-        const formattedPhone = userData.phone.startsWith('+') ? userData.phone : `+${userData.phone}`;
-        const appVerifier = window.recaptchaVerifier;
+        // SMS ვერიფიკაცია
+        if (!isValidPhoneNumber(userData.phone)) {
+          throw new Error('გთხოვთ შეიყვანოთ ვალიდური ქართული მობილურის ნომერი (მაგ: 555123456)');
+        }
+
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        }
+
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-code-button', {
+          size: 'invisible',
+          callback: async (response) => {
+            setDebug(prev => prev + '\nRecaptcha წარმატებით გაიარა: ' + response);
+          },
+          'expired-callback': () => {
+            showAlert('Recaptcha-ს ვადა გავიდა. სცადეთ თავიდან.', 'error');
+            setDebug(prev => prev + '\nRecaptcha-ს ვადა გავიდა');
+            if (window.recaptchaVerifier) {
+              window.recaptchaVerifier.clear();
+              window.recaptchaVerifier = null;
+            }
+            setLoading(false);
+          }
+        });
+
+        // ნომრის ფორმატირება +995-ით
+        const formattedPhone = userData.phone.startsWith('995') ? 
+          `+${userData.phone}` : 
+          `+995${userData.phone}`;
         
-        const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+        setDebug(prev => prev + '\nფორმატირებული ნომერი: ' + formattedPhone);
+        
+        const confirmationResult = await signInWithPhoneNumber(
+          auth,
+          formattedPhone,
+          window.recaptchaVerifier
+        );
+        
         window.confirmationResult = confirmationResult;
+        setDebug(prev => prev + '\nSMS წარმატებით გაიგზავნა');
       }
 
       setVerificationSent(true);
@@ -115,7 +188,8 @@ const PasswordChange = () => {
       startTimer();
     } catch (error) {
       console.error('Error requesting password reset:', error);
-      showAlert('დადასტურების კოდის გაგზავნა ვერ მოხერხდა', 'error');
+      showAlert(error.message || 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა', 'error');
+      setDebug(prev => prev + '\nError: ' + error.message);
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
         window.recaptchaVerifier = null;
@@ -147,6 +221,7 @@ const PasswordChange = () => {
           throw new Error('No verification in progress');
         }
         await window.confirmationResult.confirm(code);
+        setDebug(prev => prev + '\nკოდი წარმატებით დადასტურდა');
       }
 
       showAlert('კოდი სწორია', 'success');
@@ -155,6 +230,7 @@ const PasswordChange = () => {
     } catch (error) {
       console.error('Error verifying code:', error);
       showAlert('არასწორი კოდი', 'error');
+      setDebug(prev => prev + '\nError: ' + error.message);
     }
     setLoading(false);
   };
@@ -258,24 +334,33 @@ const PasswordChange = () => {
             {userData.verificationMethod === 'sms' && (
               <div className="flex flex-col gap-2.5">
                 <label htmlFor="phone" className="text-sm text-gray-600">ტელეფონის ნომერი</label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={userData.phone}
-                  onChange={handleInputChange}
-                  placeholder="+995"
-                  className="px-3 py-2 border border-gray-600 rounded-2xl"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">
+                    +995
+                  </span>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={userData.phone}
+                    onChange={handleInputChange}
+                    placeholder="555123456"
+                    className="w-full px-16 py-2 border border-gray-600 rounded-2xl"
+                  />
+                </div>
+                <small className="text-gray-600 mt-1 block">
+                  შეიყვანეთ 9-ნიშნა მობილურის ნომერი (მაგ: 555123456)
+                </small>
               </div>
             )}
             <button
+              id="send-code-button"
               type="button"
               onClick={requestPasswordReset}
               className="w-full text-sm bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
-              disabled={loading || (userData.verificationMethod === 'sms' && !userData.phone)}
+              disabled={loading || (userData.verificationMethod === 'sms' && !isValidPhoneNumber(userData.phone))}
             >
-              პაროლის შეცვლის დაწყება
+              {loading ? 'იგზავნება...' : 'პაროლის შეცვლის დაწყება'}
             </button>
           </>
         ) : (
