@@ -94,18 +94,39 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
 
     return new Promise((resolve, reject) => {
       try {
+        // Create a container for reCAPTCHA if it doesn't exist
+        let container = document.getElementById('phone-recaptcha-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'phone-recaptcha-container';
+          document.body.appendChild(container);
+        }
+
+        // Initialize reCAPTCHA verifier
         window.phoneRecaptchaVerifier = new RecaptchaVerifier(auth, 'phone-recaptcha-container', {
           size: 'invisible',
           callback: (response) => {
+            console.log('reCAPTCHA verified successfully');
             resolve(response);
           },
           'expired-callback': () => {
+            console.log('reCAPTCHA expired');
             cleanup();
             showAlert('დადასტურების კოდის ვადა გავიდა. სცადეთ თავიდან', 'error');
             reject(new Error('reCAPTCHA expired'));
+          },
+          'error-callback': (error) => {
+            console.error('reCAPTCHA error:', error);
+            cleanup();
+            showAlert('Recaptcha შემოწმება ვერ მოხერხდა', 'error');
+            reject(error);
           }
         });
+
+        console.log('reCAPTCHA verifier created successfully');
+        resolve();
       } catch (error) {
+        console.error('Error creating reCAPTCHA:', error);
         cleanup();
         reject(error);
       }
@@ -120,28 +141,53 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
 
     setLoading(true);
     try {
-      await generateRecaptcha();
+      // Clear any existing reCAPTCHA
+      cleanup();
 
+      // Format phone number
       const formattedPhone = phone.startsWith('995') ? 
         `+${phone}` : 
         `+995${phone}`;
 
+      console.log('Attempting to send SMS to:', formattedPhone);
+
+      // Initialize reCAPTCHA
+      await generateRecaptcha();
+      
+      // Wait for reCAPTCHA to be ready
+      await window.phoneRecaptchaVerifier.render();
+      console.log('reCAPTCHA rendered successfully');
+
+      // Send verification code
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         formattedPhone,
         window.phoneRecaptchaVerifier
       );
       
+      console.log('SMS sent successfully');
       window.confirmationResult = confirmationResult;
       setShowVerification(true);
       showAlert('დადასტურების კოდი გამოგზავნილია', 'success');
       startTimer();
     } catch (error) {
-      console.error('Error sending verification code:', error);
-      showAlert(error.message || 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა', 'error');
+      console.error('Detailed error:', error);
+      let errorMessage = 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა';
+      
+      // Handle specific Firebase error codes
+      if (error.code === 'auth/invalid-phone-number') {
+        errorMessage = 'არასწორი ტელეფონის ნომერი';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'ძალიან ბევრი მცდელობა. გთხოვთ სცადოთ მოგვიანებით';
+      } else if (error.code === 'auth/captcha-check-failed') {
+        errorMessage = 'Recaptcha შემოწმება ვერ მოხერხდა. გთხოვთ სცადოთ თავიდან';
+      }
+      
+      showAlert(errorMessage, 'error');
       cleanup();
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const verifyCode = async () => {
