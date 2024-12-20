@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Alert from '../../../components/Alert';
-import { auth } from '../../../firebase-config';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth, initializeRecaptcha, cleanupRecaptcha } from '../../../firebase-config';
+import { signInWithPhoneNumber } from 'firebase/auth';
 
 const PasswordChange = () => {
   const [userData, setUserData] = useState({
@@ -9,7 +9,7 @@ const PasswordChange = () => {
     password_confirm: '',
     verification_code: '',
     phone: '',
-    verificationMethod: 'email' // Default to email
+    verificationMethod: 'email'
   });
   const [loading, setLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
@@ -18,45 +18,16 @@ const PasswordChange = () => {
   const [alert, setAlert] = useState(null);
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
-  const [debug, setDebug] = useState('');
 
-  // Cleanup function to handle reCAPTCHA and timer
-  const cleanup = () => {
-    if (timer) {
-      clearInterval(timer);
-      setTimer(null);
-    }
-    if (window.recaptchaVerifier) {
-      try {
-        window.recaptchaVerifier.clear();
-      } catch (error) {
-        console.error('Error clearing reCAPTCHA:', error);
-      }
-      window.recaptchaVerifier = null;
-    }
-    if (window.confirmationResult) {
-      window.confirmationResult = null;
-    }
-  };
-
-  // Component cleanup on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      cleanup();
+      if (timer) {
+        clearInterval(timer);
+      }
+      cleanupRecaptcha();
     };
-  }, []);
-
-  // Timer cleanup when verification state changes
-  useEffect(() => {
-    if (!showVerification) {
-      cleanup();
-    }
-  }, [showVerification]);
-
-  // Cleanup on verification method change
-  useEffect(() => {
-    cleanup();
-  }, [userData.verificationMethod]);
+  }, [timer]);
 
   const formatPhoneNumber = (number) => {
     let cleaned = number.replace(/\D/g, '');
@@ -112,7 +83,7 @@ const PasswordChange = () => {
           if (!showPasswordFields) {
             setShowVerification(false);
             showAlert('დრო ამოიწურა. სცადეთ თავიდან', 'error');
-            cleanup();
+            cleanupRecaptcha();
           }
           return 0;
         }
@@ -121,29 +92,6 @@ const PasswordChange = () => {
     }, 1000);
     
     setTimer(newTimer);
-  };
-
-  const generateRecaptcha = () => {
-    cleanup(); // Clean up any existing instances
-
-    return new Promise((resolve, reject) => {
-      try {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-          callback: (response) => {
-            resolve(response);
-          },
-          'expired-callback': () => {
-            cleanup();
-            showAlert('Recaptcha-ს ვადა გავიდა. სცადეთ თავიდან.', 'error');
-            reject(new Error('reCAPTCHA expired'));
-          }
-        });
-      } catch (error) {
-        cleanup();
-        reject(error);
-      }
-    });
   };
 
   const requestPasswordReset = async () => {
@@ -169,53 +117,26 @@ const PasswordChange = () => {
           throw new Error('გთხოვთ შეიყვანოთ ვალიდური ქართული მობილურის ნომერი (მაგ: 555123456)');
         }
 
-        // Clear any existing reCAPTCHA
-        cleanup();
-        console.log('1. Cleaned up existing instances');
-
-        // Create reCAPTCHA container if it doesn't exist
-        let container = document.getElementById('recaptcha-container');
-        if (!container) {
-          console.error('reCAPTCHA container not found!');
-          throw new Error('reCAPTCHA container not found');
-        }
-        console.log('2. Found reCAPTCHA container');
-
-        // Initialize new reCAPTCHA verifier
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          auth,
-          'recaptcha-container',
-          {
-            size: 'invisible',
-            callback: () => {
-              console.log('3. reCAPTCHA callback success');
-            },
-            'expired-callback': () => {
-              console.log('reCAPTCHA expired');
-              cleanup();
-              showAlert('Recaptcha-ს ვადა გავიდა. სცადეთ თავიდან.', 'error');
-            }
-          }
-        );
-        
-        console.log('4. Created new reCAPTCHA verifier');
-
         // Format phone number
         const formattedPhone = userData.phone.startsWith('995') ? 
           `+${userData.phone}` : 
           `+995${userData.phone}`;
         
-        console.log('5. Formatted phone number:', formattedPhone);
+        console.log('1. Formatting phone number:', formattedPhone);
 
+        // Initialize reCAPTCHA
+        console.log('2. Initializing reCAPTCHA...');
+        const recaptchaVerifier = initializeRecaptcha('recaptcha-container');
+        
         // Send verification code
-        console.log('6. Attempting to send SMS...');
+        console.log('3. Sending SMS...');
         const confirmationResult = await signInWithPhoneNumber(
           auth,
           formattedPhone,
-          window.recaptchaVerifier
+          recaptchaVerifier
         );
         
-        console.log('7. SMS sent successfully!');
+        console.log('4. SMS sent successfully!');
         window.confirmationResult = confirmationResult;
       }
 
@@ -230,7 +151,7 @@ const PasswordChange = () => {
       );
       startTimer();
     } catch (error) {
-      console.error('Detailed error information:', {
+      console.error('Error details:', {
         code: error.code,
         message: error.message,
         stack: error.stack
@@ -238,7 +159,6 @@ const PasswordChange = () => {
 
       let errorMessage = 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა';
       
-      // Handle specific Firebase error codes
       switch (error.code) {
         case 'auth/invalid-phone-number':
           errorMessage = 'არასწორი ტელეფონის ნომერი';
@@ -255,54 +175,56 @@ const PasswordChange = () => {
         default:
           if (error.message.includes('-39')) {
             errorMessage = 'Recaptcha ინიციალიზაციის შეცდომა. გთხოვთ განაახლოთ გვერდი';
-            // Force cleanup on -39 error
-            cleanup();
           } else {
             errorMessage = `შეცდომა: ${error.message}`;
           }
       }
       
       showAlert(errorMessage, 'error');
-      cleanup();
+      cleanupRecaptcha();
     } finally {
       setLoading(false);
     }
   };
 
-  const verifyCode = async (code) => {
-    if (!code || code.length !== 6) return;
+  const verifyCode = async (code = userData.verification_code) => {
+    if (!code || code.length !== 6) {
+      showAlert('გთხოვთ შეიყვანოთ 6-ნიშნა კოდი', 'error');
+      return;
+    }
 
     setLoading(true);
     try {
-      if (userData.verificationMethod === 'email') {
-        const response = await fetch('/wp-json/bidspace/v1/verify-code', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-WP-Nonce': wpApiSettings.nonce
-          },
-          body: JSON.stringify({ code })
-        });
-
-        if (!response.ok) throw new Error('Invalid code');
-      } else {
-        // Firebase კოდის ვერიფიკაცია
+      if (userData.verificationMethod === 'sms') {
         if (!window.confirmationResult) {
           throw new Error('No verification in progress');
         }
         await window.confirmationResult.confirm(code);
-        setDebug(prev => prev + '\nკოდი წარმატებით დადასტურდა');
       }
 
-      showAlert('კოდი სწორია', 'success');
+      const response = await fetch('/wp-json/bidspace/v1/verify-code', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': wpApiSettings.nonce
+        },
+        body: JSON.stringify({
+          verification_code: code,
+          verification_method: userData.verificationMethod
+        })
+      });
+
+      if (!response.ok) throw new Error('Invalid verification code');
+
+      setShowVerification(false);
       setShowPasswordFields(true);
-      cleanup();
+      showAlert('კოდი დადასტურებულია', 'success');
+      cleanupRecaptcha();
     } catch (error) {
       console.error('Error verifying code:', error);
       showAlert('არასწორი კოდი', 'error');
-      setDebug(prev => prev + '\nError: ' + error.message);
-      cleanup();
+      cleanupRecaptcha();
     }
     setLoading(false);
   };
@@ -310,17 +232,44 @@ const PasswordChange = () => {
   const handleCancel = () => {
     setShowVerification(false);
     setShowPasswordFields(false);
-    setUserData({
+    setUserData(prev => ({
+      ...prev,
+      verification_code: '',
       password: '',
-      password_confirm: '',
-      verification_code: ''
-    });
-    cleanup();
+      password_confirm: ''
+    }));
+    cleanupRecaptcha();
+  };
+
+  const resetPassword = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/wp-json/bidspace/v1/reset-password', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': wpApiSettings.nonce
+        },
+        body: JSON.stringify({
+          password: userData.password,
+          password_confirm: userData.password_confirm
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to reset password');
+
+      showAlert('პაროლი წარმატებით შეიცვალა', 'success');
+      handleCancel();
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      showAlert('პაროლის შეცვლა ვერ მოხერხდა', 'error');
+    }
+    setLoading(false);
   };
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold">პაროლის შეცვლა</h3>
+    <div className="flex flex-col gap-4">
       <div id="recaptcha-container" key={showVerification ? 'showing' : 'hidden'}></div>
       {alert && (
         <Alert
@@ -330,44 +279,39 @@ const PasswordChange = () => {
         />
       )}
       {!showVerification && !showPasswordFields && (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              დადასტურების მეთოდი
-            </label>
-            <div className="space-y-2">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700">დადასტურების მეთოდი</label>
+            <div className="flex gap-4">
               <label className="inline-flex items-center">
                 <input
                   type="radio"
                   name="verificationMethod"
                   value="email"
                   checked={userData.verificationMethod === 'email'}
-                  onChange={handleInputChange}
-                  className="form-radio"
+                  onChange={(e) => setUserData(prev => ({ ...prev, verificationMethod: e.target.value }))}
+                  className="form-radio h-4 w-4 text-indigo-600"
                 />
-                <span className="ml-2">ელ-ფოსტა</span>
+                <span className="ml-2">ელ-ფოსტით</span>
               </label>
-              <br />
               <label className="inline-flex items-center">
                 <input
                   type="radio"
                   name="verificationMethod"
-                  value="phone"
-                  checked={userData.verificationMethod === 'phone'}
-                  onChange={handleInputChange}
-                  className="form-radio"
+                  value="sms"
+                  checked={userData.verificationMethod === 'sms'}
+                  onChange={(e) => setUserData(prev => ({ ...prev, verificationMethod: e.target.value }))}
+                  className="form-radio h-4 w-4 text-indigo-600"
                 />
-                <span className="ml-2">ტელეფონის ნომერი</span>
+                <span className="ml-2">SMS-ით</span>
               </label>
             </div>
           </div>
           
-          {userData.verificationMethod === 'phone' && (
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                ტელეფონის ნომერი
-              </label>
-              <div className="mt-1 relative">
+          {userData.verificationMethod === 'sms' && (
+            <div className="flex flex-col gap-2">
+              <label htmlFor="phone" className="text-sm font-medium text-gray-700">ტელეფონის ნომერი</label>
+              <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">
                   +995
                 </span>
@@ -378,7 +322,7 @@ const PasswordChange = () => {
                   value={userData.phone}
                   onChange={handleInputChange}
                   placeholder="555123456"
-                  className="block w-full pl-16 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="w-full px-16 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -386,9 +330,8 @@ const PasswordChange = () => {
 
           <button
             type="button"
-            id="send-code-button"
             onClick={requestPasswordReset}
-            disabled={loading || (userData.verificationMethod === 'phone' && !isValidPhoneNumber(userData.phone))}
+            disabled={loading || (userData.verificationMethod === 'sms' && !isValidPhoneNumber(userData.phone))}
             className="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
             style={{ backgroundColor: '#00AEEF' }}
           >
@@ -397,11 +340,11 @@ const PasswordChange = () => {
         </div>
       )}
 
-      {showVerification && !showPasswordFields && (
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="verification_code" className="block text-sm font-medium text-gray-700">
-              დადასტურების კოდი {timeLeft > 0 && <span className="text-gray-500">({timeLeft} წამი)</span>}
+      {showVerification && (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="verification_code" className="text-sm font-medium text-gray-700">
+              დადასტურების კოდი {timeLeft > 0 && <span className="text-gray-500 ml-2">({timeLeft} წამი)</span>}
             </label>
             <input
               type="text"
@@ -411,7 +354,7 @@ const PasswordChange = () => {
               onChange={handleInputChange}
               maxLength={6}
               placeholder="შეიყვანეთ 6-ნიშნა კოდი"
-              className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
           <div className="flex gap-4">
@@ -424,7 +367,7 @@ const PasswordChange = () => {
             </button>
             <button
               type="button"
-              onClick={() => verifyCode(userData.verification_code)}
+              onClick={() => verifyCode()}
               disabled={loading || userData.verification_code.length !== 6}
               className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
               style={{ backgroundColor: '#00AEEF' }}
@@ -436,31 +379,27 @@ const PasswordChange = () => {
       )}
 
       {showPasswordFields && (
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              ახალი პაროლი
-            </label>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="password" className="text-sm font-medium text-gray-700">ახალი პაროლი</label>
             <input
               type="password"
               id="password"
               name="password"
               value={userData.password}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
-          <div>
-            <label htmlFor="password_confirm" className="block text-sm font-medium text-gray-700">
-              გაიმეორეთ პაროლი
-            </label>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="password_confirm" className="text-sm font-medium text-gray-700">გაიმეორეთ პაროლი</label>
             <input
               type="password"
               id="password_confirm"
               name="password_confirm"
               value={userData.password_confirm}
               onChange={handleInputChange}
-              className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
           <div className="flex gap-4">
@@ -472,8 +411,9 @@ const PasswordChange = () => {
               გაუქმება
             </button>
             <button
-              type="submit"
-              disabled={loading || !userData.password || userData.password !== userData.password_confirm}
+              type="button"
+              onClick={resetPassword}
+              disabled={loading || !userData.password || !userData.password_confirm || userData.password !== userData.password_confirm}
               className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
               style={{ backgroundColor: '#00AEEF' }}
             >

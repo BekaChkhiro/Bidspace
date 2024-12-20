@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Alert from '../../../components/Alert';
-import { auth } from '../../../firebase-config';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth, initializeRecaptcha, cleanupRecaptcha } from '../../../firebase-config';
+import { signInWithPhoneNumber } from 'firebase/auth';
 
 const PhoneChange = ({ currentPhone, onPhoneChange }) => {
   const [phone, setPhone] = useState('');
@@ -12,38 +12,15 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
 
-  // Cleanup function to handle reCAPTCHA and timer
-  const cleanup = () => {
-    if (timer) {
-      clearInterval(timer);
-      setTimer(null);
-    }
-    if (window.phoneRecaptchaVerifier) {
-      try {
-        window.phoneRecaptchaVerifier.clear();
-      } catch (error) {
-        console.error('Error clearing reCAPTCHA:', error);
-      }
-      window.phoneRecaptchaVerifier = null;
-    }
-    if (window.confirmationResult) {
-      window.confirmationResult = null;
-    }
-  };
-
-  // Return cleanup function
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      cleanup();
+      if (timer) {
+        clearInterval(timer);
+      }
+      cleanupRecaptcha();
     };
-  }, []);
-
-  // Cleanup on showVerification change
-  useEffect(() => {
-    if (!showVerification) {
-      cleanup();
-    }
-  }, [showVerification]);
+  }, [timer]);
 
   const formatPhoneNumber = (number) => {
     let cleaned = number.replace(/\D/g, '');
@@ -81,7 +58,7 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
           clearInterval(newTimer);
           setShowVerification(false);
           showAlert('დრო ამოიწურა. სცადეთ თავიდან', 'error');
-          cleanup();
+          cleanupRecaptcha();
           return 0;
         }
         return prevTime - 1;
@@ -99,59 +76,32 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
 
     setLoading(true);
     try {
-      // Clear any existing reCAPTCHA
-      cleanup();
-      console.log('1. Cleaned up existing instances');
-
-      // Create reCAPTCHA container if it doesn't exist
-      let container = document.getElementById('phone-recaptcha-container');
-      if (!container) {
-        console.error('reCAPTCHA container not found!');
-        throw new Error('reCAPTCHA container not found');
-      }
-      console.log('2. Found reCAPTCHA container');
-
-      // Initialize new reCAPTCHA verifier
-      window.phoneRecaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        'phone-recaptcha-container',
-        {
-          size: 'invisible',
-          callback: () => {
-            console.log('3. reCAPTCHA callback success');
-          },
-          'expired-callback': () => {
-            console.log('reCAPTCHA expired');
-            cleanup();
-            showAlert('დადასტურების კოდის ვადა გავიდა. სცადეთ თავიდან', 'error');
-          }
-        }
-      );
-      
-      console.log('4. Created new reCAPTCHA verifier');
-
       // Format phone number
       const formattedPhone = phone.startsWith('995') ? 
         `+${phone}` : 
         `+995${phone}`;
       
-      console.log('5. Formatted phone number:', formattedPhone);
+      console.log('1. Formatting phone number:', formattedPhone);
 
+      // Initialize reCAPTCHA
+      console.log('2. Initializing reCAPTCHA...');
+      const recaptchaVerifier = initializeRecaptcha('phone-recaptcha-container');
+      
       // Send verification code
-      console.log('6. Attempting to send SMS...');
+      console.log('3. Sending SMS...');
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         formattedPhone,
-        window.phoneRecaptchaVerifier
+        recaptchaVerifier
       );
       
-      console.log('7. SMS sent successfully!');
+      console.log('4. SMS sent successfully!');
       window.confirmationResult = confirmationResult;
       setShowVerification(true);
       showAlert('დადასტურების კოდი გამოგზავნილია', 'success');
       startTimer();
     } catch (error) {
-      console.error('Detailed error information:', {
+      console.error('Error details:', {
         code: error.code,
         message: error.message,
         stack: error.stack
@@ -159,7 +109,6 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
 
       let errorMessage = 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა';
       
-      // Handle specific Firebase error codes
       switch (error.code) {
         case 'auth/invalid-phone-number':
           errorMessage = 'არასწორი ტელეფონის ნომერი';
@@ -176,15 +125,13 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
         default:
           if (error.message.includes('-39')) {
             errorMessage = 'Recaptcha ინიციალიზაციის შეცდომა. გთხოვთ განაახლოთ გვერდი';
-            // Force cleanup on -39 error
-            cleanup();
           } else {
             errorMessage = `შეცდომა: ${error.message}`;
           }
       }
       
       showAlert(errorMessage, 'error');
-      cleanup();
+      cleanupRecaptcha();
     } finally {
       setLoading(false);
     }
@@ -225,11 +172,11 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
       setShowVerification(false);
       setVerificationCode('');
       setPhone('');
-      cleanup();
+      cleanupRecaptcha();
     } catch (error) {
       console.error('Error verifying code:', error);
       showAlert('არასწორი კოდი', 'error');
-      cleanup();
+      cleanupRecaptcha();
     }
     setLoading(false);
   };
@@ -238,7 +185,7 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
     setShowVerification(false);
     setVerificationCode('');
     setPhone('');
-    cleanup();
+    cleanupRecaptcha();
   };
 
   return (

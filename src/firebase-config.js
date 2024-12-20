@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
+import { getAuth, RecaptchaVerifier } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -22,8 +22,57 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 
 // Configure auth settings
-auth.settings.appVerificationDisabledForTesting = false; // Ensure real verification is enabled
 auth.languageCode = 'ka'; // Set language to Georgian
 
-// Export auth instance
-export { auth };
+// Initialize global reCAPTCHA verifier
+const initializeRecaptcha = (containerId) => {
+  // Clean up existing instance if any
+  if (window.recaptchaVerifier) {
+    try {
+      window.recaptchaVerifier.clear();
+    } catch (error) {
+      console.error('Error clearing existing reCAPTCHA:', error);
+    }
+    window.recaptchaVerifier = null;
+  }
+
+  // Create new instance
+  try {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+      size: 'invisible',
+      callback: () => {
+        console.log('reCAPTCHA verified successfully');
+      },
+      'expired-callback': () => {
+        console.log('reCAPTCHA expired');
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        }
+      }
+    });
+    
+    return window.recaptchaVerifier;
+  } catch (error) {
+    console.error('Error initializing reCAPTCHA:', error);
+    throw error;
+  }
+};
+
+// Clean up function for reCAPTCHA
+const cleanupRecaptcha = () => {
+  if (window.recaptchaVerifier) {
+    try {
+      window.recaptchaVerifier.clear();
+    } catch (error) {
+      console.error('Error clearing reCAPTCHA:', error);
+    }
+    window.recaptchaVerifier = null;
+  }
+  if (window.confirmationResult) {
+    window.confirmationResult = null;
+  }
+};
+
+// Export auth instance and reCAPTCHA functions
+export { auth, initializeRecaptcha, cleanupRecaptcha };
