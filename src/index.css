@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.header-bg {
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(15px);
+}
+
+/* Dashboard styles */
+.dashboard-mode {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.dashboard-mode #wpadminbar {
+  display: none;
+}
+
+html.dashboard-mode,
+body.dashboard-mode {
+  overflow: hidden;
+  margin-top: 0 !important;
+}
+
+/* Additional styles for the dashboard */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 10px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.dashboard-header .stats {
+  display: flex;
+  gap: 20px;
+}
+
+.dashboard-header .stats .stat {
+  background-color: #e9ecef;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.event-card {
+  background-color: #e9ecef;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.event-card .event-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.event-card .event-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Add scrollable container styles */
+.scrollable-container {
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+/* Ensure body allows scrolling */
+body {
+  overflow-y: auto;
+  background-color: #e6e6e6;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Page Transition Animation */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(20px);
+  background-color: #e6e6e6;
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  background-color: #e6e6e6;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+  background-color: #e6e6e6;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+  background-color: #e6e6e6;
+}
+
+/* Add background color to the main container */
+.flex-grow {
+  background-color: #e6e6e6;
+}

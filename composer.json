@@ -1,0 +1,12 @@
+{
+    "require": {
+        "cboden/ratchet": "^0.4.4",
+        "react/event-loop": "^1.3",
+        "twilio/sdk": "^7.12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bidspace\\": "src/Bidspace"
+        }
+    }
+}

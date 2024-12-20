@@ -1,0 +1,46 @@
+/*
+Theme Name: Bidspace WordPress Theme Infinity Solutions
+Theme URI: http://example.com/
+Author: Infinity Solution
+Author URI: https://infinityglobal.agency/
+Description: A custom theme for auctions with Vue.js integration.
+Version: 1.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: bidspace-theme
+*/
+
+body {
+  background-color: white!important;
+}
+
+
+/* dashboard menu item hover */
+
+
+
+.dashboard-menu-item-active {
+  background: #EBFAFF;
+  border-left: solid 5px #00AEEF;
+  padding: 8px 24px 8px 19px;
+}
+
+.dashboard-menu-item {
+  padding: 8px 24px;
+}
+
+/* dashboard settings page */
+
+.settings-field-style {
+  padding: 12px 10px;
+  background-image: url('./icons/dashboard/edit_icon.svg');
+  background-repeat: no-repeat;
+  background-position: center right 10px;
+  border-radius: 10px;
+  border: 1px solid #737791;
+}
+
+.settings-field-style:hover, .settings-field-style:active,  .settings-field-style:focus {
+  border-radius: 10px;
+  border: 1px solid #737791;
+}
