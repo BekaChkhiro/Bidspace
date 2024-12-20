@@ -41,7 +41,9 @@ const PasswordChange = () => {
 
   // Component cleanup on unmount
   useEffect(() => {
-    return cleanup;
+    return () => {
+      cleanup();
+    };
   }, []);
 
   // Timer cleanup when verification state changes
@@ -50,6 +52,11 @@ const PasswordChange = () => {
       cleanup();
     }
   }, [showVerification]);
+
+  // Cleanup on verification method change
+  useEffect(() => {
+    cleanup();
+  }, [userData.verificationMethod]);
 
   const formatPhoneNumber = (number) => {
     let cleaned = number.replace(/\D/g, '');
@@ -162,22 +169,54 @@ const PasswordChange = () => {
           throw new Error('გთხოვთ შეიყვანოთ ვალიდური ქართული მობილურის ნომერი (მაგ: 555123456)');
         }
 
-        await generateRecaptcha();
+        // Clear any existing reCAPTCHA
+        cleanup();
+        console.log('1. Cleaned up existing instances');
 
+        // Create reCAPTCHA container if it doesn't exist
+        let container = document.getElementById('recaptcha-container');
+        if (!container) {
+          console.error('reCAPTCHA container not found!');
+          throw new Error('reCAPTCHA container not found');
+        }
+        console.log('2. Found reCAPTCHA container');
+
+        // Initialize new reCAPTCHA verifier
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          'recaptcha-container',
+          {
+            size: 'invisible',
+            callback: () => {
+              console.log('3. reCAPTCHA callback success');
+            },
+            'expired-callback': () => {
+              console.log('reCAPTCHA expired');
+              cleanup();
+              showAlert('Recaptcha-ს ვადა გავიდა. სცადეთ თავიდან.', 'error');
+            }
+          }
+        );
+        
+        console.log('4. Created new reCAPTCHA verifier');
+
+        // Format phone number
         const formattedPhone = userData.phone.startsWith('995') ? 
           `+${userData.phone}` : 
           `+995${userData.phone}`;
         
-        setDebug(prev => prev + '\nფორმატირებული ნომერი: ' + formattedPhone);
-        
+        console.log('5. Formatted phone number:', formattedPhone);
+
+        // Send verification code
+        console.log('6. Attempting to send SMS...');
         const confirmationResult = await signInWithPhoneNumber(
           auth,
           formattedPhone,
           window.recaptchaVerifier
         );
         
+        console.log('7. SMS sent successfully!');
         window.confirmationResult = confirmationResult;
-        setDebug(prev => prev + '\nSMS წარმატებით გაიგზავნა');
       }
 
       setVerificationSent(true);
@@ -191,12 +230,43 @@ const PasswordChange = () => {
       );
       startTimer();
     } catch (error) {
-      console.error('Error requesting password reset:', error);
-      showAlert(error.message || 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა', 'error');
-      setDebug(prev => prev + '\nError: ' + error.message);
+      console.error('Detailed error information:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+
+      let errorMessage = 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა';
+      
+      // Handle specific Firebase error codes
+      switch (error.code) {
+        case 'auth/invalid-phone-number':
+          errorMessage = 'არასწორი ტელეფონის ნომერი';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'ძალიან ბევრი მცდელობა. გთხოვთ სცადოთ მოგვიანებით';
+          break;
+        case 'auth/captcha-check-failed':
+          errorMessage = 'Recaptcha შემოწმება ვერ მოხერხდა. გთხოვთ სცადოთ თავიდან';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = 'ინტერნეტთან კავშირის პრობლემა. გთხოვთ შეამოწმოთ კავშირი';
+          break;
+        default:
+          if (error.message.includes('-39')) {
+            errorMessage = 'Recaptcha ინიციალიზაციის შეცდომა. გთხოვთ განაახლოთ გვერდი';
+            // Force cleanup on -39 error
+            cleanup();
+          } else {
+            errorMessage = `შეცდომა: ${error.message}`;
+          }
+      }
+      
+      showAlert(errorMessage, 'error');
       cleanup();
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const verifyCode = async (code) => {

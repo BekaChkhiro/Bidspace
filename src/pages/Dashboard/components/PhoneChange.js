@@ -31,12 +31,14 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
     }
   };
 
-  // Component cleanup on unmount
+  // Return cleanup function
   useEffect(() => {
-    return cleanup;
+    return () => {
+      cleanup();
+    };
   }, []);
 
-  // Timer cleanup when verification state changes
+  // Cleanup on showVerification change
   useEffect(() => {
     if (!showVerification) {
       cleanup();
@@ -97,33 +99,26 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
 
     setLoading(true);
     try {
-      // 1. Format phone number
-      const formattedPhone = phone.startsWith('995') ? 
-        `+${phone}` : 
-        `+995${phone}`;
-      
-      console.log('1. Formatting phone number:', formattedPhone);
-
-      // 2. Clean up any existing instances
+      // Clear any existing reCAPTCHA
       cleanup();
-      console.log('2. Cleaned up existing instances');
+      console.log('1. Cleaned up existing instances');
 
-      // 3. Create reCAPTCHA container
-      const container = document.getElementById('phone-recaptcha-container');
+      // Create reCAPTCHA container if it doesn't exist
+      let container = document.getElementById('phone-recaptcha-container');
       if (!container) {
         console.error('reCAPTCHA container not found!');
         throw new Error('reCAPTCHA container not found');
       }
-      console.log('3. Found reCAPTCHA container');
+      console.log('2. Found reCAPTCHA container');
 
-      // 4. Initialize new reCAPTCHA verifier
+      // Initialize new reCAPTCHA verifier
       window.phoneRecaptchaVerifier = new RecaptchaVerifier(
         auth,
         'phone-recaptcha-container',
         {
           size: 'invisible',
           callback: () => {
-            console.log('4. reCAPTCHA callback success');
+            console.log('3. reCAPTCHA callback success');
           },
           'expired-callback': () => {
             console.log('reCAPTCHA expired');
@@ -133,26 +128,24 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
         }
       );
       
-      console.log('5. Created new reCAPTCHA verifier');
+      console.log('4. Created new reCAPTCHA verifier');
 
-      // 6. Render reCAPTCHA
-      try {
-        await window.phoneRecaptchaVerifier.render();
-        console.log('6. Rendered reCAPTCHA');
-      } catch (renderError) {
-        console.error('Error rendering reCAPTCHA:', renderError);
-        throw renderError;
-      }
+      // Format phone number
+      const formattedPhone = phone.startsWith('995') ? 
+        `+${phone}` : 
+        `+995${phone}`;
+      
+      console.log('5. Formatted phone number:', formattedPhone);
 
-      // 7. Send verification code
-      console.log('7. Attempting to send SMS...');
+      // Send verification code
+      console.log('6. Attempting to send SMS...');
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         formattedPhone,
         window.phoneRecaptchaVerifier
       );
       
-      console.log('8. SMS sent successfully!');
+      console.log('7. SMS sent successfully!');
       window.confirmationResult = confirmationResult;
       setShowVerification(true);
       showAlert('დადასტურების კოდი გამოგზავნილია', 'success');
@@ -181,7 +174,13 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
           errorMessage = 'ინტერნეტთან კავშირის პრობლემა. გთხოვთ შეამოწმოთ კავშირი';
           break;
         default:
-          errorMessage = `შეცდომა: ${error.message}`;
+          if (error.message.includes('-39')) {
+            errorMessage = 'Recaptcha ინიციალიზაციის შეცდომა. გთხოვთ განაახლოთ გვერდი';
+            // Force cleanup on -39 error
+            cleanup();
+          } else {
+            errorMessage = `შეცდომა: ${error.message}`;
+          }
       }
       
       showAlert(errorMessage, 'error');
