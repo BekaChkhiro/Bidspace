@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, RecaptchaVerifier } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -23,61 +23,7 @@ const auth = getAuth(app);
 
 // Configure auth settings
 auth.languageCode = 'ka'; // Set language to Georgian
+auth.settings.appVerificationDisabledForTesting = false; // Enable production mode
 
-// Initialize global reCAPTCHA verifier
-const initializeRecaptcha = (containerId) => {
-  // Clean up existing instance if any
-  cleanupRecaptcha();
-
-  // Check if container exists
-  const container = document.getElementById(containerId);
-  if (!container) {
-    console.error('reCAPTCHA container not found:', containerId);
-    throw new Error('reCAPTCHA container not found');
-  }
-
-  // Check if reCAPTCHA is already rendered in this container
-  if (container.childNodes.length > 0) {
-    console.log('reCAPTCHA already exists in container, cleaning up...');
-    container.innerHTML = '';
-  }
-
-  // Create new instance
-  try {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-      size: 'invisible',
-      callback: () => {
-        console.log('reCAPTCHA verified successfully');
-      },
-      'expired-callback': () => {
-        console.log('reCAPTCHA expired');
-        cleanupRecaptcha();
-      }
-    });
-
-    return window.recaptchaVerifier;
-  } catch (error) {
-    console.error('Error initializing reCAPTCHA:', error);
-    cleanupRecaptcha();
-    throw error;
-  }
-};
-
-// Clean up function for reCAPTCHA
-const cleanupRecaptcha = () => {
-  if (window.recaptchaVerifier) {
-    try {
-      window.recaptchaVerifier.clear();
-      console.log('Cleared existing reCAPTCHA verifier');
-    } catch (error) {
-      console.error('Error clearing reCAPTCHA:', error);
-    }
-    window.recaptchaVerifier = null;
-  }
-  if (window.confirmationResult) {
-    window.confirmationResult = null;
-  }
-};
-
-// Export auth instance and reCAPTCHA functions
-export { auth, initializeRecaptcha, cleanupRecaptcha };
+// Export auth instance
+export { auth };

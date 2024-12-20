@@ -12,7 +12,7 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
   const [alert, setAlert] = useState(null);
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
+  const [verifier, setVerifier] = useState(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -24,7 +24,7 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
   }, [timer]);
 
   const handleVerifierCreated = useCallback((verifier) => {
-    setRecaptchaVerifier(verifier);
+    setVerifier(verifier);
   }, []);
 
   const formatPhoneNumber = (number) => {
@@ -54,7 +54,7 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
   };
 
   const startTimer = () => {
-    setTimeLeft(60);
+    setTimeLeft(300); // 5 minutes instead of 1
     if (timer) clearInterval(timer);
     
     const newTimer = setInterval(() => {
@@ -72,73 +72,94 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
     setTimer(newTimer);
   };
 
+  const resendCode = async () => {
+    if (loading) return;
+    
+    console.log('Resending verification code...');
+    
+    // Clear existing timer and verification code
+    if (timer) {
+      clearInterval(timer);
+      setTimer(null);
+    }
+    setVerificationCode('');
+    
+    // Reset reCAPTCHA
+    if (verifier) {
+      try {
+        console.log('Clearing existing reCAPTCHA...');
+        verifier.clear();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.error('Error clearing reCAPTCHA:', error);
+      }
+    }
+    
+    // Send new code
+    await sendVerificationCode();
+  };
+
   const sendVerificationCode = async () => {
     if (!isValidPhoneNumber(phone)) {
       showAlert('გთხოვთ შეიყვანოთ ვალიდური ქართული მობილურის ნომერი (მაგ: 555123456)', 'error');
       return;
     }
 
-    if (!recaptchaVerifier) {
-      showAlert('გთხოვთ დაელოდოთ reCAPTCHA-ს ინიციალიზაციას', 'error');
-      return;
-    }
-
     setLoading(true);
     try {
-      // Format phone number
-      const formattedPhone = phone.startsWith('995') ? 
-        `+${phone}` : 
-        `+995${phone}`;
+      if (!verifier) {
+        console.error('No reCAPTCHA verifier found');
+        showAlert('გთხოვთ განაახლოთ გვერდი და სცადოთ თავიდან', 'error');
+        return;
+      }
+
+      console.log('1. Starting verification process...');
+      console.log('Phone number:', `+995${phone}`);
+
+      // Clear any existing confirmationResult
+      if (window.confirmationResult) {
+        console.log('Clearing existing confirmationResult');
+        window.confirmationResult = null;
+      }
+
+      // Create new verifier if needed
+      if (!verifier._initialized) {
+        console.log('2. Rendering reCAPTCHA...');
+        await verifier.render();
+      }
+
+      console.log('3. Sending verification code...');
+      const confirmationResult = await signInWithPhoneNumber(auth, `+995${phone}`, verifier);
       
-      console.log('1. Formatting phone number:', formattedPhone);
-      
-      // Send verification code
-      console.log('2. Sending SMS...');
-      const confirmationResult = await signInWithPhoneNumber(
-        auth,
-        formattedPhone,
-        recaptchaVerifier
-      );
-      
-      console.log('3. SMS sent successfully!');
+      if (!confirmationResult) {
+        throw new Error('Failed to send verification code');
+      }
+
+      console.log('4. Code sent successfully!');
       window.confirmationResult = confirmationResult;
+      
       setShowVerification(true);
-      showAlert('დადასტურების კოდი გამოგზავნილია', 'success');
       startTimer();
+      showAlert('კოდი გამოგზავნილია', 'success');
     } catch (error) {
-      console.error('Error details:', {
+      console.error('Error sending code:', {
         code: error.code,
         message: error.message,
         stack: error.stack
       });
 
-      let errorMessage = 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა';
-      
-      switch (error.code) {
-        case 'auth/invalid-phone-number':
-          errorMessage = 'არასწორი ტელეფონის ნომერი';
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = 'ძალიან ბევრი მცდელობა. გთხოვთ სცადოთ მოგვიანებით';
-          break;
-        case 'auth/captcha-check-failed':
-          errorMessage = 'Recaptcha შემოწმება ვერ მოხერხდა. გთხოვთ სცადოთ თავიდან';
-          break;
-        case 'auth/network-request-failed':
-          errorMessage = 'ინტერნეტთან კავშირის პრობლემა. გთხოვთ შეამოწმოთ კავშირი';
-          break;
-        default:
-          if (error.message.includes('-39')) {
-            errorMessage = 'Recaptcha ინიციალიზაციის შეცდომა. გთხოვთ განაახლოთ გვერდი';
-          } else {
-            errorMessage = `შეცდომა: ${error.message}`;
-          }
+      let errorMessage = 'შეცდომა კოდის გაგზავნისას';
+      if (error.code === 'auth/invalid-phone-number') {
+        errorMessage = 'არასწორი ტელეფონის ნომერი';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'ძალიან ბევრი მცდელობა. გთხოვთ სცადოთ მოგვიანებით';
+      } else if (error.code === 'auth/internal-error') {
+        errorMessage = 'გთხოვთ განაახლოთ გვერდი და სცადოთ თავიდან';
       }
-      
+
       showAlert(errorMessage, 'error');
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const verifyCode = async () => {
@@ -147,9 +168,16 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
       return;
     }
 
+    // Ensure code contains only numbers
+    if (!/^\d{6}$/.test(verificationCode)) {
+      showAlert('კოდი უნდა შეიცავდეს მხოლოდ ციფრებს', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
       console.log('1. Starting code verification...');
+      console.log('Verification code:', verificationCode);
       
       if (!window.confirmationResult) {
         console.error('No confirmationResult found in window object');
@@ -157,8 +185,17 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
       }
 
       console.log('2. Confirming code...');
-      const result = await window.confirmationResult.confirm(verificationCode);
-      console.log('3. Verification result:', result);
+      try {
+        const result = await window.confirmationResult.confirm(verificationCode);
+        console.log('3. Verification result:', result);
+      } catch (confirmError) {
+        console.error('Confirmation error details:', {
+          code: confirmError.code,
+          message: confirmError.message,
+          stack: confirmError.stack
+        });
+        throw confirmError;
+      }
       
       // Update phone number in WordPress
       console.log('4. Updating phone number in WordPress...');
@@ -189,18 +226,31 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
       setVerificationCode('');
       setPhone('');
     } catch (error) {
-      console.error('Verification Error:', error);
+      console.error('Verification Error:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       
       let errorMessage = 'არასწორი კოდი';
       if (error.code === 'auth/invalid-verification-code') {
         errorMessage = 'არასწორი დადასტურების კოდი';
       } else if (error.code === 'auth/code-expired') {
         errorMessage = 'კოდს ვადა გაუვიდა';
+      } else if (error.code === 'auth/argument-error') {
+        errorMessage = 'არასწორი ფორმატის კოდი';
       }
       
       showAlert(errorMessage, 'error');
     }
     setLoading(false);
+  };
+
+  const handleVerificationCodeChange = (e) => {
+    // Allow only numbers
+    const value = e.target.value.replace(/\D/g, '');
+    // Limit to 6 digits
+    setVerificationCode(value.slice(0, 6));
   };
 
   const handleCancel = () => {
@@ -249,17 +299,33 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2.5">
             <label htmlFor="verification_code" className="text-sm font-medium text-gray-700">
-              დადასტურების კოდი {timeLeft > 0 && <span className="text-gray-500 ml-2">({timeLeft} წამი)</span>}
+              დადასტურების კოდი {timeLeft > 0 && (
+                <span className="text-gray-500 ml-2">
+                  ({Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')})
+                </span>
+              )}
             </label>
             <input
               type="text"
               id="verification_code"
               value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
+              onChange={handleVerificationCodeChange}
               maxLength={6}
               placeholder="შეიყვანეთ 6-ნიშნა კოდი"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              pattern="\d*"
+              inputMode="numeric"
             />
+            {timeLeft > 0 && (
+              <button
+                type="button"
+                onClick={resendCode}
+                disabled={loading}
+                className="mt-2 text-sm text-indigo-600 hover:text-indigo-500"
+              >
+                კოდის თავიდან გაგზავნა
+              </button>
+            )}
           </div>
           <div className="flex gap-4">
             <button

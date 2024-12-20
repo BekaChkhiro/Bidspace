@@ -9,6 +9,8 @@ import EditAuction from './pages/EditAuction';
 import Settings from './pages/Settings';
 import SMSTest from '../../components/SMSTest/SMSTest';
 import WonAuctions from './pages/won-auctions';
+import Archive from './pages/archive';
+import Wishlist from './pages/Wishlist';
 
 const DashboardRoutes = () => {
   return (
@@ -74,6 +76,22 @@ const DashboardRoutes = () => {
         element={
           <ProtectedRoute>
             <SMSTest />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="archive"
+        element={
+          <ProtectedRoute>
+            <Archive />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="wishlist"
+        element={
+          <ProtectedRoute>
+            <Wishlist />
           </ProtectedRoute>
         }
       />

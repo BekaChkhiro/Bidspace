@@ -38,7 +38,7 @@ const PasswordChange = () => {
   };
 
   const startTimer = () => {
-    setTimeLeft(60);
+    setTimeLeft(300); // 5 minutes instead of 1
     if (timer) clearInterval(timer);
     
     const newTimer = setInterval(() => {
@@ -54,6 +54,22 @@ const PasswordChange = () => {
     }, 1000);
     
     setTimer(newTimer);
+  };
+
+  const resendCode = async () => {
+    if (loading) return;
+    
+    // Clear existing timer
+    if (timer) {
+      clearInterval(timer);
+      setTimer(null);
+    }
+
+    // Reset verification code
+    setVerificationCode('');
+    
+    // Request new code
+    await requestPasswordReset();
   };
 
   const handleChange = (e) => {
@@ -160,6 +176,12 @@ const PasswordChange = () => {
       return;
     }
 
+    // Ensure code contains only numbers
+    if (!/^\d{6}$/.test(verificationCode)) {
+      showAlert('კოდი უნდა შეიცავდეს მხოლოდ ციფრებს', 'error');
+      return;
+    }
+
     if (userData.newPassword !== userData.confirmPassword) {
       showAlert('პაროლები არ ემთხვევა', 'error');
       return;
@@ -168,6 +190,7 @@ const PasswordChange = () => {
     setLoading(true);
     try {
       console.log('1. Starting password reset process...');
+      console.log('Verification code:', verificationCode);
       let verificationResponse;
       
       if (userData.verificationMethod === 'email') {
@@ -195,8 +218,17 @@ const PasswordChange = () => {
           console.error('No confirmationResult found in window object');
           throw new Error('No verification in progress');
         }
-        const result = await window.confirmationResult.confirm(verificationCode);
-        console.log('3. SMS verification result:', result);
+        try {
+          const result = await window.confirmationResult.confirm(verificationCode);
+          console.log('3. SMS verification result:', result);
+        } catch (confirmError) {
+          console.error('SMS confirmation error details:', {
+            code: confirmError.code,
+            message: confirmError.message,
+            stack: confirmError.stack
+          });
+          throw confirmError;
+        }
       }
 
       // Update password
@@ -232,13 +264,19 @@ const PasswordChange = () => {
         confirmPassword: ''
       });
     } catch (error) {
-      console.error('Password reset error:', error);
+      console.error('Password reset error:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       
       let errorMessage = error.message;
       if (error.code === 'auth/invalid-verification-code') {
         errorMessage = 'არასწორი დადასტურების კოდი';
       } else if (error.code === 'auth/code-expired') {
         errorMessage = 'კოდს ვადა გაუვიდა';
+      } else if (error.code === 'auth/argument-error') {
+        errorMessage = 'არასწორი ფორმატის კოდი';
       } else if (error.message.includes('current_password')) {
         errorMessage = 'მიმდინარე პაროლი არასწორია';
       }
@@ -246,6 +284,13 @@ const PasswordChange = () => {
       showAlert(errorMessage, 'error');
     }
     setLoading(false);
+  };
+
+  const handleVerificationCodeChange = (e) => {
+    // Allow only numbers
+    const value = e.target.value.replace(/\D/g, '');
+    // Limit to 6 digits
+    setVerificationCode(value.slice(0, 6));
   };
 
   const handleCancel = () => {
@@ -386,17 +431,33 @@ const PasswordChange = () => {
         <div className="flex flex-col gap-4">
           <div>
             <label htmlFor="verification_code" className="block text-sm font-medium text-gray-700">
-              დადასტურების კოდი {timeLeft > 0 && <span className="text-gray-500 ml-2">({timeLeft} წამი)</span>}
+              დადასტურების კოდი {timeLeft > 0 && (
+                <span className="text-gray-500 ml-2">
+                  ({Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')})
+                </span>
+              )}
             </label>
             <input
               type="text"
               id="verification_code"
               value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
+              onChange={handleVerificationCodeChange}
               maxLength={6}
               placeholder="შეიყვანეთ 6-ნიშნა კოდი"
               className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              pattern="\d*"
+              inputMode="numeric"
             />
+            {timeLeft > 0 && (
+              <button
+                type="button"
+                onClick={resendCode}
+                disabled={loading}
+                className="mt-2 text-sm text-indigo-600 hover:text-indigo-500"
+              >
+                კოდის თავიდან გაგზავნა
+              </button>
+            )}
           </div>
 
           <div className="flex gap-4">

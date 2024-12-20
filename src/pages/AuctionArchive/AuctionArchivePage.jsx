@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import AuctionArchiveFilterContainer from './Filters/AuctionArchiveFilterContainer';
 import AuctionCategoryItems from '../../components/AuctionCategoryItems';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from "../../components/ui/use-toast";
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
 const SkeletonLoader = () => (
   <div className="bg-white rounded-2xl p-4 shadow-lg flex flex-col justify-between animate-pulse">
@@ -100,12 +103,15 @@ const AuctionTimer = ({ endDate, texts }) => {
 };
 
 const AuctionArchivePage = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [wishlist, setWishlist] = useState([]);
   const auctionsPerPage = 9;
   const [dateFilter, setDateFilter] = useState(() => {
     const savedFilter = localStorage.getItem('auctionDateFilter');
@@ -156,6 +162,78 @@ const AuctionArchivePage = () => {
     }
   }, [dateFilter]);
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserWishlist();
+    } else {
+      setWishlist([]);
+    }
+  }, [user]);
+
+  const fetchUserWishlist = async () => {
+    try {
+      const response = await fetch(`/wp-json/wp/v2/users/me`, {
+        headers: {
+          'X-WP-Nonce': window.wpApiSettings?.nonce
+        }
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('Fetched wishlist:', userData.wishlist);
+        setWishlist(userData.wishlist || []);
+      }
+    } catch (error) {
+      console.error('Error fetching wishlist:', error);
+    }
+  };
+
+  const handleWishlistToggle = async (e, auctionId) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast({
+        description: "გთხოვთ გაიაროთ ავტორიზაცია",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/wp-json/custom/v1/wishlist/toggle/${auctionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': window.wpApiSettings?.nonce
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update local wishlist state immediately
+        const isAdding = !wishlist.includes(auctionId);
+        const newWishlist = isAdding 
+          ? [...wishlist, auctionId]
+          : wishlist.filter(id => id !== auctionId);
+        
+        setWishlist(newWishlist);
+        
+        toast({
+          description: isAdding ? 
+            'აუქციონი დაემატა სურვილების სიაში' : 
+            'აუქციონი წაიშალა სურვილების სიიდან'
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      toast({
+        description: "დაფიქსირდა შეცდომა",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchAuctions = async (page) => {
     try {
       const isInitialLoad = page === 1;
@@ -203,6 +281,10 @@ const AuctionArchivePage = () => {
       
       if (isInitialLoad) {
         setAuctions(data);
+        // Refresh wishlist after loading auctions
+        if (user?.id) {
+          fetchUserWishlist();
+        }
       } else {
         setAuctions(prev => [...prev, ...data]);
       }
@@ -298,7 +380,16 @@ const AuctionArchivePage = () => {
         </div>
         <div className="flex justify-between gap-6 items-center">
           <h4 className="text-lg font-bold" dangerouslySetInnerHTML={{ __html: auction.title.rendered }}></h4>
-          <img src="/heart_icon.svg" alt="heart icon" style={{ cursor: 'pointer' }} />  
+          <button 
+            onClick={(e) => handleWishlistToggle(e, auction.id)}
+            className="focus:outline-none transition-transform duration-200 hover:scale-110"
+          >
+            {wishlist.includes(Number(auction.id)) ? (
+              <FaHeart className="w-6 h-6 text-black" />
+            ) : (
+              <FaRegHeart className="w-6 h-6 text-gray-500 hover:text-black" />
+            )}
+          </button>
         </div>
         <div className="flex justify-between gap-6 items-center">
           <div className="w-1/2 flex flex-col items-start">
