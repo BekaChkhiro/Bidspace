@@ -4,6 +4,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../../../context/AuthContext';
 import MapIcon from '../../../icons/auction/location.svg';
 import DateIcon from '../../../icons/auction/date_icon.svg';
+import { FaTrash, FaEdit } from 'react-icons/fa';
 import { useToast } from "../../../components/ui/use-toast";
 
 const Wishlist = () => {
@@ -95,11 +96,11 @@ const Wishlist = () => {
               <p className="text-[#6F7181]">იტვირთება...</p>
             </div>
           ) : wishlistAuctions.length === 0 ? (
-            <div>
+            <div className="border p-4 rounded">
               <p className="text-[#6F7181]">სურვილების სია ცარიელია</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {wishlistAuctions.map((auction) => (
                 <div 
                   key={auction.id} 
@@ -111,24 +112,26 @@ const Wishlist = () => {
                   <div className="flex justify-between items-center">
                     <div className="w-2/6 flex justify-start gap-3">
                       <img src={DateIcon} alt="date icon" />
-                      <span className="text-[#6F7181]">{auction.meta?.due_time || 'თარიღი არ არის'}</span>
+                      <span className="text-[#6F7181]">{auction.meta.due_time}</span>
                     </div>
                     <div className="w-1/5 flex justify-start gap-3">
                       <img src={MapIcon} alt="map icon" />
-                      <span className="text-[#6F7181]">{auction.meta?.city || 'მდებარეობა არ არის'}</span>
+                      <span className="text-[#6F7181]">{auction.meta.city}</span>
                     </div>
                   </div>
                   <div className="flex justify-end gap-4">
                     <Link 
                       to={`/auction/${auction.id}`}
-                      className="bg-blue-600 text-white flex items-center gap-2 px-4 py-2 rounded-md"
+                      className="text-blue-600 hover:text-blue-800 flex items-center gap-2"
                     >
+                      <FaEdit className="w-4 h-4" />
                       ნახვა
                     </Link>
                     <button 
                       onClick={() => removeFromWishlist(auction.id)}
-                      className="bg-red-600 text-white flex items-center gap-2 px-4 py-2 rounded-md"
+                      className="text-red-600 hover:text-red-800 flex items-center gap-2"
                     >
+                      <FaTrash className="w-4 h-4" />
                       წაშლა
                     </button>
                   </div>

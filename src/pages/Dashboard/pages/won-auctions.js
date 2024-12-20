@@ -87,9 +87,14 @@ const WonAuctions = () => {
                                     <span className="text-sm">{auction.meta?.location || 'ბათუმი'}</span>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <div className="text-sm text-gray-500">ბიდის ფასი:</div>
-                                <div className="font-bold text-lg">{auction.meta?.last_bid_price || auction.meta?.auction_price || 0}₾</div>
+                            <div className="text-right flex flex-col gap-2">
+                                <div>
+                                    <div className="text-sm text-gray-500">ბიდის ფასი:</div>
+                                    <div className="font-bold text-lg">{auction.meta?.last_bid_price || auction.meta?.auction_price || 0}₾</div>
+                                </div>
+                                <div className="text-[#06afef]">
+                                    გადახდა
+                                </div>
                             </div>
                         </Link>
                     ))}
