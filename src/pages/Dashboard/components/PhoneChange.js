@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Alert from '../../../components/Alert';
-import { auth, initializeRecaptcha, cleanupRecaptcha } from '../../../firebase-config';
+import RecaptchaContainer from '../../../components/RecaptchaContainer';
+import { auth } from '../../../firebase-config';
 import { signInWithPhoneNumber } from 'firebase/auth';
 
 const PhoneChange = ({ currentPhone, onPhoneChange }) => {
@@ -11,6 +12,7 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
   const [alert, setAlert] = useState(null);
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -18,9 +20,12 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
       if (timer) {
         clearInterval(timer);
       }
-      cleanupRecaptcha();
     };
   }, [timer]);
+
+  const handleVerifierCreated = useCallback((verifier) => {
+    setRecaptchaVerifier(verifier);
+  }, []);
 
   const formatPhoneNumber = (number) => {
     let cleaned = number.replace(/\D/g, '');
@@ -58,7 +63,6 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
           clearInterval(newTimer);
           setShowVerification(false);
           showAlert('დრო ამოიწურა. სცადეთ თავიდან', 'error');
-          cleanupRecaptcha();
           return 0;
         }
         return prevTime - 1;
@@ -74,6 +78,11 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
       return;
     }
 
+    if (!recaptchaVerifier) {
+      showAlert('გთხოვთ დაელოდოთ reCAPTCHA-ს ინიციალიზაციას', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
       // Format phone number
@@ -82,20 +91,16 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
         `+995${phone}`;
       
       console.log('1. Formatting phone number:', formattedPhone);
-
-      // Initialize reCAPTCHA
-      console.log('2. Initializing reCAPTCHA...');
-      const recaptchaVerifier = initializeRecaptcha('shared-recaptcha-container');
       
       // Send verification code
-      console.log('3. Sending SMS...');
+      console.log('2. Sending SMS...');
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         formattedPhone,
         recaptchaVerifier
       );
       
-      console.log('4. SMS sent successfully!');
+      console.log('3. SMS sent successfully!');
       window.confirmationResult = confirmationResult;
       setShowVerification(true);
       showAlert('დადასტურების კოდი გამოგზავნილია', 'success');
@@ -131,7 +136,6 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
       }
       
       showAlert(errorMessage, 'error');
-      cleanupRecaptcha();
     } finally {
       setLoading(false);
     }
@@ -145,12 +149,19 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
 
     setLoading(true);
     try {
+      console.log('1. Starting code verification...');
+      
       if (!window.confirmationResult) {
+        console.error('No confirmationResult found in window object');
         throw new Error('No verification in progress');
       }
-      await window.confirmationResult.confirm(verificationCode);
+
+      console.log('2. Confirming code...');
+      const result = await window.confirmationResult.confirm(verificationCode);
+      console.log('3. Verification result:', result);
       
       // Update phone number in WordPress
+      console.log('4. Updating phone number in WordPress...');
       const response = await fetch('/wp-json/wp/v2/users/me', {
         method: 'POST',
         credentials: 'include',
@@ -165,18 +176,29 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
         })
       });
 
-      if (!response.ok) throw new Error('Failed to update phone number');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('WordPress API Error:', errorData);
+        throw new Error('Failed to update phone number');
+      }
 
+      console.log('5. Phone number updated successfully!');
       showAlert('ტელეფონის ნომერი წარმატებით შეიცვალა', 'success');
       onPhoneChange(phone);
       setShowVerification(false);
       setVerificationCode('');
       setPhone('');
-      cleanupRecaptcha();
     } catch (error) {
-      console.error('Error verifying code:', error);
-      showAlert('არასწორი კოდი', 'error');
-      cleanupRecaptcha();
+      console.error('Verification Error:', error);
+      
+      let errorMessage = 'არასწორი კოდი';
+      if (error.code === 'auth/invalid-verification-code') {
+        errorMessage = 'არასწორი დადასტურების კოდი';
+      } else if (error.code === 'auth/code-expired') {
+        errorMessage = 'კოდს ვადა გაუვიდა';
+      }
+      
+      showAlert(errorMessage, 'error');
     }
     setLoading(false);
   };
@@ -185,11 +207,11 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
     setShowVerification(false);
     setVerificationCode('');
     setPhone('');
-    cleanupRecaptcha();
   };
 
   return (
     <div className="flex flex-col gap-4">
+      {!showVerification && <RecaptchaContainer onVerifierCreated={handleVerifierCreated} />}
       {alert && (
         <Alert
           message={alert.message}
