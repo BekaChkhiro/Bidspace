@@ -27,13 +27,19 @@ auth.languageCode = 'ka'; // Set language to Georgian
 // Initialize global reCAPTCHA verifier
 const initializeRecaptcha = (containerId) => {
   // Clean up existing instance if any
-  if (window.recaptchaVerifier) {
-    try {
-      window.recaptchaVerifier.clear();
-    } catch (error) {
-      console.error('Error clearing existing reCAPTCHA:', error);
-    }
-    window.recaptchaVerifier = null;
+  cleanupRecaptcha();
+
+  // Check if container exists
+  const container = document.getElementById(containerId);
+  if (!container) {
+    console.error('reCAPTCHA container not found:', containerId);
+    throw new Error('reCAPTCHA container not found');
+  }
+
+  // Check if reCAPTCHA is already rendered in this container
+  if (container.childNodes.length > 0) {
+    console.log('reCAPTCHA already exists in container, cleaning up...');
+    container.innerHTML = '';
   }
 
   // Create new instance
@@ -45,16 +51,14 @@ const initializeRecaptcha = (containerId) => {
       },
       'expired-callback': () => {
         console.log('reCAPTCHA expired');
-        if (window.recaptchaVerifier) {
-          window.recaptchaVerifier.clear();
-          window.recaptchaVerifier = null;
-        }
+        cleanupRecaptcha();
       }
     });
-    
+
     return window.recaptchaVerifier;
   } catch (error) {
     console.error('Error initializing reCAPTCHA:', error);
+    cleanupRecaptcha();
     throw error;
   }
 };
@@ -64,6 +68,7 @@ const cleanupRecaptcha = () => {
   if (window.recaptchaVerifier) {
     try {
       window.recaptchaVerifier.clear();
+      console.log('Cleared existing reCAPTCHA verifier');
     } catch (error) {
       console.error('Error clearing reCAPTCHA:', error);
     }

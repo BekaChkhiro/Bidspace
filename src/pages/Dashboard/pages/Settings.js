@@ -6,7 +6,7 @@ import PhoneChangeModal from '../components/PhoneChangeModal';
 import EmailChangeModal from '../components/EmailChangeModal';
 import Alert from '../../../components/Alert';
 
-const Settings = () => {
+function Settings() {
   const { user } = useAuth();
   const [userData, setUserData] = useState({
     first_name: '',
@@ -21,10 +21,23 @@ const Settings = () => {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+  useEffect(() => {
+    // Create reCAPTCHA container if it doesn't exist
+    let container = document.getElementById('shared-recaptcha-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'shared-recaptcha-container';
+      document.body.appendChild(container);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      const container = document.getElementById('shared-recaptcha-container');
+      if (container) {
+        container.remove();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -57,6 +70,11 @@ const Settings = () => {
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
+  };
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handleInputChange = (e) => {

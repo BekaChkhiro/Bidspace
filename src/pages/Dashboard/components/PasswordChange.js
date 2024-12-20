@@ -126,7 +126,7 @@ const PasswordChange = () => {
 
         // Initialize reCAPTCHA
         console.log('2. Initializing reCAPTCHA...');
-        const recaptchaVerifier = initializeRecaptcha('recaptcha-container');
+        const recaptchaVerifier = initializeRecaptcha('shared-recaptcha-container');
         
         // Send verification code
         console.log('3. Sending SMS...');
@@ -270,7 +270,6 @@ const PasswordChange = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div id="recaptcha-container" key={showVerification ? 'showing' : 'hidden'}></div>
       {alert && (
         <Alert
           message={alert.message}
