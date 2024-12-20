@@ -12,11 +12,36 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
 
+  // Cleanup function to handle reCAPTCHA and timer
+  const cleanup = () => {
+    if (timer) {
+      clearInterval(timer);
+      setTimer(null);
+    }
+    if (window.phoneRecaptchaVerifier) {
+      try {
+        window.phoneRecaptchaVerifier.clear();
+      } catch (error) {
+        console.error('Error clearing reCAPTCHA:', error);
+      }
+      window.phoneRecaptchaVerifier = null;
+    }
+    if (window.confirmationResult) {
+      window.confirmationResult = null;
+    }
+  };
+
+  // Component cleanup on unmount
   useEffect(() => {
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [timer]);
+    return cleanup;
+  }, []);
+
+  // Timer cleanup when verification state changes
+  useEffect(() => {
+    if (!showVerification) {
+      cleanup();
+    }
+  }, [showVerification]);
 
   const formatPhoneNumber = (number) => {
     let cleaned = number.replace(/\D/g, '');
@@ -54,6 +79,7 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
           clearInterval(newTimer);
           setShowVerification(false);
           showAlert('დრო ამოიწურა. სცადეთ თავიდან', 'error');
+          cleanup();
           return 0;
         }
         return prevTime - 1;
@@ -64,14 +90,26 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
   };
 
   const generateRecaptcha = () => {
-    if (!window.phoneRecaptchaVerifier) {
-      window.phoneRecaptchaVerifier = new RecaptchaVerifier(auth, 'phone-recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {
-          // reCAPTCHA solved
-        }
-      });
-    }
+    cleanup(); // Clean up any existing instances
+
+    return new Promise((resolve, reject) => {
+      try {
+        window.phoneRecaptchaVerifier = new RecaptchaVerifier(auth, 'phone-recaptcha-container', {
+          size: 'invisible',
+          callback: (response) => {
+            resolve(response);
+          },
+          'expired-callback': () => {
+            cleanup();
+            showAlert('დადასტურების კოდის ვადა გავიდა. სცადეთ თავიდან', 'error');
+            reject(new Error('reCAPTCHA expired'));
+          }
+        });
+      } catch (error) {
+        cleanup();
+        reject(error);
+      }
+    });
   };
 
   const sendVerificationCode = async () => {
@@ -82,7 +120,7 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
 
     setLoading(true);
     try {
-      generateRecaptcha();
+      await generateRecaptcha();
 
       const formattedPhone = phone.startsWith('995') ? 
         `+${phone}` : 
@@ -101,10 +139,7 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
     } catch (error) {
       console.error('Error sending verification code:', error);
       showAlert(error.message || 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა', 'error');
-      if (window.phoneRecaptchaVerifier) {
-        window.phoneRecaptchaVerifier.clear();
-        window.phoneRecaptchaVerifier = null;
-      }
+      cleanup();
     }
     setLoading(false);
   };
@@ -144,24 +179,25 @@ const PhoneChange = ({ currentPhone, onPhoneChange }) => {
       setShowVerification(false);
       setVerificationCode('');
       setPhone('');
-      if (timer) clearInterval(timer);
+      cleanup();
     } catch (error) {
       console.error('Error verifying code:', error);
       showAlert('არასწორი კოდი', 'error');
+      cleanup();
     }
     setLoading(false);
   };
 
   const handleCancel = () => {
-    if (timer) clearInterval(timer);
     setShowVerification(false);
     setVerificationCode('');
     setPhone('');
+    cleanup();
   };
 
   return (
     <div className="flex flex-col gap-4">
-      <div id="phone-recaptcha-container"></div>
+      <div id="phone-recaptcha-container" key={showVerification ? 'showing' : 'hidden'}></div>
       {alert && (
         <Alert
           message={alert.message}

@@ -20,38 +20,50 @@ const PasswordChange = () => {
   const [timer, setTimer] = useState(null);
   const [debug, setDebug] = useState('');
 
-  useEffect(() => {
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [timer]);
+  // Cleanup function to handle reCAPTCHA and timer
+  const cleanup = () => {
+    if (timer) {
+      clearInterval(timer);
+      setTimer(null);
+    }
+    if (window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier.clear();
+      } catch (error) {
+        console.error('Error clearing reCAPTCHA:', error);
+      }
+      window.recaptchaVerifier = null;
+    }
+    if (window.confirmationResult) {
+      window.confirmationResult = null;
+    }
+  };
 
-  // ტელეფონის ნომრის ფორმატირება
+  // Component cleanup on unmount
+  useEffect(() => {
+    return cleanup;
+  }, []);
+
+  // Timer cleanup when verification state changes
+  useEffect(() => {
+    if (!showVerification) {
+      cleanup();
+    }
+  }, [showVerification]);
+
   const formatPhoneNumber = (number) => {
-    // არა-ციფრების წაშლა
     let cleaned = number.replace(/\D/g, '');
-    
-    // თუ იწყება 995-ით, წაშალე
     if (cleaned.startsWith('995')) {
       cleaned = cleaned.slice(3);
     }
-    
-    // მაქსიმუმ 9 ციფრი
     cleaned = cleaned.slice(0, 9);
-    
     return cleaned;
   };
 
-  // ტელეფონის ნომრის ვალიდაცია
   const isValidPhoneNumber = (number) => {
-    // არა-ციფრების წაშლა
     const cleaned = number.replace(/\D/g, '');
-    
-    // ქვეყნის კოდის მოშორება თუ არის
     const numberWithoutCountry = cleaned.startsWith('995') ? 
       cleaned.slice(3) : cleaned;
-    
-    // უნდა იყოს 9 ციფრი და იწყებოდეს 5-ით
     return /^5\d{8}$/.test(numberWithoutCountry);
   };
 
@@ -93,6 +105,7 @@ const PasswordChange = () => {
           if (!showPasswordFields) {
             setShowVerification(false);
             showAlert('დრო ამოიწურა. სცადეთ თავიდან', 'error');
+            cleanup();
           }
           return 0;
         }
@@ -103,16 +116,27 @@ const PasswordChange = () => {
     setTimer(newTimer);
   };
 
-  // Firebase Recaptcha-ს ინიციალიზაცია
   const generateRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {
-          // reCAPTCHA solved
-        }
-      });
-    }
+    cleanup(); // Clean up any existing instances
+
+    return new Promise((resolve, reject) => {
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+          callback: (response) => {
+            resolve(response);
+          },
+          'expired-callback': () => {
+            cleanup();
+            showAlert('Recaptcha-ს ვადა გავიდა. სცადეთ თავიდან.', 'error');
+            reject(new Error('reCAPTCHA expired'));
+          }
+        });
+      } catch (error) {
+        cleanup();
+        reject(error);
+      }
+    });
   };
 
   const requestPasswordReset = async () => {
@@ -138,28 +162,8 @@ const PasswordChange = () => {
           throw new Error('გთხოვთ შეიყვანოთ ვალიდური ქართული მობილურის ნომერი (მაგ: 555123456)');
         }
 
-        if (window.recaptchaVerifier) {
-          window.recaptchaVerifier.clear();
-          window.recaptchaVerifier = null;
-        }
+        await generateRecaptcha();
 
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-code-button', {
-          size: 'invisible',
-          callback: async (response) => {
-            setDebug(prev => prev + '\nRecaptcha წარმატებით გაიარა: ' + response);
-          },
-          'expired-callback': () => {
-            showAlert('Recaptcha-ს ვადა გავიდა. სცადეთ თავიდან.', 'error');
-            setDebug(prev => prev + '\nRecaptcha-ს ვადა გავიდა');
-            if (window.recaptchaVerifier) {
-              window.recaptchaVerifier.clear();
-              window.recaptchaVerifier = null;
-            }
-            setLoading(false);
-          }
-        });
-
-        // ნომრის ფორმატირება +995-ით
         const formattedPhone = userData.phone.startsWith('995') ? 
           `+${userData.phone}` : 
           `+995${userData.phone}`;
@@ -190,10 +194,7 @@ const PasswordChange = () => {
       console.error('Error requesting password reset:', error);
       showAlert(error.message || 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა', 'error');
       setDebug(prev => prev + '\nError: ' + error.message);
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
+      cleanup();
     }
     setLoading(false);
   };
@@ -226,61 +227,17 @@ const PasswordChange = () => {
 
       showAlert('კოდი სწორია', 'success');
       setShowPasswordFields(true);
-      if (timer) clearInterval(timer);
+      cleanup();
     } catch (error) {
       console.error('Error verifying code:', error);
       showAlert('არასწორი კოდი', 'error');
       setDebug(prev => prev + '\nError: ' + error.message);
-    }
-    setLoading(false);
-  };
-
-  const verifyAndUpdatePassword = async () => {
-    if (!userData.password || !userData.password_confirm) {
-      showAlert('გთხოვთ შეიყვანოთ ახალი პაროლი', 'error');
-      return;
-    }
-
-    if (userData.password !== userData.password_confirm) {
-      showAlert('პაროლები არ ემთხვევა', 'error');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch('/wp-json/bidspace/v1/verify-and-reset-password', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': wpApiSettings.nonce
-        },
-        body: JSON.stringify({
-          code: userData.verification_code,
-          new_password: userData.password
-        })
-      });
-
-      if (!response.ok) throw new Error('Verification failed');
-
-      showAlert('პაროლი წარმატებით შეიცვალა', 'success');
-      setShowVerification(false);
-      setShowPasswordFields(false);
-      setVerificationSent(false);
-      setUserData({
-        password: '',
-        password_confirm: '',
-        verification_code: ''
-      });
-    } catch (error) {
-      console.error('Error verifying code:', error);
-      showAlert('დადასტურების კოდი არასწორია ან ვადაგასულია', 'error');
+      cleanup();
     }
     setLoading(false);
   };
 
   const handleCancel = () => {
-    if (timer) clearInterval(timer);
     setShowVerification(false);
     setShowPasswordFields(false);
     setUserData({
@@ -288,12 +245,13 @@ const PasswordChange = () => {
       password_confirm: '',
       verification_code: ''
     });
+    cleanup();
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div id="recaptcha-container"></div>
-      <h3 className="text-xl font-semibold text-center">პაროლის აღდგენა</h3>
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold">პაროლის შეცვლა</h3>
+      <div id="recaptcha-container" key={showVerification ? 'showing' : 'hidden'}></div>
       {alert && (
         <Alert
           message={alert.message}
@@ -301,130 +259,159 @@ const PasswordChange = () => {
           onClose={() => setAlert(null)}
         />
       )}
-      <div className="flex flex-col gap-4">
-        {!showVerification ? (
-          <>
-            <div className="flex flex-col gap-2.5">
-              <label className="text-sm text-gray-600">დადასტურების მეთოდი</label>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => handleInputChange({ target: { name: 'verificationMethod', value: 'email' } })}
-                  className={`flex-1 py-3 px-4 rounded-lg border-2 border-dashed transition-colors duration-200 ${
-                    userData.verificationMethod === 'email'
-                      ? 'bg-black text-white border-black'
-                      : 'border-gray-300 text-gray-600 hover:border-[#00AEEF]'
-                  }`}
-                >
-                  ელ-ფოსტა
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleInputChange({ target: { name: 'verificationMethod', value: 'sms' } })}
-                  className={`flex-1 py-3 px-4 rounded-lg border-2 border-dashed transition-colors duration-200 ${
-                    userData.verificationMethod === 'sms'
-                      ? 'bg-black text-white border-black'
-                      : 'border-gray-300 text-gray-600 hover:border-[#00AEEF]'
-                  }`}
-                >
-                  SMS
-                </button>
-              </div>
-            </div>
-            {userData.verificationMethod === 'sms' && (
-              <div className="flex flex-col gap-2.5">
-                <label htmlFor="phone" className="text-sm text-gray-600">ტელეფონის ნომერი</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">
-                    +995
-                  </span>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={userData.phone}
-                    onChange={handleInputChange}
-                    placeholder="555123456"
-                    className="w-full px-16 py-2 border border-gray-600 rounded-2xl"
-                  />
-                </div>
-                <small className="text-gray-600 mt-1 block">
-                  შეიყვანეთ 9-ნიშნა მობილურის ნომერი (მაგ: 555123456)
-                </small>
-              </div>
-            )}
-            <button
-              id="send-code-button"
-              type="button"
-              onClick={requestPasswordReset}
-              className="w-full text-sm bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
-              disabled={loading || (userData.verificationMethod === 'sms' && !isValidPhoneNumber(userData.phone))}
-            >
-              {loading ? 'იგზავნება...' : 'პაროლის შეცვლის დაწყება'}
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="flex flex-col gap-2.5">
-              <label htmlFor="verification_code" className="text-sm text-gray-600">
-                დადასტურების კოდი {timeLeft > 0 && <span className="text-gray-500 ml-2">({timeLeft} წამი)</span>}
+      {!showVerification && !showPasswordFields && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              დადასტურების მეთოდი
+            </label>
+            <div className="space-y-2">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="verificationMethod"
+                  value="email"
+                  checked={userData.verificationMethod === 'email'}
+                  onChange={handleInputChange}
+                  className="form-radio"
+                />
+                <span className="ml-2">ელ-ფოსტა</span>
               </label>
-              <input
-                type="text"
-                id="verification_code"
-                name="verification_code"
-                value={userData.verification_code}
-                onChange={handleInputChange}
-                placeholder="შეიყვანეთ კოდი"
-                maxLength={6}
-                className="px-3 py-2 border border-gray-600 rounded-2xl"
-                disabled={showPasswordFields}
-              />
+              <br />
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="verificationMethod"
+                  value="phone"
+                  checked={userData.verificationMethod === 'phone'}
+                  onChange={handleInputChange}
+                  className="form-radio"
+                />
+                <span className="ml-2">ტელეფონის ნომერი</span>
+              </label>
             </div>
+          </div>
+          
+          {userData.verificationMethod === 'phone' && (
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                ტელეფონის ნომერი
+              </label>
+              <div className="mt-1 relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">
+                  +995
+                </span>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={userData.phone}
+                  onChange={handleInputChange}
+                  placeholder="555123456"
+                  className="block w-full pl-16 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            id="send-code-button"
+            onClick={requestPasswordReset}
+            disabled={loading || (userData.verificationMethod === 'phone' && !isValidPhoneNumber(userData.phone))}
+            className="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
+            style={{ backgroundColor: '#00AEEF' }}
+          >
+            {loading ? 'იგზავნება...' : 'დადასტურების კოდის გაგზავნა'}
+          </button>
+        </div>
+      )}
+
+      {showVerification && !showPasswordFields && (
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="verification_code" className="block text-sm font-medium text-gray-700">
+              დადასტურების კოდი {timeLeft > 0 && <span className="text-gray-500">({timeLeft} წამი)</span>}
+            </label>
+            <input
+              type="text"
+              id="verification_code"
+              name="verification_code"
+              value={userData.verification_code}
+              onChange={handleInputChange}
+              maxLength={6}
+              placeholder="შეიყვანეთ 6-ნიშნა კოდი"
+              className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+          </div>
+          <div className="flex gap-4">
             <button
               type="button"
               onClick={handleCancel}
-              className="w-full text-sm border border-gray-600 text-gray-600 p-4 rounded-full hover:bg-gray-50 transition-colors"
+              className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               გაუქმება
             </button>
-            {showPasswordFields && (
-              <>
-                <div className="flex flex-col gap-2.5">
-                  <label htmlFor="password" className="text-sm text-gray-600">ახალი პაროლი</label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={userData.password}
-                    onChange={handleInputChange}
-                    className="px-3 py-2 border border-gray-600 rounded-2xl"
-                  />
-                </div>
-                <div className="flex flex-col gap-2.5">
-                  <label htmlFor="password_confirm" className="text-sm text-gray-600">გაიმეორეთ ახალი პაროლი</label>
-                  <input
-                    type="password"
-                    id="password_confirm"
-                    name="password_confirm"
-                    value={userData.password_confirm}
-                    onChange={handleInputChange}
-                    className="px-3 py-2 border border-gray-600 rounded-2xl"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={verifyAndUpdatePassword}
-                  className="w-full text-sm bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
-                  disabled={loading}
-                >
-                  პაროლის შეცვლა
-                </button>
-              </>
-            )}
-          </>
-        )}
-      </div>
+            <button
+              type="button"
+              onClick={() => verifyCode(userData.verification_code)}
+              disabled={loading || userData.verification_code.length !== 6}
+              className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
+              style={{ backgroundColor: '#00AEEF' }}
+            >
+              დადასტურება
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showPasswordFields && (
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              ახალი პაროლი
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={userData.password}
+              onChange={handleInputChange}
+              className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="password_confirm" className="block text-sm font-medium text-gray-700">
+              გაიმეორეთ პაროლი
+            </label>
+            <input
+              type="password"
+              id="password_confirm"
+              name="password_confirm"
+              value={userData.password_confirm}
+              onChange={handleInputChange}
+              className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+          </div>
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              გაუქმება
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !userData.password || userData.password !== userData.password_confirm}
+              className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
+              style={{ backgroundColor: '#00AEEF' }}
+            >
+              პაროლის შეცვლა
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
