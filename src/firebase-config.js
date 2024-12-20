@@ -4,7 +4,6 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCOp6Z8ws4e6XSk1CTyVPqdDkAoe7Slldc",
   authDomain: "bidspace-86337.firebaseapp.com",
@@ -15,12 +14,16 @@ const firebaseConfig = {
   measurementId: "G-G2TT39HFNP"
 };
 
-// Initialize Firebase
+// Initialize Firebase with config
 const app = initializeApp(firebaseConfig);
 
-// Initialize Analytics and Auth
+// Initialize Analytics and Auth with app instance
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
+
+// Configure auth settings
+auth.settings.appVerificationDisabledForTesting = false; // Ensure real verification is enabled
+auth.languageCode = 'ka'; // Set language to Georgian
 
 // Export auth instance
 export { auth };
