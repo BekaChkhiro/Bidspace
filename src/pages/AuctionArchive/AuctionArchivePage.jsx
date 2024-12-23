@@ -3,13 +3,13 @@ import AuctionArchiveFilterContainer from './Filters/AuctionArchiveFilterContain
 import AuctionCategoryItems from '../../components/auction/AuctionCategoryItems';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../components/core/context/AuthContext';
-import { useToast } from "../../components/ui/use-toast";
+import useCustomToast from '../../components/toast/CustomToast';
 import AuctionItem from './components/AuctionItem';
 import { SkeletonLoader } from './components/SkeletonLoader';
 
 const AuctionArchivePage = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const toast = useCustomToast();
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -123,11 +123,10 @@ const AuctionArchivePage = () => {
         
         setWishlist(newWishlist);
         
-        toast({
-          description: isAdding ? 
-            'აუქციონი დაემატა სურვილების სიაში' : 
-            'აუქციონი წაიშალა სურვილების სიიდან'
-        });
+        toast(isAdding ? 
+          'აუქციონი დაემატა სურვილების სიაში' : 
+          'აუქციონი წაიშალა სურვილების სიიდან'
+        );
       }
     } catch (error) {
       console.error('Error toggling wishlist:', error);
@@ -164,10 +163,10 @@ const AuctionArchivePage = () => {
       }
 
       if (dateFilter?.from) {
-        url += `&start_date=${dateFilter.from.toISOString().split('T')[0]}`;
+        url += `&meta_query[0][key]=start_date&meta_query[0][value]=${dateFilter.from.toISOString()}&meta_query[0][compare]=>=&meta_query[0][type]=DATETIME`;
       }
       if (dateFilter?.to) {
-        url += `&end_date=${dateFilter.to.toISOString().split('T')[0]}`;
+        url += `&meta_query[1][key]=start_date&meta_query[1][value]=${dateFilter.to.toISOString()}&meta_query[1][compare]=<=&meta_query[1][type]=DATETIME`;
       }
   
       console.log('Fetching URL:', url);
@@ -252,7 +251,7 @@ const AuctionArchivePage = () => {
   if (loading) {
     return (
       <div className="w-full bg-[#E6E6E6] px-16 py-10 flex flex-col gap-10">
-        <div className="auction-archive">
+        <div className="auction-archive flex flex-col gap-12">
           <AuctionCategoryItems />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[...Array(auctionsPerPage)].map((_, index) => (

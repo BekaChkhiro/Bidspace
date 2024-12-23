@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import AuctionItem from '../components/common/AuctionItem';
 import { useAuth } from '../../../components/core/context/AuthContext';
+import useCustomToast from '../../../components/toast/CustomToast';
 import locationIcon from '../../../components/assets/icons/auction/location.svg';
 import dateIcon from '../../../components/assets/icons/auction/date_icon.svg';
 import { FaEdit, FaTrash } from 'react-icons/fa';
@@ -12,8 +13,8 @@ const MyAuctions = () => {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState({ show: false, auctionId: null, title: '' });
-  const [toast, setToast] = useState({ show: false, message: '' });
   const { user } = useAuth();
+  const toast = useCustomToast();
 
   useEffect(() => {
     fetchMyAuctions();
@@ -81,18 +82,12 @@ const MyAuctions = () => {
       });
 
       if (response.ok) {
-        setToast({ 
-          show: true, 
-          message: `აუქციონი "${deleteModal.title}" წარმატებით წაიშალა`
-        });
+        toast("აუქციონი წარმატებით წაიშალა");
         fetchMyAuctions();
       }
     } catch (error) {
       console.error('Error deleting auction:', error);
-      setToast({ 
-        show: true, 
-        message: `შეცდომა აუქციონის "${deleteModal.title}" წაშლისას`
-      });
+      toast("შეცდომა აუქციონის წაშლისას");
     } finally {
       setDeleteModal({ show: false, auctionId: null, title: '' });
     }
@@ -121,16 +116,6 @@ const MyAuctions = () => {
             </button>
           </div>
         </div>
-      </div>
-    );
-  };
-
-  const renderToast = () => {
-    if (!toast.show) return null;
-
-    return (
-      <div className="fixed bottom-4 right-4 bg-[#06afef] text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up">
-        {toast.message}
       </div>
     );
   };
@@ -188,7 +173,6 @@ const MyAuctions = () => {
         )}
       </div>
       {renderDeleteModal()}
-      {renderToast()}
     </DashboardLayout>
   );
 };

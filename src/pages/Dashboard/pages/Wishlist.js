@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../../../components/core/context/AuthContext';
-import { useToast } from "../../../components/ui/use-toast";
+import useCustomToast from '../../../components/toast/CustomToast';
 import AuctionItem from '../components/common/AuctionItem';
 
 const Wishlist = () => {
   const [wishlistAuctions, setWishlistAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { toast } = useToast();
+  const toast = useCustomToast();
 
   useEffect(() => {
     if (user?.id) {
@@ -46,10 +46,7 @@ const Wishlist = () => {
       setWishlistAuctions(validAuctions);
     } catch (error) {
       console.error('Error fetching wishlist auctions:', error);
-      toast({
-        description: "სურვილების სიის ჩატვირთვისას მოხდა შეცდომა",
-        variant: "destructive",
-      });
+      toast("სურვილების სიის ჩატვირთვისას მოხდა შეცდომა");
     } finally {
       setLoading(false);
     }
@@ -66,19 +63,14 @@ const Wishlist = () => {
       });
 
       if (response.ok) {
-        toast({
-          description: "აუქციონი წაიშალა სურვილების სიიდან",
-        });
+        toast("აუქციონი წაიშალა სურვილების სიიდან");
         fetchWishlistAuctions(); // Refresh the list
       } else {
         throw new Error('Failed to remove from wishlist');
       }
     } catch (error) {
       console.error('Error removing from wishlist:', error);
-      toast({
-        description: "შეცდომა აუქციონის წაშლისას",
-        variant: "destructive",
-      });
+      toast("შეცდომა აუქციონის წაშლისას");
     }
   };
 

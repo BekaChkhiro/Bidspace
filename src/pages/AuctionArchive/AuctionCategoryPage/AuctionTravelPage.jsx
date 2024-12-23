@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import AuctionItem from '../components/AuctionItem';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import AuctionCategoryItems from '../../../components/auction/AuctionCategoryItems';
+import { useAuth } from '../../../components/core/context/AuthContext';
+import useCustomToast from '../../../components/toast/CustomToast';
 
 const AuctionTravelPage = () => {
+  const { user } = useAuth();
+  const toast = useCustomToast();
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -53,6 +57,31 @@ const AuctionTravelPage = () => {
     fetchAuctions();
   }, []);
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserWishlist();
+    } else {
+      setWishlist([]);
+    }
+  }, [user]);
+
+  const fetchUserWishlist = async () => {
+    try {
+      const response = await fetch(`/wp-json/wp/v2/users/me`, {
+        headers: {
+          'X-WP-Nonce': window.wpApiSettings?.nonce
+        }
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('Fetched wishlist:', userData.wishlist);
+        setWishlist(userData.wishlist || []);
+      }
+    } catch (error) {
+      console.error('Error fetching wishlist:', error);
+    }
+  };
+
   const texts = {
     pageTitle: "მოგზაურობა",
     auctionsTitle: "მოგზაურობა",
@@ -101,11 +130,49 @@ const AuctionTravelPage = () => {
     event.target.src = '/placeholder.jpg';
   };
 
-  const handleWishlistToggle = (e, auctionId) => {
+  const handleWishlistToggle = async (e, auctionId) => {
     e.preventDefault();
     e.stopPropagation();
-    // Implement wishlist functionality here if needed
-    console.log('Wishlist toggle clicked for auction:', auctionId);
+
+    if (!user) {
+      toast({
+        description: "გთხოვთ გაიაროთ ავტორიზაცია",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/wp-json/custom/v1/wishlist/toggle/${auctionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': window.wpApiSettings?.nonce
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        const isAdding = !wishlist.includes(auctionId);
+        const newWishlist = isAdding 
+          ? [...wishlist, auctionId]
+          : wishlist.filter(id => id !== auctionId);
+        
+        setWishlist(newWishlist);
+        
+        toast(isAdding ? 
+          'აუქციონი დაემატა სურვილების სიაში' : 
+          'აუქციონი წაიშალა სურვილების სიიდან'
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      toast({
+        description: "დაფიქსირდა შეცდომა",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
