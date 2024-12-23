@@ -1,10 +1,10 @@
 import React from 'react';
-import mainLogo from '../../images/bidspace_logo.png';
-import languageIcon from '../../icons/header/language_icon.svg';
-import SearchInput from './SearchInput';
+import mainLogo from '../../../images/bidspace_logo.png';
+import languageIcon from '../../../icons/header/language_icon.svg';
+import SearchInput from '../search/SearchInput';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import UserProfileDropdown from './UserProfileDropdown';
+import { useAuth } from '../../../context/AuthContext';
+import UserProfileDropdown from '../user/UserProfileDropdown';
 
 const Header = ({ onLoginClick }) => {
   const { isAuthenticated, user } = useAuth();

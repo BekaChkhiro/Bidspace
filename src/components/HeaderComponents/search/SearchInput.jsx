@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import CalendarIcon from '../../icons/search/mdi_calendar.svg';
-import LocationIcon from '../../icons/search/mdi_location.svg';
+import calendarIcon from '../../../icons/search/mdi_calendar.svg';
+import locationIcon from '../../../icons/search/mdi_location.svg';
 import { Link } from 'react-router-dom';
 
 const SearchInput = () => {
@@ -209,7 +209,7 @@ const SearchInput = () => {
                       <div className="info flex gap-2">
                         <div className="flex gap-1">
                           <img 
-                            src={CalendarIcon}
+                            src={calendarIcon}
                             alt="date icon" 
                             width="18"
                           />
@@ -217,7 +217,7 @@ const SearchInput = () => {
                         </div>
                         <div className="flex gap-1">
                           <img 
-                            src={LocationIcon}
+                            src={locationIcon}
                             alt="map icon" 
                             width="18"
                           />
