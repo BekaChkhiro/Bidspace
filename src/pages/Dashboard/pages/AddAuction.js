@@ -3,11 +3,11 @@ import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../../components/core/context/AuthContext';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { DateTimePicker } from '../../../components/ui/date-time-picker';
-import mainLogo from '../../../images/bidspace_logo.png';
+import bidspaceLogo from '../../../components/assets/images/bidspace_logo.png';
 
 const AddAuction = () => {
   const navigate = useNavigate();
@@ -665,7 +665,7 @@ const AddAuction = () => {
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-xl">
                   <img
-                    src={mainLogo}
+                    src={bidspaceLogo}
                     alt="Bidspace Logo"
                     className="w-32 opacity-50"
                   />

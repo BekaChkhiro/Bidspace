@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../../components/core/context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import PasswordChange from '../components/profile/settings/PasswordChange';
 import PhoneChangeModal from '../components/profile/settings/PhoneChangeModal';
 import EmailChangeModal from '../components/profile/settings/EmailChangeModal';
-import Alert from '../../../components/Alert';
+import Alert from '../../../components/ui-elements/Alert';
 
 function Settings() {
   const { user } = useAuth();

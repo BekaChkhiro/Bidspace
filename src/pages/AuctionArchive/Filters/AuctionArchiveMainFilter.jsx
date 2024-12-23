@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import FilterIcon from '../../../icons/auction/filter.svg';
+import filterIcon from '../../../components/assets/icons/auction/filter.svg';
 
 const AuctionArchiveMainFilter = ({ onFilterChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +57,7 @@ const AuctionArchiveMainFilter = ({ onFilterChange }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         <span>ფილტრი</span>
-        <img src={FilterIcon} alt='Filter Icon' />
+        <img src={filterIcon} alt='Filter Icon' />
       </div>
 
       {isOpen && (

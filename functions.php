@@ -6,21 +6,21 @@
  */
 
 // Include all functionality files
-require_once get_template_directory() . '/includes/setup.php';
-require_once get_template_directory() . '/includes/auth.php';
-require_once get_template_directory() . '/includes/auction.php';
-require_once get_template_directory() . '/includes/comments.php';
-require_once get_template_directory() . '/includes/admin.php';
+require_once get_template_directory() . '/includes/core/setup.php';
+require_once get_template_directory() . '/includes/auth/auth.php';
+require_once get_template_directory() . '/includes/features/auction.php';
+require_once get_template_directory() . '/includes/features/comments.php';
+require_once get_template_directory() . '/includes/features/admin.php';
 require_once get_template_directory() . '/functions/wishlist.php';
 
 // Include password reset functionality
-require_once get_template_directory() . '/includes/password-reset.php';
+require_once get_template_directory() . '/includes/auth/password-reset.php';
 
 // Register Custom Post Types
-require_once get_template_directory() . '/includes/custom-post-types.php';
+require_once get_template_directory() . '/includes/core/custom-post-types.php';
 
 // Include Custom Fonts Management
-require_once get_template_directory() . '/includes/custom-fonts.php';
+require_once get_template_directory() . '/includes/core/custom-fonts.php';
 
 // Make sure we have required plugin functions
 if (!function_exists('is_plugin_active')) {

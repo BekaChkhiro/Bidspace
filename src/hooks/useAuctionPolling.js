@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useAuction } from '../context/AuctionContext';
+import { useAuction } from '../components/core/context/AuctionContext';
 
 export const useAuctionPolling = (auctionId) => {
   const { updateAuction, updateBidsList } = useAuction();

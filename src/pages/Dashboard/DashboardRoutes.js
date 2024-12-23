@@ -1,12 +1,12 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import ProtectedRoute from '../../components/ProtectedRoute';
+import ProtectedRoute from '../../components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import MyAuctions from './pages/MyAuctions';
 import AddAuction from './pages/AddAuction';
 import EditAuction from './pages/EditAuction';
 import Settings from './pages/Settings';
-import SMSTest from '../../components/SMSTest/SMSTest';
+import SMSTest from '../../components/forms/SMSTest/SMSTest';
 import WonAuctions from './pages/WonAuctions';
 import Archive from './pages/Archive';
 import Wishlist from './pages/Wishlist';

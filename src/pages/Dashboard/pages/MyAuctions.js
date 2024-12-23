@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import AuctionItem from '../components/common/AuctionItem';
-import { useAuth } from '../../../context/AuthContext';
-import MapIcon from '../../../icons/auction/location.svg';
-import DateIcon from '../../../icons/auction/date_icon.svg';
+import { useAuth } from '../../../components/core/context/AuthContext';
+import locationIcon from '../../../components/assets/icons/auction/location.svg';
+import dateIcon from '../../../components/assets/icons/auction/date_icon.svg';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 
 const MyAuctions = () => {

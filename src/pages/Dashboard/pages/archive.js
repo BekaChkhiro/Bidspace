@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../../components/core/context/AuthContext';
 import AuctionItem from '../components/common/AuctionItem';
 
 const Archive = () => {

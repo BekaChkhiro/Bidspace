@@ -1,6 +1,6 @@
 <?php
 // Include email notifications
-require_once(get_template_directory() . '/includes/email-notifications.php');
+require_once(get_template_directory() . '/includes/notifications/email-notifications.php');
 
 /**
  * Auction Functions

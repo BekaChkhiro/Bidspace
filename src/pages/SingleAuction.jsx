@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import AuctionImage from '../components/single-auction/AuctionImage';
-import AuctionHeaderInfo from '../components/single-auction/AuctionHeaderInfo';
-import AuctionPriceContainer from '../components/single-auction/AuctionPriceContainer';
-import AuctionTimerStatus from '../components/single-auction/AuctionTimerStatus';
-import AuctionBidsList from '../components/single-auction/AuctionBidsList';
-import AuctionComments from '../components/single-auction/AuctionComments';
-import { useAuction } from '../context/AuctionContext';
+import AuctionImage from '../components/auction/single-auction/AuctionImage';
+import AuctionHeaderInfo from '../components/auction/single-auction/AuctionHeaderInfo';
+import AuctionPriceContainer from '../components/auction/single-auction/AuctionPriceContainer';
+import AuctionTimerStatus from '../components/auction/single-auction/AuctionTimerStatus';
+import AuctionBidsList from '../components/auction/single-auction/AuctionBidsList';
+import AuctionComments from '../components/auction/single-auction/AuctionComments';
+import { useAuction } from '../components/core/context/AuctionContext';
 import { useAuctionPolling } from '../hooks/useAuctionPolling';
 import { useWebSocket } from '../hooks/useWebSocket';
-import RelatedAuctions from '../components/single-auction/RelatedAuctions';
+import RelatedAuctions from '../components/auction/single-auction/RelatedAuctions';
 
 function SingleAuction() {
   const { id } = useParams();

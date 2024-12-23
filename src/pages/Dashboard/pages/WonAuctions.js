@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import LoadingSpinner from '../../../components/LoadingSpinner';
-import { useAuth } from '../../../context/AuthContext';
+import LoadingSpinner from '../../../components/ui-elements/LoadingSpinner';
+import { useAuth } from '../../../components/core/context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Link } from 'react-router-dom';
 import { FaMapMarkerAlt, FaCalendarAlt } from 'react-icons/fa';

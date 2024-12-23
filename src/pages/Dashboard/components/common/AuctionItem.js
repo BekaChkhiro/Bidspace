@@ -2,9 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaEdit, FaTrash, FaUndo } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../../../context/AuthContext';
-import MapIcon from '../../../../icons/auction/location.svg';
-import DateIcon from '../../../../icons/auction/date_icon.svg';
+import { useAuth } from '../../../../components/core/context/AuthContext';
+import locationIcon from '../../../../components/assets/icons/auction/location.svg';
+import dateIcon from '../../../../components/assets/icons/auction/date_icon.svg';
 import EditIcon from '../../../../assets/icons/dashboard/edit-icon.svg';
 
 const AuctionItem = ({ 
@@ -68,11 +68,11 @@ const AuctionItem = ({
       </div>
       <div className="flex justify-between items-center">
         <div className="w-2/6 flex justify-start gap-3">
-          <img src={DateIcon} alt="date icon" />
+          <img src={dateIcon} alt="date icon" />
           <span className="text-[#6F7181]">{auction.meta?.due_time || 'თარიღი არ არის'}</span>
         </div>
         <div className="w-1/5 flex justify-start gap-3">
-          <img src={MapIcon} alt="map icon" />
+          <img src={locationIcon} alt="map icon" />
           <span className="text-[#6F7181]">{auction.meta?.city || 'მდებარეობა არ არის'}</span>
         </div>
       </div>

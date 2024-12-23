@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
-import profileIcon from '../../../assets/icons/dashboard/profile_icon.svg';
-import addAuctionIcon from '../../../assets/icons/dashboard/add_to_auction_icon.svg';
-import myAuctionsIcon from '../../../assets/icons/dashboard/my_auctions_icon.svg';
-import winAuctionsIcon from '../../../assets/icons/dashboard/win_auctions_with_bg.svg';
-import wishlistIcon from '../../../assets/icons/dashboard/my_wishlist_icon.svg';
-import archiveIcon from '../../../assets/icons/dashboard/archive_icon.svg';
-import settingsIcon from '../../../assets/icons/dashboard/setting_icon.svg';
-import logoutIcon from '../../../assets/icons/dashboard/logout_icon.svg';
+import { useAuth } from '../../../core/context/AuthContext';
+import profileIcon from '../../../../assets/icons/dashboard/profile_icon.svg';
+import addAuctionIcon from '../../../../assets/icons/dashboard/add_to_auction_icon.svg';
+import myAuctionsIcon from '../../../../assets/icons/dashboard/my_auctions_icon.svg';
+import winAuctionsIcon from '../../../../assets/icons/dashboard/win_auctions_with_bg.svg';
+import wishlistIcon from '../../../../assets/icons/dashboard/my_wishlist_icon.svg';
+import archiveIcon from '../../../../assets/icons/dashboard/archive_icon.svg';
+import settingsIcon from '../../../../assets/icons/dashboard/setting_icon.svg';
+import logoutIcon from '../../../../assets/icons/dashboard/logout_icon.svg';
 
 const UserProfileDropdown = ({ user }) => {
   const [showDropdown, setShowDropdown] = useState(false);

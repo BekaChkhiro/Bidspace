@@ -1,8 +1,9 @@
 import React from 'react';
-import EndedLostIcon from '../../icons/auction/ended_lost_auction.svg';
-import DateIcon from '../../icons/auction/date_icon.svg';
+import wonAuctionIcon from '../../assets/icons/auction/won_auction.svg';
+import dateIcon from '../../assets/icons/auction/date_icon.svg';
+import paymentArrowIcon from '../../assets/icons/auction/payment_arrow.svg';
 
-const EndedLostAuction = ({ auctionData }) => {
+const EndedWonAuction = ({ auctionData }) => {
   // Get the last bid from the bids list
   const getLastBid = () => {
     if (!auctionData?.meta?.bids_list) return null;
@@ -43,28 +44,35 @@ const EndedLostAuction = ({ auctionData }) => {
   return (
     <div className="w-full flex flex-col py-6 gap-6">
       <div className="flex justify-center items-center gap-6">
-        <img src={EndedLostIcon} alt="Auction ended icon" />
-        <span className="font-normal text-lg text-[#FF0101]">აუქციონი დასრულდა!</span>
+        <img src={wonAuctionIcon} alt="Auction ended icon" />
+        <span className="font-normal text-lg">გილოცავთ, გათამაშება წარმატებით დასრულდა!</span>
       </div>
 
-      <div className="w-full border-y p-6 flex flex-col items-center gap-6">
-        <span className="w-11/12 font-bold text-lg">
+      <div className="w-full border-y p-4 flex flex-col items-center gap-6">
+        <span className="w-full font-bold text-lg">
           {auctionData?.title?.rendered || 'აუქციონის სახელი'}
         </span>
-        <div className="w-11/12 flex justify-between items-center">
-          <div className="w-1/3 flex items-center gap-2">
-            <img src={DateIcon} alt="Date icon" />
+        <div className="w-full flex justify-between items-center">
+          <div className="w-3/12 flex items-center gap-2">
+            <img src={dateIcon} alt="Date icon" />
             <span>{lastBid ? formatDate(lastBid.bid_time) : 'თარიღი არ არის'}</span>
           </div>
 
-          <div className="w-1/3 flex items-center gap-2">
+          <div className="w-4/12 flex items-center gap-2">
             <span className="font-bold">ბიდის ავტორი: </span>
             <span>{lastBid?.author_name || 'უცნობი'}</span>
           </div>
 
-          <div className="w-1/3 flex items-center gap-2">
+          <div className="w-2.5/12 flex items-center gap-2">
             <span className="font-bold">ბიდის ფასი: </span>
             <span>{lastBid ? `${lastBid.bid_price} ₾` : '0 ₾'}</span>
+          </div>
+
+          <div className="w-1.5/12 flex items-center gap-2">
+            <button className='flex items-center gap-2'>
+              <span className="font-bold text-[#00a9eb]">გადახდა</span>
+              <img src={paymentArrowIcon} alt='payment icon' />
+            </button>
           </div>
         </div>
       </div>
@@ -72,4 +80,4 @@ const EndedLostAuction = ({ auctionData }) => {
   );
 };
 
-export default EndedLostAuction;
+export default EndedWonAuction;

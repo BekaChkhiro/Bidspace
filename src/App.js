@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
-import LoadingSpinner from './components/LoadingSpinner';
-import Header from './components/HeaderComponents/core/Header';
-import LoginModal from './components/HeaderComponents/auth/LoginModal';
+import LoadingSpinner from './components/ui-elements/LoadingSpinner';
+import Header from './components/layout/HeaderComponents/core/Header';
+import LoginModal from './components/layout/HeaderComponents/auth/LoginModal';
 import HomePage from './pages/HomePage';
 import InstructioPage from './pages/InstructionPage';
 import QuestionsPage from './pages/QuestionsPage';
-import Footer from './components/Footer';
-import { AuctionProvider } from './context/AuctionContext';
+import Footer from './components/layout/Footer';
+import { AuctionProvider } from './components/core/context/AuctionContext';
 import AuctionArchivePage from './pages/AuctionArchive/AuctionArchivePage';
 import SingleAuction from './pages/SingleAuction';
 import AuctionSportPage from './pages/AuctionArchive/AuctionCategoryPage/AuctionSportPage';
 import AuctionTravelPage from './pages/AuctionArchive/AuctionCategoryPage/AuctionTravelPage';
 import AuctionEventPage from './pages/AuctionArchive/AuctionCategoryPage/AuctionEventPage';
 import AuctionTheaterCinemaPage from './pages/AuctionArchive/AuctionCategoryPage/AuctionTheaterCinemaPage';
-import ScrollToTop from './components/ScrollToTop';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import ScrollToTop from './components/ui-elements/ScrollToTop';
+import { AuthProvider } from './components/core/context/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardRoutes from './pages/Dashboard/DashboardRoutes';
 import { Toaster } from './components/ui/use-toast';
+import NotFound from './components/core/NotFound';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -54,15 +55,6 @@ class ErrorBoundary extends React.Component {
 
     return this.props.children;
   }
-}
-
-function NotFound() {
-  return (
-    <div className="text-center py-10">
-      <h2 className="text-2xl font-bold mb-4">404 - გვერდი ვერ მოიძებნა</h2>
-      <p>სამწუხაროდ, თქვენს მიერ მოთხოვნილი გვერდი ვერ მოიძებნა.</p>
-    </div>
-  );
 }
 
 function App() {

@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import AuctionCategoryItems from '../components/AuctionCategoryItems';
-import InstructionItems from '../components/InstructionItems';
-import AuctionArchive from '../components/AuctionArchive';
-import TheatreCinemaCarousel from '../components/AuctionCarousels/TheatreCinemaCarousel';
-import EventCarousel from '../components/AuctionCarousels/EventCarousel';
+import AuctionCategoryItems from '../components/auction/AuctionCategoryItems';
+import InstructionItems from '../components/content/InstructionItems';
+import AuctionArchive from '../components/auction/AuctionArchive';
+import TheatreCinemaCarousel from '../components/auction/AuctionCarousels/TheatreCinemaCarousel';
+import EventCarousel from '../components/auction/AuctionCarousels/EventCarousel';
 
 const HomePage = () => {
   useEffect(() => {

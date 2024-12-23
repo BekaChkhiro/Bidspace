@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../../../context/AuthContext';
+import { useAuth } from '../../../../components/core/context/AuthContext';
 import ProfileIcon from '../../../../assets/icons/dashboard/profile_icon.svg';
 import AddToAuctionIcon from '../../../../assets/icons/dashboard/add_to_auction_icon.svg';
 import MyAuctionsIcon from '../../../../assets/icons/dashboard/my_auctions_icon.svg';

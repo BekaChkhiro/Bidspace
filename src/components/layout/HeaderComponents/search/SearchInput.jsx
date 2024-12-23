@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import calendarIcon from '../../../icons/search/mdi_calendar.svg';
-import locationIcon from '../../../icons/search/mdi_location.svg';
+import calendarIcon from '../../../assets/icons/search/mdi_calendar.svg';
+import locationIcon from '../../../assets/icons/search/mdi_location.svg';
 import { Link } from 'react-router-dom';
 
 const SearchInput = () => {

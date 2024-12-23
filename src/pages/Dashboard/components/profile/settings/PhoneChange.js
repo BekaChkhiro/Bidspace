@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import Alert from '../../../../../components/Alert';
-import RecaptchaContainer from '../../../../../components/RecaptchaContainer';
-import { auth } from '../../../../../firebase-config';
+import Alert from '../../../../../components/ui-elements/Alert';
+import RecaptchaContainer from '../../../../../components/forms/RecaptchaContainer';
+import { auth } from '../../../../../components/core/firebase-config';
 import { signInWithPhoneNumber } from 'firebase/auth';
 
 const PhoneChange = ({ currentPhone, onPhoneChange }) => {

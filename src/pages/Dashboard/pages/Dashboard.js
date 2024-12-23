@@ -4,10 +4,10 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import WinAuctionsIcon from '../../../assets/icons/dashboard/win_auctions_with_bg.svg';
 import ActiveAuctionsIcon from '../../../assets/icons/dashboard/active_auctions_icon.svg';
 import EndAuctionsIcon from '../../../assets/icons/dashboard/end_auctions_icon.svg';
-import MapIcon from '../../../icons/auction/location.svg';
-import DateIcon from '../../../icons/auction/date_icon.svg';
+import locationIcon from '../../../components/assets/icons/auction/location.svg';
+import dateIcon from '../../../components/assets/icons/auction/date_icon.svg';
 import { FaEdit, FaTrash } from 'react-icons/fa';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../../components/core/context/AuthContext';
 import AuctionItem from '../components/common/AuctionItem';
 
 const Dashboard = () => {

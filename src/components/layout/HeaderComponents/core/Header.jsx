@@ -1,9 +1,9 @@
 import React from 'react';
-import mainLogo from '../../../images/bidspace_logo.png';
-import languageIcon from '../../../icons/header/language_icon.svg';
+import bidspaceLogo from '../../../assets/images/bidspace_logo.png';
+import languageIcon from '../../../assets/icons/header/language_icon.svg';
 import SearchInput from '../search/SearchInput';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../../core/context/AuthContext';
 import UserProfileDropdown from '../user/UserProfileDropdown';
 
 const Header = ({ onLoginClick }) => {
@@ -19,7 +19,7 @@ const Header = ({ onLoginClick }) => {
       <div className='w-4/12 flex justify-between items-center'>
         <div className='w-1/3'>
           <Link to='/'>
-            <img src={mainLogo} alt='Bidspace Logo' />
+            <img src={bidspaceLogo} alt='Bidspace Logo' />
           </Link>
         </div>
         <div className='w-2/3'>
