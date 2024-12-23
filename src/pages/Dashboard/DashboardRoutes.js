@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile';
 import MyAuctions from './pages/MyAuctions';
 import AddAuction from './pages/AddAuction';
 import EditAuction from './pages/EditAuction';
@@ -20,14 +19,6 @@ const DashboardRoutes = () => {
         element={
           <ProtectedRoute>
             <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="profile"
-        element={
-          <ProtectedRoute>
-            <Profile />
           </ProtectedRoute>
         }
       />

@@ -4,9 +4,15 @@ import languageIcon from '../../icons/header/language_icon.svg';
 import SearchInput from './SearchInput';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import UserProfileDropdown from './UserProfileDropdown';
 
 const Header = ({ onLoginClick }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const [showDropdown, setShowDropdown] = React.useState(false);
+
+  const toggleDropdown = () => {
+    setShowDropdown(!showDropdown);
+  };
 
   return (
     <header className='w-full px-16 py-4 flex gap-12 items-center header-bg'>
@@ -52,12 +58,7 @@ const Header = ({ onLoginClick }) => {
         </button>
 
         {isAuthenticated ? (
-          <Link 
-            to="/dashboard"
-            className="py-2 px-8 bg-black text-white rounded-full hover:bg-gray-900 transition-colors text-base font-medium"
-          >
-            დაშბორდი
-          </Link>
+          <UserProfileDropdown user={user} />
         ) : (
           <button 
             onClick={onLoginClick}

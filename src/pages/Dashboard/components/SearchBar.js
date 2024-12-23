@@ -133,7 +133,7 @@ const SearchBar = () => {
             }
           }}
           placeholder="ძებნა"
-          className="w-full bg-white px-4 py-2 pr-10 rounded-full focus:outline-none"
+          className="w-full bg-white px-4 py-2 pr-10 rounded-full focus:outline-none border border-[#e5e5e5]"
         />
         <button 
           type="submit"

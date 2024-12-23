@@ -201,7 +201,7 @@ const EditAuction = () => {
   const validateForm = () => {
     const errors = [];
     
-    // Required fields validation
+    // Required fields validation with trimming
     const requiredFields = {
       title: 'სათაური',
       category: 'კატეგორია',
@@ -217,36 +217,47 @@ const EditAuction = () => {
     };
 
     Object.entries(requiredFields).forEach(([field, label]) => {
-      if (!formData[field] || formData[field].toString().trim() === '') {
+      const value = formData[field]?.toString().trim();
+      if (!value) {
         errors.push(`${label} სავალდებულოა`);
       }
     });
 
     // Category-specific validation
-    if (formData.category === 'თეატრი-კინო' || formData.category === 'მოგზაურობა') {
-      if (!formData.hall?.trim()) errors.push('დარბაზი სავალდებულოა');
-      if (!formData.row?.trim()) errors.push('რიგი სავალდებულოა');
-      if (!formData.place?.trim()) errors.push('ადგილი სავალდებულოა');
-    } else if (formData.category === 'სპორტი') {
-      if (!formData.sector?.trim()) errors.push('სექტორი სავალდებულოა');
-      if (!formData.row?.trim()) errors.push('რიგი სავალდებულოა');
-      if (!formData.place?.trim()) errors.push('ადგილი სავალდებულოა');
+    if (formData.category) {
+      const categoryFields = {
+        'თეატრი-კინო': ['hall', 'row', 'place'],
+        'სპორტი': ['sector', 'row', 'place'],
+        'მოგზაურობა': ['hall', 'row', 'place']
+      };
+
+      const requiredFields = categoryFields[formData.category] || [];
+      requiredFields.forEach(field => {
+        if (!formData[field]?.trim()) {
+          const fieldLabel = 
+            field === 'hall' ? 'დარბაზი' : 
+            field === 'row' ? 'რიგი' :
+            field === 'place' ? 'ადგილი' :
+            field === 'sector' ? 'სექტორი' : field;
+          errors.push(`${fieldLabel} სავალდებულოა ${formData.category}-სთვის`);
+        }
+      });
     }
 
-    // City validation
+    // City validation with specific error messages
     if (formData.city === 'skhva_qalaqebi' && !formData.skhva_qalaqebi?.trim()) {
-      errors.push('გთხოვთ მიუთითოთ ქალაქი');
+      errors.push('გთხოვთ მიუთითოთ სხვა ქალაქის დასახელება');
     }
     if (formData.city === 'sazgvargaret' && !formData.sazgvargaret?.trim()) {
-      errors.push('გთხოვთ მიუთითოთ ქვეყანა');
+      errors.push('გთხოვთ მიუთითოთ საზღვარგარეთის ქვეყნის დასახელება');
     }
 
-    // Price validation
+    // Price validation with specific error messages
     const prices = {
       ticket_price: parseFloat(formData.ticket_price),
       auction_price: parseFloat(formData.auction_price),
       min_bid_price: parseFloat(formData.min_bid_price),
-      buy_now: parseFloat(formData.buy_now)
+      buy_now: formData.buy_now ? parseFloat(formData.buy_now) : null
     };
 
     if (isNaN(prices.ticket_price) || prices.ticket_price <= 0) {
@@ -261,29 +272,19 @@ const EditAuction = () => {
     if (prices.min_bid_price >= prices.auction_price) {
       errors.push('მინიმალური ბიდი უნდა იყოს აუქციონის ფასზე ნაკლები');
     }
-    if (prices.buy_now && prices.buy_now <= prices.auction_price) {
-      errors.push('ახლავე ყიდვის ფასი უნდა იყოს აუქციონის ფასზე მეტი');
+    if (prices.buy_now !== null) {
+      if (isNaN(prices.buy_now) || prices.buy_now <= prices.auction_price) {
+        errors.push('ახლავე ყიდვის ფასი უნდა იყოს აუქციონის ფასზე მეტი');
+      }
     }
     if (prices.auction_price <= prices.ticket_price) {
       errors.push('აუქციონის ფასი უნდა იყოს ბილეთის ფასზე მეტი');
     }
 
-    // Date validation
-    const startTime = new Date(formData.start_time);
-    const dueTime = new Date(formData.due_time);
-    const now = new Date('2024-12-19T19:05:37+04:00');
-
-    if (startTime < now) {
-      errors.push('დაწყების დრო უნდა იყოს მომავალში');
-    }
-    if (dueTime <= startTime) {
-      errors.push('დასრულების დრო უნდა იყოს დაწყების დროზე გვიან');
-    }
-
     // Ticket quantity validation
     const ticketQty = parseInt(formData.ticket_quantity);
     if (isNaN(ticketQty) || ticketQty <= 0) {
-      errors.push('ბილეთების რაოდენობა უნდა იყოს დადებითი რიცხვი');
+      errors.push('ბილეთების რაოდენობა უნდა იყოს დადებითი მთელი რიცხვი');
     }
 
     return errors;
@@ -305,67 +306,59 @@ const EditAuction = () => {
       // Create FormData object
       const postData = new FormData();
       
-      // Add content and title
+      // Add title and content
       postData.append('title', formData.title);
       postData.append('content', formData.ticket_information || '');
       postData.append('status', 'publish');
 
-      // Add all meta fields
-      const metaFields = {
-        category: formData.category,
-        ticket_category: formData.ticket_category,
-        start_date: formData.start_date,
-        city: formData.city,
-        ticket_price: formData.ticket_price,
-        ticket_quantity: formData.ticket_quantity,
-        hall: formData.hall,
-        row: formData.row,
-        place: formData.place,
-        sector: formData.sector,
-        start_time: formData.start_time,
-        due_time: formData.due_time,
-        auction_price: formData.auction_price,
-        buy_now: formData.buy_now,
-        min_bid_price: formData.min_bid_price,
-        skhva_qalaqebi: formData.skhva_qalaqebi,
-        sazgvargaret: formData.sazgvargaret
-      };
-
-      // Append each meta field individually
-      Object.entries(metaFields).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
+      // Add meta fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key !== 'featured_image' && value !== undefined && value !== null && value !== '') {
           postData.append(`meta[${key}]`, value.toString());
         }
       });
 
       // Handle featured image
       if (formData.featured_image instanceof File) {
-        postData.append('featured_media', formData.featured_image);
+        const imageData = new FormData();
+        imageData.append('file', formData.featured_image);
+
+        // First upload the image
+        const mediaResponse = await fetch('/wp-json/wp/v2/media', {
+          method: 'POST',
+          headers: {
+            'X-WP-Nonce': wpApiSettings.nonce
+          },
+          credentials: 'include',
+          body: imageData
+        });
+
+        if (!mediaResponse.ok) {
+          throw new Error('სურათის ატვირთვა ვერ მოხერხდა');
+        }
+
+        const mediaData = await mediaResponse.json();
+        postData.append('featured_media', mediaData.id);
       }
 
-      console.log('Submitting auction update with data:', Object.fromEntries(postData));
-
+      // Update the auction
       const response = await fetch(`/wp-json/wp/v2/auction/${id}`, {
         method: 'POST',
         headers: {
-          'X-WP-Nonce': wpApiSettings.nonce,
+          'X-WP-Nonce': wpApiSettings.nonce
         },
+        credentials: 'include',
         body: postData
       });
 
-      const responseData = await response.json();
-      
       if (!response.ok) {
-        console.error('Error response:', responseData);
-        throw new Error(responseData.message || 'შეცდომა აუქციონის განახლებისას');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'აუქციონის განახლება ვერ მოხერხდა');
       }
 
-      console.log('Success response:', responseData);
+      const responseData = await response.json();
 
       if (responseData.id) {
-        // Refetch the auction data to ensure we have the latest version
-        await fetchAuctionData();
-        
         setSuccessMessage(
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
             <div className="bg-white p-8 rounded-lg max-w-md w-full mx-4 text-center">
@@ -376,19 +369,13 @@ const EditAuction = () => {
               <p className="text-gray-600 mb-6">თქვენი აუქციონი წარმატებით განახლდა</p>
               <div className="flex justify-center gap-4">
                 <button 
-                  onClick={() => {
-                    window.location.reload();
-                    window.location.href = `/auction/${id}`;
-                  }} 
+                  onClick={() => navigate(`/auction/${id}`)}
                   className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
                 >
                   ნახეთ აუქციონი
                 </button>
                 <button 
-                  onClick={() => {
-                    window.location.reload();
-                    window.location.href = '/dashboard/my-auctions';
-                  }} 
+                  onClick={() => navigate('/dashboard/my-auctions')}
                   className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-transparent rounded-md hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500"
                 >
                   ჩემი აუქციონები
@@ -401,7 +388,7 @@ const EditAuction = () => {
       }
     } catch (error) {
       console.error('Error updating auction:', error);
-      setError([error.message]);
+      setError([typeof error === 'string' ? error : error.message || 'მოხდა შეცდომა. გთხოვთ სცადოთ თავიდან']);
     } finally {
       setSaving(false);
     }

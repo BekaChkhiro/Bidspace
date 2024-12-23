@@ -74,24 +74,14 @@ const Dashboard = () => {
       console.log('Current date:', currentDate);
 
       const activeAuctions = userAuctions.filter(auction => {
+        const startTime = auction.meta?.start_time ? new Date(auction.meta.start_time) : null;
         const dueTime = auction.meta?.due_time ? new Date(auction.meta.due_time) : null;
-        console.log('Auction:', {
-          id: auction.id,
-          title: auction.title.rendered,
-          dueTime,
-          isActive: dueTime ? currentDate < dueTime : false
-        });
-        return dueTime && currentDate < dueTime;
+        
+        return dueTime && currentDate < dueTime && (!startTime || currentDate >= startTime);
       });
 
       const endedAuctions = userAuctions.filter(auction => {
         const dueTime = auction.meta?.due_time ? new Date(auction.meta.due_time) : null;
-        console.log('Auction:', {
-          id: auction.id,
-          title: auction.title.rendered,
-          dueTime,
-          isEnded: dueTime ? currentDate >= dueTime : true
-        });
         return !dueTime || currentDate >= dueTime;
       });
 
@@ -286,7 +276,7 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <div>
         <div className="w-full flex flex-col gap-3 p-6 bg-white rounded-2xl mb-6">
           <span className="text-lg font-bold">დღეს</span>
           <div className="w-full flex justify-between items-center gap-4">
