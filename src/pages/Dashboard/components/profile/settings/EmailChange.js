@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import Alert from '../../../components/Alert';
+import { useTranslation } from 'react-i18next';
+import Alert from '../../../../../components/Alert';
 
 const EmailChange = ({ currentEmail, onEmailChange }) => {
   const [newEmail, setNewEmail] = useState('');

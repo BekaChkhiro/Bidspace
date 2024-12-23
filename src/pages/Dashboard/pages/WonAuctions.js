@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { useAuth } from '../../../context/AuthContext';
-import DashboardLayout from '../components/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { Link } from 'react-router-dom';
 import { FaMapMarkerAlt, FaCalendarAlt } from 'react-icons/fa';
 

@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import DashboardLayout from '../components/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../../../context/AuthContext';
-import MapIcon from '../../../icons/auction/location.svg';
-import DateIcon from '../../../icons/auction/date_icon.svg';
-import { FaTrash, FaEdit } from 'react-icons/fa';
 import { useToast } from "../../../components/ui/use-toast";
+import AuctionItem from '../components/common/AuctionItem';
 
 const Wishlist = () => {
   const [wishlistAuctions, setWishlistAuctions] = useState([]);
@@ -102,40 +99,14 @@ const Wishlist = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {wishlistAuctions.map((auction) => (
-                <div 
-                  key={auction.id} 
-                  className="w-full flex flex-col gap-4 p-4 rounded-2xl bg-[#E5ECF6]"
-                >
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-semibold">{auction.title.rendered}</h3>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="w-2/6 flex justify-start gap-3">
-                      <img src={DateIcon} alt="date icon" />
-                      <span className="text-[#6F7181]">{auction.meta.due_time}</span>
-                    </div>
-                    <div className="w-1/5 flex justify-start gap-3">
-                      <img src={MapIcon} alt="map icon" />
-                      <span className="text-[#6F7181]">{auction.meta.city}</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-4">
-                    <Link 
-                      to={`/auction/${auction.id}`}
-                      className="text-blue-600 hover:text-blue-800 flex items-center gap-2"
-                    >
-                      <FaEdit className="w-4 h-4" />
-                      ნახვა
-                    </Link>
-                    <button 
-                      onClick={() => removeFromWishlist(auction.id)}
-                      className="text-red-600 hover:text-red-800 flex items-center gap-2"
-                    >
-                      <FaTrash className="w-4 h-4" />
-                      წაშლა
-                    </button>
-                  </div>
-                </div>
+                <AuctionItem
+                  key={auction.id}
+                  auction={auction}
+                  onDeleteClick={removeFromWishlist}
+                  editLink={`/auction/${auction.id}`}
+                  editText="ნახვა"
+                  showStatus={false}
+                />
               ))}
             </div>
           )}

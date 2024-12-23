@@ -11,7 +11,6 @@ require_once get_template_directory() . '/includes/auth.php';
 require_once get_template_directory() . '/includes/auction.php';
 require_once get_template_directory() . '/includes/comments.php';
 require_once get_template_directory() . '/includes/admin.php';
-require_once get_template_directory() . '/includes/rest-api.php';
 require_once get_template_directory() . '/functions/wishlist.php';
 
 // Include password reset functionality
@@ -88,6 +87,16 @@ function show_admin_bar_for_admins() {
         add_filter('show_admin_bar', '__return_false');
     }
 }
+
+// Enqueue WordPress REST API nonce
+function enqueue_wp_api_settings() {
+    wp_enqueue_script('wp-api');
+    wp_localize_script('wp-api', 'wpApiSettings', array(
+        'root' => esc_url_raw(rest_url()),
+        'nonce' => wp_create_nonce('wp_rest')
+    ));
+}
+add_action('wp_enqueue_scripts', 'enqueue_wp_api_settings');
 
 // Add Twilio settings to the Customizer
 function bidspace_customize_register($wp_customize) {

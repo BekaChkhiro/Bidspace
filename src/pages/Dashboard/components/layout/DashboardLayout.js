@@ -1,7 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import SearchBar from './SearchBar';
-import UserProfile from './UserProfile';
+import SearchBar from '../common/SearchBar';
+import UserProfile from '../profile/UserProfile';
 
 const DashboardLayout = ({ children }) => {
   return (

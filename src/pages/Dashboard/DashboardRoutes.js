@@ -7,8 +7,8 @@ import AddAuction from './pages/AddAuction';
 import EditAuction from './pages/EditAuction';
 import Settings from './pages/Settings';
 import SMSTest from '../../components/SMSTest/SMSTest';
-import WonAuctions from './pages/won-auctions';
-import Archive from './pages/archive';
+import WonAuctions from './pages/WonAuctions';
+import Archive from './pages/Archive';
 import Wishlist from './pages/Wishlist';
 
 const DashboardRoutes = () => {

@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
-import logoutIcon from '../../../assets/icons/dashboard/logout_icon.svg';
-import backArrow from '../../../assets/icons/dashboard/back-arrow.svg';
-import AuctionIcon from '../../../assets/icons/dashboard/my_auctions_icon.svg';
+import { useAuth } from '../../../../context/AuthContext';
+import logoutIcon from '../../../../assets/icons/dashboard/logout_icon.svg';
+import backArrow from '../../../../assets/icons/dashboard/back-arrow.svg';
+import AuctionIcon from '../../../../assets/icons/dashboard/my_auctions_icon.svg';
 
 const SiteActions = ({ user }) => {
   const [showDropdown, setShowDropdown] = useState(false);

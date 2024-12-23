@@ -1,6 +1,7 @@
 import React from 'react';
-import { useAuth } from '../../../context/AuthContext';
-import SiteActions from './SiteActions';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../../../context/AuthContext';
+import SiteActions from '../common/SiteActions';
 
 const UserProfile = () => {
   const { user } = useAuth();

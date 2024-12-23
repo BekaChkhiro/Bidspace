@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import DashboardLayout from '../components/DashboardLayout';
+import { useSelector } from 'react-redux';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import AuctionItem from '../components/common/AuctionItem';
 import { useAuth } from '../../../context/AuthContext';
 import MapIcon from '../../../icons/auction/location.svg';
 import DateIcon from '../../../icons/auction/date_icon.svg';
@@ -148,49 +150,12 @@ const MyAuctions = () => {
           <h2 className="text-xl font-bold mb-4">{title}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {auctions.map(auction => (
-              <div 
-                key={auction.id} 
-                className={`w-full flex flex-col gap-4 p-4 rounded-2xl ${
-                  status === 'planned' 
-                    ? 'bg-[#FFF4DE] border-2 border-[#FDB022]' 
-                    : 'bg-[#E5ECF6]'
-                }`}
-              >
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-semibold">{auction.title.rendered}</h3>
-                  {status === 'planned' && (
-                    <span className="px-3 py-1 bg-[#FDB022] text-white rounded-full text-sm">
-                      დაგეგმილი
-                    </span>
-                  )}
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="w-2/6 flex justify-start gap-3">
-                    <img src={DateIcon} alt="date icon" />
-                    <span className="text-[#6F7181]">{auction.meta.due_time}</span>
-                  </div>
-                  <div className="w-1/5 flex justify-start gap-3">
-                    <img src={MapIcon} alt="map icon" />
-                    <span className="text-[#6F7181]">{auction.meta.city}</span>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-4">
-                  <Link 
-                    to={`/dashboard/edit-auction/${auction.id}`} 
-                    className="text-blue-600 hover:text-blue-800 flex items-center gap-2"
-                  >
-                    <FaEdit className="w-4 h-4" />
-                    რედაქტირება
-                  </Link>
-                  <button 
-                    onClick={() => handleDeleteClick(auction.id)}
-                    className="text-red-600 hover:text-red-800 flex items-center gap-2"
-                  >
-                    <FaTrash className="w-4 h-4" />
-                    წაშლა
-                  </button>
-                </div>
-              </div>
+              <AuctionItem
+                key={auction.id}
+                auction={auction}
+                status={status}
+                onDeleteClick={handleDeleteClick}
+              />
             ))}
           </div>
         </div>
