@@ -12,10 +12,24 @@ function create_auction_user_role() {
         'read' => true,
         'edit_auctions' => true,
         'publish_auctions' => true,
-        'upload_files' => true
+        'upload_files' => true,
+        'delete_auction' => true,
+        'delete_auctions' => true,
+        'delete_published_auctions' => true
     ));
 }
 add_action('init', 'create_auction_user_role');
+
+// Refresh auction user capabilities
+function refresh_auction_user_capabilities() {
+    $auction_users = get_users(array('role' => 'auction_user'));
+    foreach ($auction_users as $user) {
+        $user->add_cap('delete_auction');
+        $user->add_cap('delete_auctions');
+        $user->add_cap('delete_published_auctions');
+    }
+}
+add_action('init', 'refresh_auction_user_capabilities');
 
 // Handle placing bid
 function handle_place_bid($request) {
