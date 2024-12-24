@@ -1,6 +1,70 @@
 import React from 'react';
 
 const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMessage, setIsRegistration }) => {
+  const validateForm = (e) => {
+    e.preventDefault();
+    
+    // Validation for required fields
+    const requiredFields = {
+      regFirstName: 'სახელი',
+      regLastName: 'გვარი',
+      regEmail: 'ელ-ფოსტა',
+      regPhone: 'ტელეფონი',
+      regUsername: 'მომხმარებლის სახელი',
+      regPersonalNumber: 'პირადი ნომერი',
+      regPassword: 'პაროლი',
+      regConfirmPassword: 'პაროლის დადასტურება'
+    };
+
+    // Check required fields
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!formData[field]) {
+        alert(`გთხოვთ შეავსოთ ${label}`);
+        return;
+      }
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.regEmail)) {
+      alert('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტის მისამართი');
+      return;
+    }
+
+    // Phone validation (Georgian format)
+    const phoneRegex = /^5\d{8}$/;
+    if (!phoneRegex.test(formData.regPhone)) {
+      alert('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი (5XXXXXXXX)');
+      return;
+    }
+
+    // Personal number validation
+    if (!/^\d{11}$/.test(formData.regPersonalNumber)) {
+      alert('პირადი ნომერი უნდა შედგებოდეს 11 ციფრისგან');
+      return;
+    }
+
+    // Password validation
+    if (formData.regPassword.length < 8) {
+      alert('პაროლი უნდა შეიცავდეს მინიმუმ 8 სიმბოლოს');
+      return;
+    }
+
+    if (formData.regPassword !== formData.regConfirmPassword) {
+      alert('პაროლები არ ემთხვევა');
+      return;
+    }
+
+    // Terms agreement validation
+    if (!formData.regTermsAgreed) {
+      alert('გთხოვთ დაეთანხმოთ წესებსა და პირობებს');
+      return;
+    }
+
+    // If all validations pass, proceed with registration
+    handleRegister(e);
+  };
+
   return (
     <div className="px-9 pb-9 pt-12 flex flex-col gap-4">
       <button 
@@ -13,7 +77,10 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       </button>
 
       <h3 className="text-xl font-semibold text-center">რეგისტრაცია</h3>
-      <form onSubmit={handleRegister} className="flex flex-col gap-4">
+      {errorMessage && (
+        <p className="text-sm text-red-500 text-center">{errorMessage}</p>
+      )}
+      <form onSubmit={validateForm} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
             <label className="text-sm text-gray-600">სახელი</label>
@@ -23,6 +90,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
               value={formData.regFirstName}
               onChange={handleInputChange}
               className="px-3 py-2 border border-gray-600 rounded-2xl"
+              required
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -33,6 +101,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
               value={formData.regLastName}
               onChange={handleInputChange}
               className="px-3 py-2 border border-gray-600 rounded-2xl"
+              required
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -43,6 +112,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
               value={formData.regEmail}
               onChange={handleInputChange}
               className="px-3 py-2 border border-gray-600 rounded-2xl"
+              required
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -53,6 +123,8 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
               value={formData.regPhone}
               onChange={handleInputChange}
               className="px-3 py-2 border border-gray-600 rounded-2xl"
+              placeholder="5XXXXXXXX"
+              required
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -63,6 +135,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
               value={formData.regUsername}
               onChange={handleInputChange}
               className="px-3 py-2 border border-gray-600 rounded-2xl"
+              required
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -73,6 +146,8 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
               value={formData.regPersonalNumber}
               onChange={handleInputChange}
               className="px-3 py-2 border border-gray-600 rounded-2xl"
+              maxLength={11}
+              required
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -83,6 +158,8 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
               value={formData.regPassword}
               onChange={handleInputChange}
               className="px-3 py-2 border border-gray-600 rounded-2xl"
+              minLength={8}
+              required
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -93,6 +170,8 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
               value={formData.regConfirmPassword}
               onChange={handleInputChange}
               className="px-3 py-2 border border-gray-600 rounded-2xl"
+              minLength={8}
+              required
             />
           </div>
         </div>
@@ -105,6 +184,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             checked={formData.regTermsAgreed}
             onChange={handleInputChange}
             className="h-4 w-4"
+            required
           />
           <label htmlFor="regTermsAgreed" className="text-sm text-gray-600">
             ვეთანხმები წესებს და პირობებს
@@ -124,6 +204,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             <button 
               onClick={() => setIsRegistration(false)} 
               className="font-bold hover:underline"
+              type="button"
             >
               შესვლა
             </button>

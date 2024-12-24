@@ -15,7 +15,7 @@ const Header = ({ onLoginClick }) => {
   };
 
   return (
-    <header className='w-full px-16 py-4 flex gap-12 items-center header-bg'>
+    <header className='w-full px-16 py-4 flex gap-12 items-center header-bg z-10'>
       <div className='w-4/12 flex justify-between items-center'>
         <div className='w-1/3'>
           <Link to='/'>

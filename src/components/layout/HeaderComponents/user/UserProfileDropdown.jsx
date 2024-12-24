@@ -43,7 +43,7 @@ const UserProfileDropdown = ({ user }) => {
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-[9999]" ref={dropdownRef}>
       <div 
         onClick={toggleDropdown}
         className="flex items-center gap-2 p-2 bg-white rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
@@ -56,7 +56,7 @@ const UserProfileDropdown = ({ user }) => {
         <span className="font-medium">{user?.name}</span>
       </div>
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-100 border border-[#e5e5e5]">
+        <div className="absolute right-0 mt-6 w-64 bg-white rounded-lg shadow-lg py-2 z-[9999] border border-[#e5e5e5]">
           <Link 
             to="/dashboard/"
             className="flex items-center gap-2 px-4 py-2 text-base text-gray-700 hover:bg-gray-100"

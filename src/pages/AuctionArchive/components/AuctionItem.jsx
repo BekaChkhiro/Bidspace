@@ -50,7 +50,7 @@ const AuctionItem = ({
           <img
             src={getFeaturedImageUrl(auction)}
             alt={auction.title.rendered}  
-            className="w-full h-full object-cover rounded-xl"
+            className="w-full h-full object-cover rounded-xl z-0"
             onError={handleImageError}
           />
           <div 
