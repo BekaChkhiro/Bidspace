@@ -410,7 +410,8 @@ function get_auth_status() {
             'user' => array(
                 'id' => $current_user->ID,
                 'email' => $current_user->user_email,
-                'name' => $current_user->display_name
+                'name' => $current_user->display_name,
+                'roles' => $current_user->roles
             )
         ), 200);
     }

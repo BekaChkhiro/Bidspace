@@ -19,6 +19,7 @@ import ScrollToTop from './components/ui-elements/ScrollToTop';
 import { AuthProvider } from './components/core/context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardRoutes from './pages/Dashboard/DashboardRoutes';
+import AdminDashboardRoutes from './pages/AdminDashboard/AdminDashboardRoutes';
 import { Toaster } from './components/ui/use-toast';
 import NotFound from './components/core/NotFound';
 
@@ -61,7 +62,7 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
-  const isDashboardRoute = location.pathname.startsWith('/dashboard');
+  const isDashboardRoute = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
 
   React.useEffect(() => {
     if (!isDashboardRoute) {
@@ -112,6 +113,7 @@ function App() {
                     <Route path="/events" element={<AuctionEventPage />} />
                     <Route path="/theater_cinema" element={<AuctionTheaterCinemaPage />} />
                     <Route path="/dashboard/*" element={<DashboardRoutes />} />
+                    <Route path="/admin/*" element={<AdminDashboardRoutes />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
