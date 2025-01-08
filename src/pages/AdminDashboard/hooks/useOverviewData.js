@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
-import { getChartData, chartOptions } from '../config/chartConfig';
 import { statsConfig } from '../config/statsConfig';
 
 export const useOverviewData = () => {
-  const [dateRange, setDateRange] = useState('იან 20, 2024 - თებ 09, 2024');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
 
   // მოცემული მონაცემები (მომავალში API-დან მოვა)
   const mockData = {
-    dates: ['24 დეკ', '25 დეკ', '26 დეკ', '27 დეკ', '28 დეკ', '29 დეკ', '30 დეკ'],
-    values: [12, 19, 15, 25, 22, 30, 18],
     recentSales: [
       {
         name: 'გიორგი მაისურაძე',
@@ -41,20 +38,25 @@ export const useOverviewData = () => {
 
   // მონაცემების ჩატვირთვის იმიტაცია
   useEffect(() => {
-    setLoading(true);
-    // აქ მომავალში API call იქნება
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // აქ მომავალში API call იქნება
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setData(mockData);
+      } catch (error) {
+        console.error('Error loading overview data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
   return {
     loading,
-    dateRange,
-    setDateRange,
-    chartData: getChartData(mockData.dates, mockData.values),
-    chartOptions,
     stats: statsConfig,
-    recentSales: mockData.recentSales
+    recentSales: data?.recentSales || []
   };
 };

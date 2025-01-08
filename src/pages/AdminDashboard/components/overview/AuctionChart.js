@@ -1,5 +1,24 @@
 import React, { useState } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+
+// რეგისტრირება Chart.js კომპონენტების
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const AuctionChart = ({ data, options }) => {
   const [timeRange, setTimeRange] = useState('7');
@@ -10,11 +29,11 @@ const AuctionChart = ({ data, options }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium">აუქციონების აქტივობა</h3>
+    <div className="bg-white p-6 rounded-lg shadow-sm h-[400px]">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-medium text-gray-900">აუქციონების აქტივობა</h3>
         <select 
-          className="text-sm border rounded-md px-2 py-1"
+          className="text-sm border rounded-md px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           value={timeRange}
           onChange={handleTimeRangeChange}
         >
@@ -23,7 +42,16 @@ const AuctionChart = ({ data, options }) => {
           <option value="90">ბოლო 3 თვე</option>
         </select>
       </div>
-      <Bar data={data} options={options} height={100} />
+      <div className="h-[300px]">
+        <Bar 
+          data={data} 
+          options={{
+            ...options,
+            maintainAspectRatio: false,
+            responsive: true,
+          }} 
+        />
+      </div>
     </div>
   );
 };
