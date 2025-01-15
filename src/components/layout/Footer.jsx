@@ -10,15 +10,15 @@ const Footer = () => {
 
   return (
     <footer>
-      <div className="w-full px-16 py-6 bg-[#DCDCDC]">
-        <div className="w-full flex justify-between">
-          <div className="w-1/6">
+      <div className="w-full px-4 md:px-8 lg:px-16 py-6 bg-[#DCDCDC]">
+        <div className="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+          <div className="col-span-2 md:col-span-3 lg:col-span-1">
             <Link to='/'>
-              <img src={bidspaceLogo} alt='Bidspace Logo' />
+              <img src={bidspaceLogo} alt='Bidspace Logo' className="max-w-[150px]" />
             </Link>
           </div>
-          <div className="w-1/6 flex flex-col gap-4">
-            <span className="font-bold text-2xl text-black">მენიუ</span>
+          <div className="flex flex-col gap-4">
+            <span className="font-bold text-xl lg:text-2xl text-black">მენიუ</span>
             <nav className="flex flex-col gap-2">
               <Link to="/about" className="hover:font-bold hover:text-black">
                 ჩვენ შესახებ
@@ -37,8 +37,8 @@ const Footer = () => {
               </Link>
             </nav>
           </div>
-          <div className="w-1/6 flex flex-col gap-4">
-            <span className="font-bold text-2xl text-black">კონტაქტი</span>
+          <div className="flex flex-col gap-4">
+            <span className="font-bold text-xl lg:text-2xl text-black">კონტაქტი</span>
             <nav className="flex flex-col gap-2">
               <Link to="#" className="hover:font-bold hover:text-black">
                 +995 555 555 555
@@ -48,8 +48,8 @@ const Footer = () => {
               </Link>
             </nav>
           </div>
-          <div className="w-1/6 flex flex-col gap-4">
-            <span className="font-bold text-2xl text-black">გამოგვყევი</span>
+          <div className="flex flex-col gap-4">
+            <span className="font-bold text-xl lg:text-2xl text-black">გამოგვყევი</span>
             <nav className="flex flex-col gap-2">
               <Link to="#" className="flex gap-4 items-center hover:font-bold hover:text-black">
                 <img src={facebookIcon} alt="Facebook Icon" width={24} height={24} />
@@ -61,8 +61,8 @@ const Footer = () => {
               </Link>
             </nav>
           </div>
-          <div className="w-1/6 flex flex-col gap-4">
-            <span className="font-bold text-2xl text-black">წესები და პირობები</span>
+          <div className="flex flex-col gap-4">
+            <span className="font-bold text-xl lg:text-2xl text-black">წესები და პირობები</span>
             <nav className="flex flex-col gap-2">
               <Link to="#" className="hover:font-bold hover:text-black">
                 წესები და პირობები
@@ -72,8 +72,8 @@ const Footer = () => {
               </Link>
             </nav>
           </div>
-          <div className="w-1/6 flex flex-col gap-4">
-            <span className="font-bold text-2xl text-black">გადახდა</span>
+          <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
+            <span className="font-bold text-xl lg:text-2xl text-black">გადახდა</span>
             <nav className="flex gap-2">
               <img src={visaCardIcon} alt="Visa Card" width={40} height={40} />
               <img src={mastercardIcon} alt="Mastercard" width={40} height={40} />
@@ -81,10 +81,10 @@ const Footer = () => {
           </div>
         </div>
       </div>
-      <hr></hr>
-      <div className='w-full px-16 py-3 flex justify-between items-center bg-[#DCDCDC]'>
-        <span className='font-normal text-lg'> 2024 Bidspace. All rights reserved</span>
-        <span className='font-normal text-lg'>Powered By <Link to='https://infinityglobal.agency/'>Infinity Solutions</Link></span>
+      <hr />
+      <div className='w-full px-4 md:px-8 lg:px-16 py-3 flex flex-col md:flex-row justify-between items-center gap-2 bg-[#DCDCDC]'>
+        <span className='font-normal text-base lg:text-lg text-center md:text-left'> 2024 Bidspace. All rights reserved</span>
+        <span className='font-normal text-base lg:text-lg text-center md:text-left'>Powered By <Link to='https://infinityglobal.agency/'>Infinity Solutions</Link></span>
       </div>
     </footer>
   );
