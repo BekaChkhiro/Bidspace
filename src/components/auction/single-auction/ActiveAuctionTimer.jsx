@@ -64,22 +64,22 @@ const ActiveAuctionTimer = ({ endDate }) => {
   const formatNumber = (num) => String(num).padStart(2, '0');
 
   return (
-    <div className="w-full flex gap-4 justify-center text-center">
-      <div className="w-1/4 bg-blue-100 p-3 rounded-lg min-w-[80px]">
-        <div className="text-2xl font-bold">{formatNumber(timeLeft.days)}</div>
-        <div className="text-sm">დღე</div>
+    <div className="w-full flex gap-2 sm:gap-4 justify-center text-center overflow-x-auto">
+      <div className="w-[50px] sm:w-[60px] md:w-1/4 bg-blue-100 p-1.5 sm:p-2 md:p-3 rounded-lg shrink-0">
+        <div className="text-base sm:text-lg md:text-2xl font-bold">{formatNumber(timeLeft.days)}</div>
+        <div className="text-[10px] sm:text-xs md:text-sm">დღ</div>
       </div>
-      <div className="w-1/4 bg-blue-100 p-3 rounded-lg min-w-[80px]">
-        <div className="text-2xl font-bold">{formatNumber(timeLeft.hours)}</div>
-        <div className="text-sm">საათი</div>
+      <div className="w-[50px] sm:w-[60px] md:w-1/4 bg-blue-100 p-1.5 sm:p-2 md:p-3 rounded-lg shrink-0">
+        <div className="text-base sm:text-lg md:text-2xl font-bold">{formatNumber(timeLeft.hours)}</div>
+        <div className="text-[10px] sm:text-xs md:text-sm">სთ</div>
       </div>
-      <div className="w-1/4 bg-blue-100 p-3 rounded-lg min-w-[80px]">
-        <div className="text-2xl font-bold">{formatNumber(timeLeft.minutes)}</div>
-        <div className="text-sm">წუთი</div>
+      <div className="w-[50px] sm:w-[60px] md:w-1/4 bg-blue-100 p-1.5 sm:p-2 md:p-3 rounded-lg shrink-0">
+        <div className="text-base sm:text-lg md:text-2xl font-bold">{formatNumber(timeLeft.minutes)}</div>
+        <div className="text-[10px] sm:text-xs md:text-sm">წთ</div>
       </div>
-      <div className="w-1/4 bg-blue-100 p-3 rounded-lg min-w-[80px]">
-        <div className="text-2xl font-bold">{formatNumber(timeLeft.seconds)}</div>
-        <div className="text-sm">წამი</div>
+      <div className="w-[50px] sm:w-[60px] md:w-1/4 bg-blue-100 p-1.5 sm:p-2 md:p-3 rounded-lg shrink-0">
+        <div className="text-base sm:text-lg md:text-2xl font-bold">{formatNumber(timeLeft.seconds)}</div>
+        <div className="text-[10px] sm:text-xs md:text-sm">წმ</div>
       </div>
     </div>
   );

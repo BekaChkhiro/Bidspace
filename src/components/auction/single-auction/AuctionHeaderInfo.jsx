@@ -22,7 +22,7 @@ const AuctionHeaderInfo = ({ authorName, city, startTime }) => {
   };
 
   return (
-    <div className="flex flex-row justify-start sm:justify-between items-center gap-3 sm:gap-6 overflow-x-auto">
+    <div className="flex flex-row justify-between sm:justify-between items-center gap-3 sm:gap-6 overflow-x-auto">
       {/* ავტორის ინფორმაცია */}
       <div className="flex items-center gap-2 shrink-0">
         <div className="w-7 sm:w-10 h-7 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm sm:text-base">

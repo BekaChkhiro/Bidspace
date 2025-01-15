@@ -69,31 +69,51 @@ const AuctionPriceContainer = ({ auction }) => {
         `}
       </style>
 
-      <div className="grid grid-cols-2 sm:flex sm:flex-row gap-4 justify-between">
-        <div className="flex flex-col items-start gap-1 sm:gap-2">
-          <span className="text-base sm:text-lg font-bold">ბილეთის ფასი</span>
-          <span className="text-base sm:text-lg font-normal">{auction.meta?.ticket_price} ლარი</span>
+      <div className="flex flex-wrap sm:flex-row gap-2 sm:gap-4 justify-between">
+        {/* Top row container for mobile */}
+        <div className="w-full flex justify-between sm:hidden">
+          <div className="flex flex-col items-start gap-0.5 shrink-0 w-[120px]">
+            <span className="text-[12px] font-bold whitespace-nowrap">ბილეთის ფასი</span>
+            <span className="text-[14px] font-normal whitespace-nowrap">{auction.meta?.ticket_price}₾</span>
+          </div>
+
+          <div className="flex flex-col items-start gap-0.5 shrink-0 w-[120px]">
+            <span className="text-[12px] font-bold whitespace-nowrap">მიმდინარე ფასი</span>
+            <span 
+              className={`text-[14px] font-normal whitespace-nowrap ${isPriceUpdated ? 'pulse-animation' : ''}`}
+              style={{ color: '#00AEEF' }}
+            >
+              {currentPrice}₾
+            </span>
+          </div>
         </div>
 
-        <div className="flex flex-col items-start gap-1 sm:gap-2">
-          <span className="text-base sm:text-lg font-bold">მიმდინარე ფასი</span>
+        {/* Desktop version (hidden on mobile) */}
+        <div className="hidden sm:flex flex-col items-start gap-2 shrink-0 w-[120px] md:w-auto">
+          <span className="text-[10px] md:text-lg font-bold whitespace-nowrap">ბილეთის ფასი</span>
+          <span className="text-[12px] md:text-lg font-normal whitespace-nowrap">{auction.meta?.ticket_price}₾</span>
+        </div>
+
+        <div className="hidden sm:flex flex-col items-start gap-2 shrink-0 w-[120px] md:w-auto">
+          <span className="text-[10px] md:text-lg font-bold whitespace-nowrap">მიმდინარე ფასი</span>
           <span 
-            className={`text-base sm:text-lg font-normal ${isPriceUpdated ? 'pulse-animation' : ''}`}
+            className={`text-[12px] md:text-lg font-normal whitespace-nowrap ${isPriceUpdated ? 'pulse-animation' : ''}`}
             style={{ color: '#00AEEF' }}
           >
-            {currentPrice} ლარი
+            {currentPrice}₾
           </span>
         </div>
 
-        <div className="col-span-2 sm:col-span-1 flex flex-col items-start gap-1 sm:gap-2">
-          <span className="text-base sm:text-lg font-bold">მომენტალურად ყიდვა</span>
+        {/* Bottom element (full width on mobile) */}
+        <div className="w-full sm:w-[120px] flex flex-col items-start gap-0.5 sm:gap-2 shrink-0 md:w-auto">
+          <span className="text-[12px] sm:text-sm md:text-lg font-bold whitespace-nowrap">მომენტალურად ყიდვა</span>
           {auctionStarted ? (
-            <span className="text-base sm:text-lg font-normal" style={{ color: '#FF0000' }}>
-              არ არის ხელმისაწვდომი
+            <span className="text-[14px] sm:text-sm md:text-lg font-normal whitespace-nowrap" style={{ color: '#FF0000' }}>
+              არ აქვს
             </span>
           ) : (
-            <span className="text-base sm:text-lg font-normal" style={{ color: '#00AEEF' }}>
-              {auction.meta?.buy_now} ლარი
+            <span className="text-[14px] sm:text-sm md:text-lg font-normal whitespace-nowrap" style={{ color: '#00AEEF' }}>
+              {auction.meta?.buy_now}₾
             </span>
           )}
         </div>
