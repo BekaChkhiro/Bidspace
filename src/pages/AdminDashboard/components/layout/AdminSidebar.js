@@ -8,7 +8,7 @@ import SettingsIcon from '../../../../assets/icons/dashboard/setting_icon.svg';
 import LogoutIcon from '../../../../assets/icons/dashboard/logout_icon.svg';
 import Logo from '../../../../assets/images/bidspace_logo.png';
 
-const AdminSidebar = () => {
+const AdminSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { logout } = useAuth();
 
@@ -28,7 +28,23 @@ const AdminSidebar = () => {
   };
 
   return (
-    <div className="w-1/6 h-full bg-white flex flex-col justify-between border-r border-[#E5E5E5] pb-6">
+    <div className={`
+      fixed md:relative md:w-1/6 h-full bg-white flex flex-col justify-between border-r border-[#E5E5E5] pb-6
+      transform transition-transform duration-300 ease-in-out
+      ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+      md:translate-x-0 z-30
+    `}>
+      <div className="flex md:hidden absolute right-0 top-0 transform translate-x-full">
+        <button
+          onClick={onClose}
+          className="p-4 text-gray-600 hover:text-gray-900"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
       <div className="flex flex-col gap-11">
         {/* Logo */}
         <div className="w-full h-24 p-6" style={{ height: '10%' }}>
