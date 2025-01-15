@@ -156,11 +156,11 @@ const AuctionBidActions = ({
   return (
     <div className="flex flex-col gap-4">
       <form onSubmit={handleBidSubmit} className="flex flex-col gap-2">
-        <div className="flex gap-2 justify-between">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             type="button"
             onClick={handleQuickBid}
-            className="w-[10%] bg-[#00adef] text-white rounded-full text-lg h-11 hover:bg-[#80d6f7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            className="w-full sm:w-[10%] bg-[#00adef] text-white rounded-full text-base sm:text-lg h-10 sm:h-11 hover:bg-[#80d6f7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             disabled={isSubmitting || !userCanBid}
             title="სწრაფი ბიდი"
           >
@@ -172,12 +172,12 @@ const AuctionBidActions = ({
             onChange={(e) => setNewBid(e.target.value)}
             min={minimumBid}
             placeholder={`მინ. ${minimumBid} ₾`}
-            className="w-[50%] p-4 border rounded-full text-center text-lg h-11"
+            className="w-full sm:w-[50%] p-3 sm:p-4 border rounded-full text-center text-base sm:text-lg h-10 sm:h-11"
             disabled={isSubmitting || !userCanBid}
           />
           <button
             type="submit"
-            className="w-[40%] bg-[#00AEEF] text-white rounded-full text-lg h-11 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-[40%] bg-[#00AEEF] text-white rounded-full text-base sm:text-lg h-10 sm:h-11 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!newBid || Number(newBid) < minimumBid || isSubmitting || !userCanBid}
           >
             {isSubmitting ? 'იტვირთება...' : 'განათავსე ბიდი'}

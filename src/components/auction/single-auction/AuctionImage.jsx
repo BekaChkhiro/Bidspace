@@ -33,11 +33,11 @@ function AuctionImage({ mediaId }) {
   }, [mediaId]);
 
   if (loading) {
-    return <div className="w-full h-48 bg-gray-200 animate-pulse rounded-lg"></div>;
+    return <div className="w-full h-36 sm:h-48 bg-gray-200 animate-pulse rounded-lg"></div>;
   }
 
   if (error) {
-    return <div className="text-red-500 text-center">სურათის ჩატვირთვა ვერ მოხერხდა</div>;
+    return <div className="text-red-500 text-center text-sm sm:text-base">სურათის ჩატვირთვა ვერ მოხერხდა</div>;
   }
 
   if (!imageUrl) {
@@ -49,7 +49,7 @@ function AuctionImage({ mediaId }) {
       <img 
         src={imageUrl} 
         alt="აუქციონის სურათი"
-        className="w-full mx-auto rounded-lg shadow-lg max-h-72"
+        className="w-full mx-auto rounded-lg shadow-lg max-h-48 sm:max-h-72 object-cover"
         loading="lazy"
       />
     </div>

@@ -69,30 +69,30 @@ const AuctionPriceContainer = ({ auction }) => {
         `}
       </style>
 
-      <div className="flex gap-4 justify-between">
-        <div className="w-3/12 flex flex-col items-start gap-2">
-          <span className="text-lg font-bold">ბილეთის ფასი</span>
-          <span className="text-lg font-normal">{auction.meta?.ticket_price} ლარი</span>
+      <div className="grid grid-cols-2 sm:flex sm:flex-row gap-4 justify-between">
+        <div className="flex flex-col items-start gap-1 sm:gap-2">
+          <span className="text-base sm:text-lg font-bold">ბილეთის ფასი</span>
+          <span className="text-base sm:text-lg font-normal">{auction.meta?.ticket_price} ლარი</span>
         </div>
 
-        <div className="w-3/12 flex flex-col items-start gap-2">
-          <span className="text-lg font-bold">მიმდინარე ფასი</span>
+        <div className="flex flex-col items-start gap-1 sm:gap-2">
+          <span className="text-base sm:text-lg font-bold">მიმდინარე ფასი</span>
           <span 
-            className={`text-lg font-normal ${isPriceUpdated ? 'pulse-animation' : ''}`}
+            className={`text-base sm:text-lg font-normal ${isPriceUpdated ? 'pulse-animation' : ''}`}
             style={{ color: '#00AEEF' }}
           >
             {currentPrice} ლარი
           </span>
         </div>
 
-        <div className="w-4/10 flex flex-col items-start gap-2">
-          <span className="text-lg font-bold">მომენტალურად ყიდვა</span>
+        <div className="col-span-2 sm:col-span-1 flex flex-col items-start gap-1 sm:gap-2">
+          <span className="text-base sm:text-lg font-bold">მომენტალურად ყიდვა</span>
           {auctionStarted ? (
-            <span className="text-lg font-normal" style={{ color: '#FF0000' }}>
+            <span className="text-base sm:text-lg font-normal" style={{ color: '#FF0000' }}>
               არ არის ხელმისაწვდომი
             </span>
           ) : (
-            <span className="text-lg font-normal" style={{ color: '#00AEEF' }}>
+            <span className="text-base sm:text-lg font-normal" style={{ color: '#00AEEF' }}>
               {auction.meta?.buy_now} ლარი
             </span>
           )}

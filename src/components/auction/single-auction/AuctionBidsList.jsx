@@ -65,7 +65,7 @@ const AuctionBidsList = ({ bids }) => {
 
   if (isLoading && !prevBidsRef.current) {
     return (
-      <div className="max-h-60 overflow-y-auto">
+      <div className="h-[250px] sm:max-h-60 overflow-y-auto">
         {[1, 2, 3].map((i) => (
           <BidSkeleton key={i} />
         ))}
@@ -75,30 +75,36 @@ const AuctionBidsList = ({ bids }) => {
 
   if (!Array.isArray(bids)) {
     return (
-      <div className="text-center text-gray-500 py-4">
-        ბიდების მონაცემები არასწორ ფორმატშია
+      <div className="h-[250px] sm:max-h-60 overflow-y-auto flex items-center justify-center">
+        <p className="text-center text-gray-500">
+          ბიდების მონაცემები არასწორ ფორმატშია
+        </p>
       </div>
     );
   }
 
   if (bids.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-4">
-        ბიდები ჯერ არ არის
+      <div className="h-[250px] sm:max-h-60 overflow-y-auto flex items-center justify-center">
+        <p className="text-center text-gray-500">
+          ბიდები ჯერ არ არის
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="max-h-60 overflow-y-auto">
+    <div className="h-[250px] sm:max-h-60 overflow-y-auto">
       {(isLoading ? prevBidsRef.current : enrichedBids).map((bid, index) => (
         <div 
           key={`${bid.bid_time}-${index}`}
-          className="flex justify-between items-center py-2 border-b last:border-b-0"
+          className="flex justify-between items-start sm:items-center py-2 border-b last:border-b-0"
         >
           <div className="flex flex-col">
-            <span className="font-medium">{bid.author_name || bid.bid_author || 'Unknown'}</span>
-            <span className="text-sm text-gray-500">
+            <span className="font-medium text-sm sm:text-base">
+              {bid.author_name || bid.bid_author || 'Unknown'}
+            </span>
+            <span className="text-xs sm:text-sm text-gray-500">
               {new Date(bid.bid_time).toLocaleString('ka-GE', {
                 timeZone: 'Asia/Tbilisi',
                 hour: '2-digit',
@@ -111,8 +117,8 @@ const AuctionBidsList = ({ bids }) => {
             </span>
           </div>
           <div className="flex flex-col items-end">
-            <span className="font-bold">{bid.bid_price} ₾</span>
-            <span className="text-sm text-green-600">+{bid.price_increase} ₾</span>
+            <span className="font-bold text-sm sm:text-base">{bid.bid_price} ₾</span>
+            <span className="text-xs sm:text-sm text-green-600">+{bid.price_increase} ₾</span>
           </div>
         </div>
       ))}

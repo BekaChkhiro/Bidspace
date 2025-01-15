@@ -94,31 +94,31 @@ const AuctionComments = ({ comments = {}, currentUserName, onSubmitComment }) =>
   );
 
   return (
-    <div className="p-10 bg-white rounded-2xl">
-      <h2 className="font-bold text-lg">კომენტარები</h2>
-      <div className="flex flex-col gap-8 mt-6">
+    <div className="p-4 sm:p-6 lg:p-10 bg-white rounded-2xl">
+      <h2 className="font-bold text-base sm:text-lg">კომენტარები</h2>
+      <div className="flex flex-col gap-6 sm:gap-8 mt-4 sm:mt-6">
         {/* Comment Form */}
-        <div className="p-4 bg-gray-100 rounded-xl">
+        <div className="p-3 sm:p-4 bg-gray-100 rounded-xl">
           <form onSubmit={handleSubmit} className="flex flex-col justify-between gap-3">
-            <span className="m-0">{currentUserName}</span>
+            <span className="text-sm sm:text-base m-0">{currentUserName}</span>
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="w-full p-2 border rounded-xl"
+              className="w-full p-2 sm:p-3 border rounded-xl text-sm sm:text-base"
               rows="3"
               placeholder="დაწერეთ კომენტარი..."
               disabled={isSubmitting}
             />
             {error && (
-              <div className="text-red-500 text-sm">
+              <div className="text-red-500 text-xs sm:text-sm">
                 {error}
               </div>
             )}
-            <div className="flex gap-6 items-center">
+            <div className="flex gap-4 sm:gap-6 items-center">
               <button
                 type="submit"
                 disabled={isSubmitting || !newComment.trim()}
-                className={`text-center px-4 py-3 bg-[#00AEEF] text-sm text-white rounded-xl ${
+                className={`text-center px-3 sm:px-4 py-2 sm:py-3 bg-[#00AEEF] text-xs sm:text-sm text-white rounded-xl ${
                   (isSubmitting || !newComment.trim()) ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -128,7 +128,7 @@ const AuctionComments = ({ comments = {}, currentUserName, onSubmitComment }) =>
                 <button
                   type="button"
                   onClick={() => setNewComment('')}
-                  className="text-center text-sm"
+                  className="text-center text-xs sm:text-sm"
                 >
                   გაუქმება
                 </button>

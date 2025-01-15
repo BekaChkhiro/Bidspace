@@ -41,30 +41,30 @@ const EndedLostAuction = ({ auctionData }) => {
   };
 
   return (
-    <div className="w-full flex flex-col py-6 gap-6">
-      <div className="flex justify-center items-center gap-6">
-        <img src={lostAuctionIcon} alt="Auction ended icon" />
-        <span className="font-normal text-lg text-[#FF0101]">აუქციონი დასრულდა!</span>
+    <div className="w-full flex flex-col py-4 sm:py-6 gap-4 sm:gap-6">
+      <div className="flex justify-center items-center gap-3 sm:gap-6 px-2 sm:px-0">
+        <img src={lostAuctionIcon} alt="Auction ended icon" className="w-8 h-8 sm:w-auto sm:h-auto" />
+        <span className="font-normal text-base sm:text-lg text-[#FF0101]">აუქციონი დასრულდა!</span>
       </div>
 
-      <div className="w-full border-y p-6 flex flex-col items-center gap-6">
-        <span className="w-11/12 font-bold text-lg">
+      <div className="w-full border-y p-3 sm:p-6 flex flex-col items-center gap-4 sm:gap-6">
+        <span className="w-full sm:w-11/12 font-bold text-base sm:text-lg px-2 sm:px-0">
           {auctionData?.title?.rendered || 'აუქციონის სახელი'}
         </span>
-        <div className="w-11/12 flex justify-between items-center">
-          <div className="w-1/3 flex items-center gap-2">
-            <img src={dateIcon} alt="Date icon" />
-            <span>{lastBid ? formatDate(lastBid.bid_time) : 'თარიღი არ არის'}</span>
+        <div className="w-full sm:w-11/12 grid grid-cols-2 sm:flex sm:flex-row gap-3 sm:gap-0 sm:justify-between items-start sm:items-center px-2 sm:px-0">
+          <div className="col-span-2 sm:col-span-1 sm:w-1/3 flex items-center gap-2">
+            <img src={dateIcon} alt="Date icon" className="w-4 h-4 sm:w-auto sm:h-auto" />
+            <span className="text-sm sm:text-base">{lastBid ? formatDate(lastBid.bid_time) : 'თარიღი არ არის'}</span>
           </div>
 
-          <div className="w-1/3 flex items-center gap-2">
-            <span className="font-bold">ბიდის ავტორი: </span>
-            <span>{lastBid?.author_name || 'უცნობი'}</span>
+          <div className="sm:w-1/3 flex items-center gap-2">
+            <span className="font-bold text-sm sm:text-base">ბიდის ავტორი: </span>
+            <span className="text-sm sm:text-base">{lastBid?.author_name || 'უცნობი'}</span>
           </div>
 
-          <div className="w-1/3 flex items-center gap-2">
-            <span className="font-bold">ბიდის ფასი: </span>
-            <span>{lastBid ? `${lastBid.bid_price} ₾` : '0 ₾'}</span>
+          <div className="sm:w-1/3 flex items-center gap-2">
+            <span className="font-bold text-sm sm:text-base">ბიდის ფასი: </span>
+            <span className="text-sm sm:text-base">{lastBid ? `${lastBid.bid_price} ₾` : '0 ₾'}</span>
           </div>
         </div>
       </div>

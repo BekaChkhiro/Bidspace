@@ -218,17 +218,18 @@ function SingleAuction() {
   }
 
   return (
-    <div className='w-full bg-[#E6E6E6] px-16 py-10 flex flex-col gap-10'>
-      <div className='w-full bg-white p-5 rounded-2xl flex gap-5'>
-        <div className='w-1/2 flex flex-col gap-4'>
+    <div className='w-full bg-[#E6E6E6] px-4 sm:px-8 lg:px-16 py-5 sm:py-8 lg:py-10 flex flex-col gap-5 sm:gap-8 lg:gap-10'>
+      <div className='w-full bg-white p-3 sm:p-4 lg:p-5 rounded-2xl flex flex-col lg:flex-row gap-4 lg:gap-5'>
+        <div className='w-full lg:w-1/2 flex flex-col gap-4'>
           <AuctionImage mediaId={auction.featured_media} />
-          <div className="bg-white rounded-lg p-4 shadow">
-            <h3 className="text-lg font-semibold mb-4">ბიდების ისტორია</h3>
+          {/* Bids history is now visible only on desktop */}
+          <div className="hidden lg:block bg-white rounded-lg p-3 sm:p-4 shadow">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">ბიდების ისტორია</h3>
             <AuctionBidsList bids={currentBids} />
           </div>
         </div>
-        <div className='w-1/2 flex flex-col gap-4'>
-          <h1 className="text-2xl font-bold">
+        <div className='w-full lg:w-1/2 flex flex-col gap-3 sm:gap-4'>
+          <h1 className="text-xl sm:text-2xl font-bold">
             {auction.title?.rendered || 'უსათაურო აუქციონი'}
           </h1>
 
@@ -251,6 +252,12 @@ function SingleAuction() {
             onBidPlaced={handleBidSubmit}
           />
         </div>
+      </div>
+
+      {/* Bids history for mobile devices */}
+      <div className="lg:hidden w-full bg-white rounded-2xl p-3 sm:p-4 shadow">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">ბიდების ისტორია</h3>
+        <AuctionBidsList bids={currentBids} />
       </div>
 
       <AuctionComments

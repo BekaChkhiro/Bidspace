@@ -43,28 +43,28 @@ const BeforeStartTimer = ({ targetDate, buyNowPrice }) => {
     : 'მომენტალურად ყიდვა';
 
   return (
-    <div className="space-y-4">
-      <div className="w-full flex gap-4 justify-center text-center">
-        <div className="w-1/4 bg-blue-100 p-3 rounded-lg min-w-[80px]">
-          <div className="text-2xl font-bold">{formatNumber(timeLeft.days)}</div>
-          <div className="text-sm">დღე</div>
+    <div className="space-y-3 sm:space-y-4">
+      <div className="w-full flex gap-2 sm:gap-4 justify-center text-center">
+        <div className="w-1/4 bg-blue-100 p-2 sm:p-3 rounded-lg min-w-[60px] sm:min-w-[80px]">
+          <div className="text-lg sm:text-2xl font-bold">{formatNumber(timeLeft.days)}</div>
+          <div className="text-xs sm:text-sm">დღე</div>
         </div>
-        <div className="w-1/4 bg-blue-100 p-3 rounded-lg min-w-[80px]">
-          <div className="text-2xl font-bold">{formatNumber(timeLeft.hours)}</div>
-          <div className="text-sm">საათი</div>
+        <div className="w-1/4 bg-blue-100 p-2 sm:p-3 rounded-lg min-w-[60px] sm:min-w-[80px]">
+          <div className="text-lg sm:text-2xl font-bold">{formatNumber(timeLeft.hours)}</div>
+          <div className="text-xs sm:text-sm">საათი</div>
         </div>
-        <div className="w-1/4 bg-blue-100 p-3 rounded-lg min-w-[80px]">
-          <div className="text-2xl font-bold">{formatNumber(timeLeft.minutes)}</div>
-          <div className="text-sm">წუთი</div>
+        <div className="w-1/4 bg-blue-100 p-2 sm:p-3 rounded-lg min-w-[60px] sm:min-w-[80px]">
+          <div className="text-lg sm:text-2xl font-bold">{formatNumber(timeLeft.minutes)}</div>
+          <div className="text-xs sm:text-sm">წუთი</div>
         </div>
-        <div className="w-1/4 bg-blue-100 p-3 rounded-lg min-w-[80px]">
-          <div className="text-2xl font-bold">{formatNumber(timeLeft.seconds)}</div>
-          <div className="text-sm">წამი</div>
+        <div className="w-1/4 bg-blue-100 p-2 sm:p-3 rounded-lg min-w-[60px] sm:min-w-[80px]">
+          <div className="text-lg sm:text-2xl font-bold">{formatNumber(timeLeft.seconds)}</div>
+          <div className="text-xs sm:text-sm">წამი</div>
         </div>
       </div>
       
       <button
-        className="w-full bg-[#00AEEF] text-white rounded-full text-lg h-11 transition-colors"
+        className="w-full py-2 sm:py-3 bg-[#00AEEF] text-white rounded-full text-base sm:text-lg transition-colors"
         onClick={() => alert('ეს ფუნქცია ჯერ არ არის აქტიური')}
       >
         {buttonText}
