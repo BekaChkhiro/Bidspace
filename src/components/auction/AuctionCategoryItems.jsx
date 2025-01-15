@@ -1,5 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from '../ui/carousel'
+// Remove slick carousel imports
 import cinemaImage from '../assets/images/auction-categories/cinema_category_image.png';
 import eventsImage from '../assets/images/auction-categories/events_category_image.png';
 import sportImage from '../assets/images/auction-categories/sport_category_image.png';
@@ -16,65 +22,57 @@ const AuctionCategoryItems = () => {
     } : {};
   };
 
+  const categoryItems = [
+    { path: '/auction', title: 'ყველა კატეგორია', icon: menuIcon },
+    { path: '/theater_cinema', title: 'თეატრი-კინო', image: cinemaImage },
+    { path: '/events', title: 'ივენთები', image: eventsImage },
+    { path: '/sport', title: 'სპორტი', image: sportImage },
+    { path: '/travel', title: 'მოგზაურობა', image: travelImage },
+  ];
+
   return (
-    <div className="w-full flex justify-between items-stretch gap-7">
-      <Link 
-        to="/auction" 
-        className="w-1/5 px-7 py-7 flex flex-col gap-7 items-center rounded-3xl bg-gray-300"
-        style={getActiveStyle('/auction')}
-      >
-        <span className="text-sm xl:text-xl text-gray-900">ყველა კატეგორია</span>
-        <img src={menuIcon} className="w-9 h-9" alt="menu_icon" />
-      </Link>
+    <>
+      {/* Desktop version */}
+      <div className="hidden md:flex w-full justify-between items-stretch gap-7">
+        {categoryItems.map(item => (
+          <Link 
+            key={item.path}
+            to={item.path} 
+            className="w-1/5 px-7 py-7 flex flex-col gap-7 items-center justify-top rounded-3xl h-36 bg-gray-300 bg-no-repeat bg-right-bottom"
+            style={{ 
+              ...getActiveStyle(item.path),
+              ...(item.image && { backgroundImage: `url(${item.image})`, backgroundSize: '70px' })
+            }}
+          >
+            <span className="text-sm xl:text-xl text-gray-900">{item.title}</span>
+            {item.icon && <img src={item.icon} className="w-9 h-9" alt="menu_icon" />}
+          </Link>
+        ))}
+      </div>
 
-      <Link 
-        to="/theater_cinema" 
-        className="w-1/5 px-7 py-7 flex flex-col gap-7 items-center justify-top rounded-3xl h-36 bg-gray-300 bg-no-repeat bg-right-bottom" 
-        style={{ 
-          ...getActiveStyle('/theater_cinema'),
-          backgroundImage: `url(${cinemaImage})`, 
-          backgroundSize: '70px' 
-        }}
-      >
-        <span className="text-sm xl:text-xl text-gray-900">თეატრი-კინო</span>
-      </Link>
-
-      <Link 
-        to="/events" 
-        className="w-1/5 px-7 py-7 flex flex-col gap-7 items-center justify-top rounded-3xl h-36 bg-gray-300 bg-no-repeat bg-right-bottom"
-        style={{ 
-          ...getActiveStyle('/events'),
-          backgroundImage: `url(${eventsImage})`, 
-          backgroundSize: '70px' 
-        }}
-      >
-        <span className="text-sm xl:text-xl text-gray-900">ივენთები</span>
-      </Link>
-
-      <Link 
-        to="/sport" 
-        className="w-1/5 px-7 py-7 flex flex-col gap-7 items-center justify-top rounded-3xl h-36 bg-gray-300 bg-no-repeat bg-right-bottom"
-        style={{ 
-          ...getActiveStyle('/sport'),
-          backgroundImage: `url(${sportImage})`, 
-          backgroundSize: '70px' 
-        }}
-      >
-        <span className="text-sm xl:text-xl text-gray-900">სპორტი</span>
-      </Link>
-
-      <Link 
-        to="/travel" 
-        className="w-1/5 px-7 py-7 flex flex-col gap-7 items-center justify-top rounded-3xl h-36 bg-gray-300 bg-no-repeat bg-right-bottom"
-        style={{ 
-          ...getActiveStyle('/travel'),
-          backgroundImage: `url(${travelImage})`, 
-          backgroundSize: '70px' 
-        }}
-      >
-        <span className="text-sm xl:text-xl text-gray-900">მოგზაურობა</span>
-      </Link>
-    </div>
+      {/* Mobile version */}
+      <div className="md:hidden w-full">
+        <Carousel className="overflow-hidden">
+          <CarouselContent className="-ml-2">
+            {categoryItems.map((item) => (
+              <CarouselItem key={item.path} className="pl-2 basis-[38%]">
+                <Link 
+                  to={item.path} 
+                  className="block w-full px-3 py-3 flex flex-col gap-3 items-center justify-top rounded-2xl h-[80px] bg-gray-300 bg-no-repeat bg-right-bottom"
+                  style={{ 
+                    ...getActiveStyle(item.path),
+                    ...(item.image && { backgroundImage: `url(${item.image})`, backgroundSize: '45px' })
+                  }}
+                >
+                  <span className="text-xs text-gray-900 text-center">{item.title}</span>
+                  {item.icon && <img src={item.icon} className="w-6 h-6" alt="menu_icon" />}
+                </Link>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+      </div>
+    </>
   );
 };
 

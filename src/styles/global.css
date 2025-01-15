@@ -1,0 +1,35 @@
+/* Custom dots styling */
+.custom-dots {
+  bottom: -20px;
+}
+
+.custom-dots li {
+  margin: 0 2px;
+}
+
+.custom-dots li button:before {
+  font-size: 5px;
+  color: #00adef;
+  opacity: 0.25;
+}
+
+.custom-dots li.slick-active button:before {
+  opacity: 1;
+  color: #00adef;
+}
+
+/* Carousel item styling */
+.slick-track {
+  margin-left: 0;
+  display: flex;
+  align-items: center;
+}
+
+.slick-list {
+  padding: 0 16px !important;
+}
+
+/* Fix carousel item width */
+.slick-slide {
+  margin: 0 4px;
+}
