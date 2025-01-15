@@ -52,7 +52,15 @@ const AuctionCategoryItems = () => {
 
       {/* Mobile version */}
       <div className="md:hidden w-full">
-        <Carousel className="overflow-hidden">
+        <Carousel 
+          opts={{
+            dragFree: true,
+            containScroll: "trimSnaps",
+            skipSnaps: true,
+            align: 'start',
+          }} 
+          className="overflow-hidden pb-4"
+        >
           <CarouselContent className="-ml-2">
             {categoryItems.map((item) => (
               <CarouselItem key={item.path} className="pl-2 basis-[38%]">

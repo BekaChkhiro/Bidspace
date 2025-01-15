@@ -9,6 +9,8 @@ export function Carousel({
   children,
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
+    dragFree: true,
+    containScroll: "trimSnaps",
     ...opts,
     align: 'start',
   })
