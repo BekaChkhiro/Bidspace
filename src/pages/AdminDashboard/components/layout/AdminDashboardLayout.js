@@ -10,7 +10,6 @@ const AdminDashboardLayout = ({ children }) => {
 
   return (
     <div className="w-full min-h-screen bg-[#F9F9F9]">
-      {/* Top Header */}
         <div className="w-full p-4 md:p-6 border-b border-[#E5E5E5] bg-white flex justify-between items-center gap-4 md:gap-6 fixed top-0 left-0 z-40">
           <button
             className="md:hidden"
@@ -20,7 +19,9 @@ const AdminDashboardLayout = ({ children }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <img src={BidspaceLogo} alt="Bidspace Logo" className="w-24 md:w-28" />
+          <Link to="/">
+            <img src={BidspaceLogo} alt="Bidspace Logo" className="w-24 md:w-28" />
+          </Link>
           <div className='hidden md:flex w-4/5 justify-end gap-6 items-center'>
             <SearchBar />
             <UserProfile />
@@ -31,7 +32,7 @@ const AdminDashboardLayout = ({ children }) => {
         </div>
 
         {/* Navigation Container - Always Visible */}
-        <div className="mt-[90px] hidden md:block">
+        <div className="mt-[73px] hidden md:block">
           <AdminNav />
         </div>
 
