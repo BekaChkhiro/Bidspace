@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkbrads_boilerplate_theme=self.webpackChunkbrads_boilerplate_theme||[]).push([[225],{225:(e,t,a)=>{a.r(t),a.d(t,{default:()=>s});var l=a(609);const s=()=>(0,l.createElement)("div",{className:"container mx-auto px-4 py-8"},(0,l.createElement)("h1",{className:"text-3xl font-bold mb-8"},"პარამეტრები"))}}]);

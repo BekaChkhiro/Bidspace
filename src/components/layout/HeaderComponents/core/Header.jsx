@@ -19,7 +19,7 @@ const Header = ({ onLoginClick }) => {
 
   return (
     <>
-      <header className='w-full px-4 md:px-8 lg:px-16 py-4 flex flex-wrap md:flex-nowrap gap-4 md:gap-8 lg:gap-12 items-center header-bg z-10 overflow-hidden'>
+      <header className='w-full px-4 md:px-8 lg:px-16 py-4 flex flex-wrap md:flex-nowrap gap-4 md:gap-8 lg:gap-12 items-center header-bg z-[50] relative'>
         <div className='w-full md:w-4/12 flex justify-between items-center'>
           <div className='w-1/3'>
             <Link to='/'>
@@ -38,8 +38,8 @@ const Header = ({ onLoginClick }) => {
         </div>
 
         <div className='hidden md:flex w-8/12 justify-between items-center'>
-          <nav className='w-auto'>
-            <ul className='flex gap-8'>
+          <nav className='w-1/2'>
+            <ul className='flex gap-8 justify-center'>
               <li>
                 <Link to='/forum' className='text-black text-lg font-bold hover:text-[#00adef] transition-colors'>
                   ფორუმი
@@ -58,7 +58,7 @@ const Header = ({ onLoginClick }) => {
             </ul>
           </nav>
 
-          <div className='flex gap-4 items-center'>
+          <div className='w-1/2 flex gap-4 justify-end items-center'>
             <button className='flex items-center py-2 px-4 gap-1.5 bg-white rounded-full hover:bg-gray-50 transition-colors'>
               <img className='w-6 h-6' src={languageIcon} alt='Language Icon' />
               <span className="font-medium">ქარ</span>
