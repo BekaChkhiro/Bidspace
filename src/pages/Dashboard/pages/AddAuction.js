@@ -354,10 +354,10 @@ const AddAuction = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-row -mx-3 justify-between gap-6 h-full">
+      <div className="flex flex-col lg:flex-row -mx-3 justify-between gap-6 h-full">
         {/* Left side - Form */}
-        <div className="w-full lg:w-8/12 px-3 h-[80vh] overflow-y-auto pr-5">
-          <h2 className="text-2xl font-bold mb-6">აუქციონის დამატება</h2>
+        <div className="w-full lg:w-8/12 px-4 h-[80vh] overflow-y-auto lg:pr-5">
+          <h2 className="text-2xl font-bold mt-3 mb-6">აუქციონის დამატება</h2>
           
           {error && (
             <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
@@ -387,7 +387,7 @@ const AddAuction = () => {
 
           {successMessage}
 
-          <form onSubmit={handleSubmit} className="space-y-6" id="add-auction-form">
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6" id="add-auction-form">
             {/* Step 1: Title */}
             <div id="step1" style={{ display: showStep(1) ? 'block' : 'none' }}>
               <div>
@@ -406,7 +406,7 @@ const AddAuction = () => {
             {/* Step 2: Category Selection */}
             <div id="step2" style={{ display: showStep(2) ? 'block' : 'none' }}>
               <h3 className="text-lg font-medium mb-4">აირჩიეთ კატეგორია</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 {['თეატრი-კინო', 'ივენთები', 'სპორტი', 'მოგზაურობა'].map(category => (
                   <button
                     key={category}
@@ -430,7 +430,7 @@ const AddAuction = () => {
                 {/* City Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">ქალაქი</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 md:gap-4">
                     {[
                       { value: 'tbilisi', label: 'თბილისი' },
                       { value: 'batumi', label: 'ბათუმი' },
@@ -533,7 +533,7 @@ const AddAuction = () => {
             {/* Step 4: Auction Details */}
             <div id="step4" style={{ display: showStep(4) ? 'block' : 'none' }}>
               <h3 className="text-lg font-medium mb-4">აუქციონის დეტალები</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="start_time" className="block text-sm font-medium text-gray-700">დაწყების დრო</label>
                   <DateTimePicker
@@ -652,7 +652,7 @@ const AddAuction = () => {
         </div>
 
         {/* Right side - Preview */}
-        <div className="w-full lg:w-4/12 px-6 border-l">
+        <div className="w-full lg:w-4/12 mt-6 lg:mt-0 px-3 lg:px-6 lg:border-l">
           <h2 className="text-2xl font-bold mb-6">აუქციონის დეტალები</h2>
           <div className="bg-white rounded-2xl p-4 shadow-lg flex flex-col justify-between sticky top-0">
             <div className="relative h-[180px]">

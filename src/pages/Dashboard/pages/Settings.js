@@ -122,7 +122,7 @@ function Settings() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6 max-w-4xl mx-auto">
+      <div className="flex flex-col gap-6 max-w-4xl mx-auto px-4 md:px-6">
         {toast && (
           <div className="fixed bottom-4 right-4 z-50">
             <Alert
@@ -132,9 +132,9 @@ function Settings() {
             />
           </div>
         )}
-        <h2 className="text-2xl font-bold">პირადი მონაცემების რედაქტირება</h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+        <h2 className="text-xl md:text-2xl font-bold">პირადი მონაცემების რედაქტირება</h2>
+        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">სახელი</label>
               <input type="text" id="first_name" name="first_name" value={userData.first_name} onChange={handleInputChange} required className="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
@@ -144,7 +144,7 @@ function Settings() {
               <input type="text" id="last_name" name="last_name" value={userData.last_name} onChange={handleInputChange} required className="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">ელ-ფოსტა</label>
               <div className="mt-1 relative">
@@ -186,7 +186,7 @@ function Settings() {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="nickname" className="block text-sm font-medium text-gray-700">მომხმარებლის სახელი</label>
               <input type="text" id="nickname" name="nickname" value={userData.nickname} onChange={handleInputChange} required className="settings-field-style mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
@@ -199,7 +199,7 @@ function Settings() {
           <div className="flex">
             <button
               type="submit"
-              className="w-full inline-flex justify-center py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors disabled:bg-gray-400"
+              className="w-full md:w-auto px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800"
               disabled={loading}
             >
               შენახვა

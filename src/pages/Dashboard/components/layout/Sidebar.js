@@ -12,7 +12,7 @@ import SettingsIcon from '../../../../assets/icons/dashboard/setting_icon.svg';
 import LogoutIcon from '../../../../assets/icons/dashboard/logout_icon.svg';
 import Logo from '../../../../assets/images/bidspace_logo.png';
 
-const Sidebar = () => {
+const Sidebar = ({ isMobile, onClose }) => {
   const location = useLocation();
   const { logout } = useAuth();
 
@@ -32,10 +32,26 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="w-1/6 h-full bg-white flex flex-col justify-between border-r border-[#E5E5E5] pb-6">
+    <div className="h-full bg-white flex flex-col justify-between border-r border-[#E5E5E5] pb-6">
       <div className="flex flex-col gap-11">
+        {isMobile && (
+          <div className="flex justify-between items-center p-4 border-b border-[#E5E5E5]">
+          <Link to="/">
+              <img src={Logo} alt="Logo Icon" className="w-28" />
+            </Link>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        )}
+        
         {/* Logo */}
-        <div className="w-full h-24 p-6" style={{ height: '10%' }}>
+        <div className="hidden md:block w-full h-24 p-6" style={{ height: '10%' }}>
           <Link to="/">
             <img src={Logo} alt="Logo Icon" className="w-28" />
           </Link>

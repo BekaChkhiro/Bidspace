@@ -158,21 +158,39 @@ const MyAuctions = () => {
 
   return (
     <DashboardLayout>
-      <h1 className="text-2xl font-bold mb-6">ჩემი აუქციონები</h1>
-      <div className="bg-white p-6 rounded-lg shadow">
-        {loading ? (
-          <div className="text-center">
-            <p className="text-[#6F7181]">იტვირთება...</p>
+      <div className="container mx-auto px-4 md:px-6">
+        <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">ჩემი აუქციონები</h1>
+        
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+          {loading ? (
+            <div className="text-center">
+              <p className="text-[#6F7181]">იტვირთება...</p>
+            </div>
+          ) : auctions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {renderAuctionsList()}
+            </div>
+          ) : (
+            <div className="border p-4 rounded">
+              <p className="text-[#6F7181]">ჯერ არ გაქვთ აუქციონები</p>
+            </div>
+          )}
+        </div>
+
+        {deleteModal?.show && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 p-4 md:p-0">
+            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              {renderDeleteModal()}
+            </div>
           </div>
-        ) : auctions.length > 0 ? (
-          renderAuctionsList()
-        ) : (
-          <div className="border p-4 rounded">
-            <p className="text-[#6F7181]">ჯერ არ გაქვთ აუქციონები</p>
+        )}
+
+        {toast?.show && (
+          <div className="fixed bottom-4 right-4 left-4 md:left-auto md:max-w-md bg-[#06afef] text-white px-4 md:px-6 py-3 rounded-lg shadow-lg z-50">
+            {/* ...toast content... */}
           </div>
         )}
       </div>
-      {renderDeleteModal()}
     </DashboardLayout>
   );
 };

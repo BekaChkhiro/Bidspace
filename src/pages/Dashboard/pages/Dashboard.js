@@ -169,20 +169,20 @@ const Dashboard = () => {
     if (!deleteModal.show) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <h3 className="text-xl font-semibold mb-4">აუქციონის წაშლა</h3>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-4 md:p-6 max-w-md w-full mx-4">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">აუქციონის წაშლა</h3>
           <p className="text-gray-600 mb-6">ნამდვილად გსურთ აუქციონის წაშლა?</p>
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-3 md:gap-4">
             <button
               onClick={() => setDeleteModal({ show: false, auctionId: null, title: '' })}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium rounded-lg"
+              className="px-3 md:px-4 py-2 text-gray-600 hover:text-gray-800 font-medium rounded-lg"
             >
               გაუქმება
             </button>
             <button
               onClick={handleDeleteConfirm}
-              className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700"
+              className="px-3 md:px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700"
             >
               წაშლა
             </button>
@@ -196,7 +196,7 @@ const Dashboard = () => {
     if (!toast.show) return null;
 
     return (
-      <div className="fixed bottom-4 right-4 bg-[#06afef] text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up">
+      <div className="fixed bottom-4 right-4 left-4 md:left-auto bg-[#06afef] text-white px-4 md:px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up md:max-w-md">
         {toast.message}
       </div>
     );
@@ -241,11 +241,12 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div>
-        <div className="w-full flex flex-col gap-3 p-6 bg-white rounded-2xl mb-6">
+        {/* Stats Cards - Responsive */}
+        <div className="w-full flex flex-col gap-3 p-4 md:p-6 bg-white rounded-2xl mb-6">
           <span className="text-lg font-bold">დღეს</span>
-          <div className="w-full flex justify-between items-center gap-4">
+          <div className="w-full flex flex-col md:flex-row justify-between items-stretch gap-4">
             <div 
-              className="w-1/3 flex flex-col gap-6 p-4 rounded-2xl" 
+              className="w-full md:w-1/3 flex flex-col gap-6 p-4 rounded-2xl" 
               style={{
                 background: `url(${WinAuctionsIcon}), #DCFCE7`,
                 backgroundRepeat: 'no-repeat',
@@ -253,12 +254,12 @@ const Dashboard = () => {
                 backgroundPosition: 'bottom 10px right 10px'
               }}
             >
-              <span className="text-lg font-bold">მოგებული აუქციონები</span>
-              <span className="font-bold text-3xl">{stats.won}</span>
+              <span className="text-base md:text-lg font-bold">მოგებული აუქციონები</span>
+              <span className="font-bold text-2xl md:text-3xl">{stats.won}</span>
             </div>
 
             <div 
-              className="w-1/3 flex flex-col gap-6 p-4 rounded-2xl"
+              className="w-full md:w-1/3 flex flex-col gap-6 p-4 rounded-2xl"
               style={{
                 background: `url(${ActiveAuctionsIcon}), #FFF4DE`,
                 backgroundRepeat: 'no-repeat',
@@ -266,12 +267,12 @@ const Dashboard = () => {
                 backgroundPosition: 'bottom 10px right 10px'
               }}
             >
-              <span className="text-lg font-bold">მიმდინარე აუქციონები</span>
-              <span className="font-bold text-3xl">{stats.active}</span>
+              <span className="text-base md:text-lg font-bold">მიმდინარე აუქციონები</span>
+              <span className="font-bold text-2xl md:text-3xl">{stats.active}</span>
             </div>
 
             <div 
-              className="w-1/3 flex flex-col gap-4 p-6 rounded-2xl"
+              className="w-full md:w-1/3 flex flex-col gap-4 p-4 md:p-6 rounded-2xl"
               style={{
                 background: `url(${EndAuctionsIcon}), #F3E8FF`,
                 backgroundRepeat: 'no-repeat',
@@ -279,28 +280,58 @@ const Dashboard = () => {
                 backgroundPosition: 'bottom 10px right 10px'
               }}
             >
-              <span className="text-lg font-bold">დასრულებული აუქციონები</span>
-              <span className="font-bold text-3xl">{stats.ended}</span>
+              <span className="text-base md:text-lg font-bold">დასრულებული აუქციონები</span>
+              <span className="font-bold text-2xl md:text-3xl">{stats.ended}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        {/* Auctions List - Responsive */}
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow">
           {loading ? (
-            <div className="text-center">
+            <div className="text-center py-8">
               <p className="text-[#6F7181]">იტვირთება...</p>
             </div>
           ) : auctions.length > 0 ? (
             renderAuctionsList()
           ) : (
-            <div className="border p-4 rounded">
+            <div className="border p-4 rounded text-center md:text-left">
               <p className="text-[#6F7181]">ჯერ არ გაქვთ აუქციონები</p>
             </div>
           )}
         </div>
       </div>
-      {renderDeleteModal()}
-      {renderToast()}
+
+      {/* Modal - Responsive */}
+      {deleteModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 md:p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg md:text-xl font-semibold mb-4">აუქციონის წაშლა</h3>
+            <p className="text-gray-600 mb-6">ნამდვილად გსურთ აუქციონის წაშლა?</p>
+            <div className="flex justify-end gap-3 md:gap-4">
+              <button
+                onClick={() => setDeleteModal({ show: false, auctionId: null, title: '' })}
+                className="px-3 md:px-4 py-2 text-gray-600 hover:text-gray-800 font-medium rounded-lg"
+              >
+                გაუქმება
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-3 md:px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700"
+              >
+                წაშლა
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast - Responsive */}
+      {toast.show && (
+        <div className="fixed bottom-4 right-4 left-4 md:left-auto bg-[#06afef] text-white px-4 md:px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up md:max-w-md">
+          {toast.message}
+        </div>
+      )}
     </DashboardLayout>
   );
 };
