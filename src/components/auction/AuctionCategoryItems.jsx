@@ -56,14 +56,17 @@ const AuctionCategoryItems = () => {
           opts={{
             dragFree: true,
             containScroll: "trimSnaps",
-            skipSnaps: true,
+            skipSnaps: false,
             align: 'start',
+            breakpoints: {
+              '(max-width: 768px)': { slidesToShow: 2.5 }
+            }
           }} 
           className="overflow-hidden pb-4"
         >
           <CarouselContent className="-ml-2">
             {categoryItems.map((item) => (
-              <CarouselItem key={item.path} className="pl-2 basis-[38%]">
+              <CarouselItem key={item.path} className="pl-2 basis-[40%]">
                 <Link 
                   to={item.path} 
                   className="block w-full px-3 py-3 flex flex-col gap-3 items-center justify-top rounded-2xl h-[80px] bg-gray-300 bg-no-repeat bg-right-bottom"

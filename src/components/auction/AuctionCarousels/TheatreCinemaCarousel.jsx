@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useCustomToast from '../../../components/toast/CustomToast';
 import AuctionItem from '../../../pages/AuctionArchive/components/AuctionItem';
+import { Carousel, CarouselContent, CarouselItem } from '../../../components/ui/carousel';
 
 const SkeletonLoader = () => (
   <div className="bg-white rounded-2xl p-4 shadow-lg flex flex-col justify-between animate-pulse">
@@ -134,24 +135,53 @@ const TheatreCinemaCarousel = () => {
   }, []);
 
   useEffect(() => {
-    const fetchTheatreCinemaAuctions = async () => {
+    const fetchTheatreCinemaAuctions = async (retryCount = 0) => {
       try {
-        const response = await fetch('/wp-json/wp/v2/auction?_embed&per_page=3&categories=YOUR_CATEGORY_ID&orderby=date&order=desc');
+        const response = await fetch('/wp-json/wp/v2/auction?per_page=100&_embed', {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        });
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch auctions');
+          throw new Error(`Server responded with ${response.status}`);
         }
+
         const data = await response.json();
-        setTheatreCinemaAuctions(data);
+        
+        // ფილტრაცია ticket_category-ის მიხედვით
+        const theatreCinemaAuctions = data.filter(auction => 
+          auction.meta.ticket_category === "თეატრი-კინო"
+        );
+
+        if (theatreCinemaAuctions.length === 0) {
+          setError('ამ კატეგორიაში აუქციონები ვერ მოიძებნა');
+          return;
+        }
+
+        setTheatreCinemaAuctions(theatreCinemaAuctions);
+        setError(null);
+
       } catch (error) {
-        setError('აუქციონების ჩატვირთვისას მოხდა შეცდომა');
-        toast('აუქციონების ჩატვირთვისას მოხდა შეცდომა');
+        console.error('Error fetching auctions:', error);
+        
+        if (retryCount < 2) {
+          setTimeout(() => {
+            fetchTheatreCinemaAuctions(retryCount + 1);
+          }, 2000);
+        } else {
+          setError('აუქციონების ჩატვირთვა ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან.');
+          toast('აუქციონების ჩატვირთვა ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchTheatreCinemaAuctions();
-  }, []);
+  }, [toast]);
 
   if (loading) {
     return (
@@ -177,20 +207,35 @@ const TheatreCinemaCarousel = () => {
   return (
     <div className="theatre-cinema-auctions-carousel">
       <h3 className="text-2xl font-bold text-center text-black mb-12">{texts.auctionsTitle}</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {theatreCinemaAuctions.map(auction => (
-          <div key={auction.id}>
-            <AuctionItem
-              auction={auction}
-              texts={texts}
-              wishlist={wishlist}
-              onWishlistToggle={handleWishlistToggle}
-              getFeaturedImageUrl={getFeaturedImageUrl}
-              handleImageError={handleImageError}
-            />
-          </div>
-        ))}
-      </div>
+      <Carousel 
+        className="w-full" 
+        opts={{
+          dragFree: true,
+          containScroll: "trimSnaps",
+          slidesToScroll: 1,
+          align: "start",
+          breakpoints: {
+            '(min-width: 1024px)': { slidesToShow: 3.5 },
+            '(min-width: 768px)': { slidesToShow: 2.5 },
+            '(max-width: 767px)': { slidesToShow: 1.5 }
+          }
+        }}
+      >
+        <CarouselContent>
+          {theatreCinemaAuctions.map(auction => (
+            <CarouselItem key={auction.id} className="basis-[85%] md:basis-[45%] lg:basis-[30%]">
+              <AuctionItem
+                auction={auction}
+                texts={texts}
+                wishlist={wishlist}
+                onWishlistToggle={handleWishlistToggle}
+                getFeaturedImageUrl={getFeaturedImageUrl}
+                handleImageError={handleImageError}
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
     </div>
   );
 };

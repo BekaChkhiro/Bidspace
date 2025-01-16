@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 import { Link } from 'react-router-dom';
+import useCustomToast from '../../../components/toast/CustomToast';
+import AuctionItem from '../../../pages/AuctionArchive/components/AuctionItem';
+import { Carousel, CarouselContent, CarouselItem } from '../../../components/ui/carousel';
 
 const AuctionTimer = ({ endDate, texts }) => {
   const [days, setDays] = useState(0);
@@ -106,6 +104,8 @@ const EventCarousel = () => {
   const [eventAuctions, setEventAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [wishlist, setWishlist] = useState([]);
+  const toast = useCustomToast();
 
   const texts = {
     auctionsTitle: "ივენთები",
@@ -133,117 +133,105 @@ const EventCarousel = () => {
     }
   };
 
-  const getAuctionLink = (auctionId) => {
-    return `/auction/${auctionId}`;
-  };
-
   const handleImageError = (event) => {
     event.target.src = '/placeholder.jpg';
   };
 
-  useEffect(() => {
-    const fetchEventAuctions = async () => {
-      try {
-        const response = await fetch('/wp-json/wp/v2/auction?_embed&per_page=3&categories_name=ივენთები&orderby=date&order=desc');
-        if (!response.ok) {
-          throw new Error('Failed to fetch auctions');
+  const handleWishlistToggle = async (e, auctionId) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`/wp-json/custom/v1/wishlist/toggle/${auctionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': window.wpApiSettings?.nonce
         }
-        const data = await response.json();
-        setEventAuctions(data);
+      });
+
+      if (response.ok) {
+        setWishlist(prev => {
+          const isInWishlist = prev.includes(Number(auctionId));
+          if (isInWishlist) {
+            toast("აუქციონი წაიშალა სურვილების სიიდან");
+            return prev.filter(id => id !== Number(auctionId));
+          } else {
+            toast("აუქციონი დაემატა სურვილების სიაში");
+            return [...prev, Number(auctionId)];
+          }
+        });
+      } else {
+        throw new Error('Failed to toggle wishlist');
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      toast("შეცდომა სურვილების სიის განახლებისას");
+    }
+  };
+
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      try {
+        const response = await fetch('/wp-json/custom/v1/wishlist');
+        if (response.ok) {
+          const data = await response.json();
+          setWishlist(data.map(Number));
+        }
       } catch (error) {
-        setError('აუქციონების ჩატვირთვისას მოხდა შეცდომა');
+        console.error('Error fetching wishlist:', error);
+      }
+    };
+
+    fetchWishlist();
+  }, []);
+
+  useEffect(() => {
+    const fetchEventAuctions = async (retryCount = 0) => {
+      try {
+        const response = await fetch('/wp-json/wp/v2/auction?per_page=100&_embed', {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // ფილტრაცია ticket_category-ის მიხედვით
+        const eventAuctions = data.filter(auction => 
+          auction.meta.ticket_category === "ივენთები"
+        );
+
+        if (eventAuctions.length === 0) {
+          setError('ამ კატეგორიაში აუქციონები ვერ მოიძებნა');
+          return;
+        }
+
+        setEventAuctions(eventAuctions);
+        setError(null);
+
+      } catch (error) {
+        console.error('Error fetching auctions:', error);
+        
+        if (retryCount < 2) {
+          setTimeout(() => {
+            fetchEventAuctions(retryCount + 1);
+          }, 2000);
+        } else {
+          setError('აუქციონების ჩატვირთვა ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან.');
+          toast('აუქციონების ჩატვირთვა ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchEventAuctions();
-  }, []);
-
-  const getBadgeStyle = (auction) => {
-    const now = Date.now();
-    const startTime = new Date(auction.meta.start_time).getTime();
-    const endTime = new Date(auction.meta.due_time).getTime();
-
-    if (startTime > now) {
-      return { backgroundColor: '#FF5733' };
-    } else if (endTime > now) {  
-      return { backgroundColor: '#19B200' };
-    } else {
-      return { backgroundColor: '#848484' };
-    }
-  };
-
-  const getAuctionStatus = (auction) => {
-    const now = Date.now();
-    const startTime = new Date(auction.meta.start_time).getTime();
-    const endTime = new Date(auction.meta.due_time).getTime();
-    
-    if (startTime > now) {
-      return 'იწყება';
-    } else if (endTime > now) {
-      return 'აქტიური';
-    } else {
-      return 'დასრულებული';
-    }
-  };
-
-  const renderAuctionCard = (auction) => (
-    <div className="bg-white rounded-2xl p-4 shadow-lg flex flex-col justify-between">
-      <Link to={getAuctionLink(auction.id)} className="flex flex-col gap-4">
-        <div className="relative" style={{ height: '180px' }}>
-          <img
-            src={getFeaturedImageUrl(auction)}
-            alt={auction.title.rendered}  
-            className="w-full h-full object-cover rounded-xl"
-            onError={handleImageError}
-          />
-          <div 
-            className="absolute top-2 left-2 px-2 py-1 rounded-full text-white text-sm" 
-            style={getBadgeStyle(auction)}
-          >
-            {getAuctionStatus(auction)}
-          </div>
-        </div>
-        <div className="flex justify-between gap-6 items-center">
-          <h4 className="text-lg font-bold" dangerouslySetInnerHTML={{ __html: auction.title.rendered }}></h4>
-          <img src="/heart_icon.svg" alt="heart icon" style={{ cursor: 'pointer' }} />  
-        </div>
-        <div className="flex justify-between gap-6 items-center">
-          <div className="w-1/2 flex flex-col items-start">
-            <h5 className="text-black font-normal text-lg">{texts.ticketPrice}</h5>
-            <span className="text-black font-normal text-lg">{auction.meta.ticket_price} {texts.currency}</span>
-          </div>
-          <div className="w-1/2 flex flex-col items-start">  
-            <h5 className="text-black font-normal text-lg">{texts.currentPrice}</h5>
-            <span className="text-black font-normal text-lg" style={{color: '#00AEEF'}}>
-              {auction.meta.auction_price} {texts.currency}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col items-center my-4">
-          <p className="text-lg font-bold mb-4">{texts.auctionWillEnd}</p>
-          <AuctionTimer endDate={auction.meta.due_time} texts={texts} />
-        </div>
-        <div className="flex flex-col gap-3 mt-4">
-          <Link 
-            to={getAuctionLink(auction.id)} 
-            className="w-full p-3 text-white text-center rounded-full" 
-            style={{ backgroundColor: '#00AEEF' }}
-          >
-            {texts.placeBid}
-          </Link>
-          <Link
-            to={getAuctionLink(auction.id)}  
-            className="w-full p-3 text-center rounded-full"
-            style={{ backgroundColor: '#E6E6E6' }}
-          >
-            {texts.buyNow} {auction.meta.buy_now}{texts.currency}
-          </Link>
-        </div>
-      </Link>
-    </div>
-  );
+  }, [toast]);
 
   if (loading) {
     return (
@@ -269,13 +257,35 @@ const EventCarousel = () => {
   return (
     <div className="event-auctions-carousel">
       <h3 className="text-2xl font-bold text-center text-black mb-12">{texts.auctionsTitle}</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {eventAuctions.map(auction => (
-          <div key={auction.id}>
-            {renderAuctionCard(auction)}
-          </div>
-        ))}
-      </div>
+      <Carousel 
+        className="w-full" 
+        opts={{
+          dragFree: true,
+          containScroll: "trimSnaps",
+          slidesToScroll: 1,
+          align: "start",
+          breakpoints: {
+            '(min-width: 1024px)': { slidesToShow: 3.5 },
+            '(min-width: 768px)': { slidesToShow: 2.5 },
+            '(max-width: 767px)': { slidesToShow: 1.5 }
+          }
+        }}
+      >
+        <CarouselContent>
+          {eventAuctions.map(auction => (
+            <CarouselItem key={auction.id} className="basis-[85%] md:basis-[45%] lg:basis-[30%]">
+              <AuctionItem
+                auction={auction}
+                texts={texts}
+                wishlist={wishlist}
+                onWishlistToggle={handleWishlistToggle}
+                getFeaturedImageUrl={getFeaturedImageUrl}
+                handleImageError={handleImageError}
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
     </div>
   );
 };
