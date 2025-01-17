@@ -61,10 +61,8 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     try {
       const response = await fetch('/wp-json/bidspace/v1/request-password-reset', {
         method: 'POST',
-        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': wpApiSettings.nonce
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ email: userData.email })
       });
@@ -95,10 +93,8 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     try {
       const response = await fetch('/wp-json/bidspace/v1/verify-code', {
         method: 'POST',
-        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': wpApiSettings.nonce
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
           email: userData.email,
@@ -142,10 +138,8 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     try {
       const response = await fetch('/wp-json/bidspace/v1/reset-password', {
         method: 'POST',
-        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': wpApiSettings.nonce
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           email: userData.email,
@@ -297,11 +291,12 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       
       <div className="flex flex-col gap-4">
         {renderStep()}
+        <hr className="my-4" />
         
         <button
           type="button"
           onClick={() => setIsPasswordReset(false)}
-          className="w-full text-sm border border-gray-600 text-gray-600 p-4 rounded-full hover:bg-gray-50 transition-colors"
+          className="font-bold hover:underline"
         >
           უკან დაბრუნება
         </button>

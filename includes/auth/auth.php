@@ -194,7 +194,7 @@ function custom_resend_code_endpoint($request) {
     $to = $email;
     $subject = 'ელ-ფოსტის დადასტურება';
     $message = sprintf(
-        'გამარჯობა %s,\ნ\nგთხოვთ შეიყვანოთ ეს კოდი თქვენი ანგარიშის დასადასტურებლად: %s',
+        'გამარჯობა %s,\n\nგთხოვთ შეიყვანოთ ეს კოდი თქვენი ანგარიშის დასადასტურებლად: %s',
         get_user_meta($user->ID, 'first_name', true),
         $verification_code
     );
@@ -242,7 +242,7 @@ function request_password_reset($request) {
             ], 400);
         }
 
-        require_once _DIR_ . '/twilio-config.php';
+        require_once __DIR__ . '/twilio-config.php';
         $sms_sent = send_sms_verification($phone, $verification_code);
         
         if (!$sms_sent) {
@@ -256,7 +256,7 @@ function request_password_reset($request) {
         $to = $user->user_email;
         $subject = 'პაროლის აღდგენა';
         $message = sprintf(
-            'გამარჯობა,\ნ\nგთხოვთ შეიყვანოთ ეს კოდი პაროლის აღსადგენად: %s',
+            'გამარჯობა,\n\nგთხოვთ შეიყვანოთ ეს კოდი პაროლის აღსადგენად: %s',
             $verification_code
         );
         $headers = array('Content-Type: text/plain; charset=UTF-8');
@@ -366,26 +366,35 @@ function logout_page() {
 
 // Logout endpoint
 function custom_logout_endpoint() {
+    // Force session start
+    if (!session_id()) {
+        session_start();
+    }
+
     // Clear WordPress auth cookies
     wp_clear_auth_cookie();
     
-    // Clear session
+    // Clear session data
+    $_SESSION = array();
+    
+    // Destroy session
     if (session_id()) {
         session_destroy();
     }
     
-    // Clear all WordPress cookies
-    if (isset($_COOKIE)) {
-        $cookies = array_keys($_COOKIE);
-        foreach ($cookies as $cookie) {
-            if (strpos($cookie, 'wordpress_') === 0 || strpos($cookie, 'wp-') === 0) {
-                setcookie($cookie, '', time() - 3600, '/');
-            }
-        }
+    // Clear all cookies
+    if (isset($_COOKIE[LOGGED_IN_COOKIE])) {
+        setcookie(LOGGED_IN_COOKIE, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
+    }
+    if (isset($_COOKIE[AUTH_COOKIE])) {
+        setcookie(AUTH_COOKIE, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
+    }
+    if (isset($_COOKIE[SECURE_AUTH_COOKIE])) {
+        setcookie(SECURE_AUTH_COOKIE, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
     }
 
     wp_logout();
-
+    
     return new WP_REST_Response([
         'success' => true,
         'message' => 'Successfully logged out'
@@ -486,4 +495,4 @@ add_action('rest_api_init', function() {
 add_action('init', 'redirect_login_page');
 add_action('wp_login_failed', 'login_failed');
 add_action('wp_logout', 'logout_page');
-add_filter('authenticate', 'verify_username_password', 1, 3);
+add_filter('authenticate', 'verify_username_password', 1, 3);

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoginForm from './LoginForm';
 import RegistrationForm from './RegistrationForm';
+import PasswordResetForm from './PasswordResetForm';
 
 const LoginModal = ({ isOpen, onClose }) => {
   const [isRegistration, setIsRegistration] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
+  const [isPasswordReset, setIsPasswordReset] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -201,13 +203,16 @@ const LoginModal = ({ isOpen, onClose }) => {
           </svg>
         </button>
 
-        {!isRegistration ? (
+        {isPasswordReset ? (
+          <PasswordResetForm setIsPasswordReset={setIsPasswordReset} />
+        ) : !isRegistration ? (
           <LoginForm 
             formData={formData}
             handleInputChange={handleInputChange}
             handleLogin={handleLogin}
             errorMessage={errorMessage}
             setIsRegistration={setIsRegistration}
+            setIsPasswordReset={setIsPasswordReset}
           />
         ) : !showVerification ? (
           <RegistrationForm
