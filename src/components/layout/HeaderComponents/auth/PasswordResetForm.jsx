@@ -219,6 +219,12 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
             >
               {loading ? 'გთხოვთ მოიცადოთ...' : 'კოდის დადასტურება'}
             </button>
+            <a
+              href={`mailto:${userData.email}`}
+              className="w-full text-sm text-center border border-gray-400 text-gray-600 p-4 rounded-full hover:bg-gray-50 transition-colors"
+            >
+              მეილის გახსნა
+            </a>
             {timeLeft === 0 && (
               <button
                 type="button"
