@@ -186,19 +186,19 @@ const LoginModal = ({ isOpen, onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative bg-white rounded-3xl w-full max-w-xl mx-4 my-8 overflow-y-auto" 
-           style={{ maxHeight: 'calc(100vh - 4rem)' }}>
+      <div className="relative bg-white rounded-3xl w-full max-w-xl overflow-y-auto" 
+           style={{ maxHeight: 'calc(100vh - 2rem)' }}>
         <button 
           onClick={onClose} 
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-50"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 z-50"
         >
-          <svg className="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-7 h-7 sm:w-9 sm:h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -223,9 +223,9 @@ const LoginModal = ({ isOpen, onClose }) => {
             setIsRegistration={setIsRegistration}
           />
         ) : (
-          <div className="px-9 pb-9 pt-12 flex flex-col gap-4">
-            <h3 className="text-xl font-semibold text-center">დაადასტურე კოდი</h3>
-            <p className="text-center">შეიყვანე ელ-ფოსტაზე გამოგზავნილი 6-ციფრიანი კოდი:</p>
+          <div className="px-4 sm:px-9 pb-9 pt-12 flex flex-col gap-4">
+            <h3 className="text-lg sm:text-xl font-semibold text-center">დაადასტურე კოდი</h3>
+            <p className="text-xs sm:text-sm text-center">შეიყვანე ელ-ფოსტაზე გამოგზავნილი 6-ციფრიანი კოდი:</p>
             
             <form onSubmit={handleVerification} className="flex flex-col items-center gap-4">
               <input
@@ -234,22 +234,22 @@ const LoginModal = ({ isOpen, onClose }) => {
                 value={formData.verificationCode}
                 onChange={handleInputChange}
                 maxLength={6}
-                className="px-3 py-2 border border-gray-600 rounded-2xl w-48 text-center text-2xl tracking-wider"
+                className="px-3 py-2 border border-gray-600 rounded-2xl w-36 sm:w-48 text-center text-xl sm:text-2xl tracking-wider"
                 placeholder="000000"
               />
               
               {verificationError && (
-                <div className="text-red-500 text-sm">{verificationError}</div>
+                <div className="text-red-500 text-xs sm:text-sm">{verificationError}</div>
               )}
               <button 
                 type="submit" 
-                className="w-full bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
+                className="w-full bg-black text-white p-3 sm:p-4 text-xs sm:text-sm rounded-full hover:bg-gray-900 transition-colors"
               >
                 დადასტურება
               </button>
               
-              <p className="text-sm text-gray-600 text-center mt-4">
-                არ მიგიღია კოდი? {' '}
+              <p className="text-xs sm:text-sm text-gray-600 text-center mt-4">
+                არ მიგიღიათ კოდი? {' '}
                 <button 
                   type="button"
                   onClick={() => handleRegister()}
@@ -265,7 +265,7 @@ const LoginModal = ({ isOpen, onClose }) => {
                   setShowVerification(false);
                   setVerificationError('');
                 }}
-                className="text-sm text-gray-600 hover:underline mt-2"
+                className="text-xs sm:text-sm text-gray-600 hover:underline mt-2"
               >
                 უკან დაბრუნება
               </button>
