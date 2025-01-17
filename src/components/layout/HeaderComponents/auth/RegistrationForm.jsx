@@ -111,7 +111,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
   };
 
   const renderStepIndicator = () => (
-    <div className="flex justify-center gap-2 mb-4 sm:hidden">
+    <div className="flex justify-center gap-2 mb-4">
       {[1, 2, 3].map(step => (
         <div
           key={step}
@@ -141,203 +141,107 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       {renderStepIndicator()}
       
       <form onSubmit={validateForm} className="flex flex-col gap-4">
-        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 ${!window.matchMedia('(max-width: 640px)').matches ? '' : 'hidden sm:grid'}`}>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">სახელი</label>
-            <input
-              name="regFirstName"
-              type="text"
-              value={formData.regFirstName}
-              onChange={handleInputChange}
-              className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">გვარი</label>
-            <input
-              name="regLastName"
-              type="text"
-              value={formData.regLastName}
-              onChange={handleInputChange}
-              className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">ელ-ფოსტა</label>
-            <input
-              name="regEmail"
-              type="email"
-              value={formData.regEmail}
-              onChange={handleInputChange}
-              className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">ტელეფონი</label>
-            <input
-              name="regPhone"
-              type="tel"
-              value={formData.regPhone}
-              onChange={handleInputChange}
-              className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
-              placeholder="5XXXXXXXX"
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">მომხმარებლის სახელი</label>
-            <input
-              name="regUsername"
-              type="text"
-              value={formData.regUsername}
-              onChange={handleInputChange}
-              className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">პირადი ნომერი</label>
-            <input
-              name="regPersonalNumber"
-              type="text"
-              value={formData.regPersonalNumber}
-              onChange={handleInputChange}
-              className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
-              maxLength={11}
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">პაროლი</label>
-            <input
-              name="regPassword"
-              type="password"
-              value={formData.regPassword}
-              onChange={handleInputChange}
-              className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
-              minLength={8}
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs sm:text-sm text-gray-600">გაიმეორეთ პაროლი</label>
-            <input
-              name="regConfirmPassword"
-              type="password"
-              value={formData.regConfirmPassword}
-              onChange={handleInputChange}
-              className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
-              minLength={8}
-              required
-            />
-          </div>
-        </div>
-
-        {/* Mobile stepped form */}
-        <div className="sm:hidden">
+        <div className="flex flex-col gap-3">
           {currentStep === 1 && (
-            <div className="flex flex-col gap-3">
+            <>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-gray-600">სახელი</label>
+                <label className="text-xs sm:text-sm text-gray-600">სახელი</label>
                 <input
                   name="regFirstName"
                   type="text"
                   value={formData.regFirstName}
                   onChange={handleInputChange}
-                  className="px-3 py-2 text-sm border border-gray-600 rounded-2xl"
+                  className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
                   required
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-gray-600">გვარი</label>
+                <label className="text-xs sm:text-sm text-gray-600">გვარი</label>
                 <input
                   name="regLastName"
                   type="text"
                   value={formData.regLastName}
                   onChange={handleInputChange}
-                  className="px-3 py-2 text-sm border border-gray-600 rounded-2xl"
+                  className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
                   required
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-gray-600">ელ-ფოსტა</label>
+                <label className="text-xs sm:text-sm text-gray-600">ელ-ფოსტა</label>
                 <input
                   name="regEmail"
                   type="email"
                   value={formData.regEmail}
                   onChange={handleInputChange}
-                  className="px-3 py-2 text-sm border border-gray-600 rounded-2xl"
+                  className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
                   required
                 />
               </div>
-            </div>
+            </>
           )}
 
           {currentStep === 2 && (
-            <div className="flex flex-col gap-3">
+            <>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-gray-600">ტელეფონი</label>
+                <label className="text-xs sm:text-sm text-gray-600">ტელეფონი</label>
                 <input
                   name="regPhone"
                   type="tel"
                   value={formData.regPhone}
                   onChange={handleInputChange}
-                  className="px-3 py-2 text-sm border border-gray-600 rounded-2xl"
+                  className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
                   placeholder="5XXXXXXXX"
                   required
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-gray-600">მომხმარებლის სახელი</label>
+                <label className="text-xs sm:text-sm text-gray-600">მომხმარებლის სახელი</label>
                 <input
                   name="regUsername"
                   type="text"
                   value={formData.regUsername}
                   onChange={handleInputChange}
-                  className="px-3 py-2 text-sm border border-gray-600 rounded-2xl"
+                  className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
                   required
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-gray-600">პირადი ნომერი</label>
+                <label className="text-xs sm:text-sm text-gray-600">პირადი ნომერი</label>
                 <input
                   name="regPersonalNumber"
                   type="text"
                   value={formData.regPersonalNumber}
                   onChange={handleInputChange}
-                  className="px-3 py-2 text-sm border border-gray-600 rounded-2xl"
+                  className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
                   maxLength={11}
                   required
                 />
               </div>
-            </div>
+            </>
           )}
 
           {currentStep === 3 && (
-            <div className="flex flex-col gap-3">
+            <>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-gray-600">პაროლი</label>
+                <label className="text-xs sm:text-sm text-gray-600">პაროლი</label>
                 <input
                   name="regPassword"
                   type="password"
                   value={formData.regPassword}
                   onChange={handleInputChange}
-                  className="px-3 py-2 text-sm border border-gray-600 rounded-2xl"
+                  className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
                   minLength={8}
                   required
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-gray-600">გაიმეორეთ პაროლი</label>
+                <label className="text-xs sm:text-sm text-gray-600">გაიმეორეთ პაროლი</label>
                 <input
                   name="regConfirmPassword"
                   type="password"
                   value={formData.regConfirmPassword}
                   onChange={handleInputChange}
-                  className="px-3 py-2 text-sm border border-gray-600 rounded-2xl"
+                  className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
                   minLength={8}
                   required
                 />
@@ -352,21 +256,21 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
                   className="h-4 w-4 mt-1"
                   required
                 />
-                <label htmlFor="regTermsAgreed" className="text-xs text-gray-600">
+                <label htmlFor="regTermsAgreed" className="text-xs sm:text-sm text-gray-600">
                   ვეთანხმები <a href="/terms" className="underline" target="_blank" rel="noopener noreferrer">წესებს და პირობებს</a>
                 </label>
               </div>
-            </div>
+            </>
           )}
         </div>
 
-        {/* Mobile navigation buttons */}
-        <div className="flex gap-3 mt-4 sm:hidden">
+        {/* Navigation buttons */}
+        <div className="flex gap-3 mt-4">
           {currentStep > 1 && (
             <button
               type="button"
               onClick={handlePrevStep}
-              className="w-1/2 text-xs border border-black text-black p-3 rounded-full hover:bg-gray-100 transition-colors"
+              className="w-1/2 text-xs sm:text-sm border border-black text-black p-3 sm:p-4 rounded-full hover:bg-gray-100 transition-colors"
             >
               უკან
             </button>
@@ -375,27 +279,19 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             <button
               type="button"
               onClick={handleNextStep}
-              className={`${currentStep === 1 ? 'w-full' : 'w-1/2'} text-xs bg-black text-white p-3 rounded-full hover:bg-gray-900 transition-colors`}
+              className={`${currentStep === 1 ? 'w-full' : 'w-1/2'} text-xs sm:text-sm bg-black text-white p-3 sm:p-4 rounded-full hover:bg-gray-900 transition-colors`}
             >
               შემდეგი
             </button>
           ) : (
             <button
               type="submit"
-              className="w-1/2 text-xs bg-black text-white p-3 rounded-full hover:bg-gray-900 transition-colors"
+              className="w-1/2 text-xs sm:text-sm bg-black text-white p-3 sm:p-4 rounded-full hover:bg-gray-900 transition-colors"
             >
               რეგისტრაცია
             </button>
           )}
         </div>
-
-        {/* Desktop submit button */}
-        <button 
-          type="submit" 
-          className="hidden sm:block w-full text-sm bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors mt-4"
-        >
-          რეგისტრაცია
-        </button>
 
         <div className="text-center">
           <p className="text-xs sm:text-sm text-gray-800">

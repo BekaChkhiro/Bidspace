@@ -108,6 +108,70 @@ function custom_register_endpoint($request) {
 
     error_log("Verification code generated: $verification_code");
 
+    // HTML version of the email
+    $message_html = '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="' . get_template_directory_uri() . '/src/assets/images/bidspace_logo.png" alt="Bidspace Logo" style="max-width: 150px;">
+        </div>
+        
+        <div style="background: #f9f9f9; border-radius: 10px; padding: 30px; margin-bottom: 30px;">
+            <h2 style="color: #000; margin-bottom: 20px; text-align: center;">ანგარიშის დადასტურება</h2>
+            
+            <p style="margin-bottom: 20px;">გამარჯობა ' . $first_name . ',</p>
+            
+            <p style="margin-bottom: 20px;">მადლობა Bidspace-ზე დარეგისტრირებისთვის. გთხოვთ, დაადასტუროთ თქვენი ანგარიში ქვემოთ მოცემული კოდის გამოყენებით.</p>
+            
+            <div style="background: #fff; padding: 20px; border-radius: 5px; text-align: center; margin: 30px 0;">
+                <p style="font-size: 18px; margin-bottom: 10px;">თქვენი დადასტურების კოდია:</p>
+                <div style="position: relative; display: inline-block;">
+                    <h1 style="color: #000; font-size: 32px; margin: 0; padding: 10px 20px; background: #f5f5f5; border-radius: 5px; letter-spacing: 3px;">' . $verification_code . '</h1>
+                </div>
+            </div>
+            
+            <p style="color: #666; font-size: 14px;">კოდი მოქმედებს 30 წუთის განმავლობაში.</p>
+            
+            <p style="color: #666; margin-top: 30px;">თუ თქვენ არ დარეგისტრირებულხართ Bidspace-ზე, გთხოვთ უგულებელყოთ ეს შეტყობინება.</p>
+        </div>
+        
+        <div style="text-align: center; color: #666; font-size: 12px;">
+            <p>ეს არის ავტომატური შეტყობინება, გთხოვთ არ უპასუხოთ.</p>
+            <p>&copy; ' . date('Y') . ' Bidspace. ყველა უფლება დაცულია.</p>
+        </div>
+    </body>
+    </html>';
+
+    // Plain text version
+    $message_text = sprintf(
+        "ანგარიშის დადასტურება - Bidspace\n\n" .
+        "გამარჯობა %s,\n\n" .
+        "მადლობა Bidspace-ზე დარეგისტრირებისთვის. გთხოვთ, დაადასტუროთ თქვენი ანგარიში.\n\n" .
+        "თქვენი დადასტურების კოდია: %s\n\n" .
+        "კოდი მოქმედებს 30 წუთის განმავლობაში.\n\n" .
+        "თუ თქვენ არ დარეგისტრირებულხართ Bidspace-ზე, გთხოვთ უგულებელყოთ ეს შეტყობინება.\n\n" .
+        "ეს არის ავტომატური შეტყობინება, გთხოვთ არ უპასუხოთ.",
+        $first_name,
+        $verification_code
+    );
+
+    $headers = array(
+        'Content-Type: text/html; charset=UTF-8',
+        'From: Bidspace <noreply@bidspace.ge>'
+    );
+
+    $subject = 'ანგარიშის დადასტურება - Bidspace';
+
+    // Send email with both HTML and plain text versions
+    add_filter('wp_mail_content_type', function() { return "text/html"; });
+    $mail_sent = wp_mail($email, $subject, $message_html, $headers);
+    remove_filter('wp_mail_content_type', function() { return "text/html"; });
+
     // Send verification email
     $to = $email;
     $subject = 'ელ-ფოსტის დადასტურება';
