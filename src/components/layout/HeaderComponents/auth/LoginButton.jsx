@@ -27,11 +27,18 @@ const LoginButton = () => {
     try {
       const response = await fetch('/wp-json/custom/v1/logout', {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.ok) {
-        window.location.reload();
+        // Force clear any local state
+        localStorage.clear();
+        sessionStorage.clear();
+        // Redirect to home page
+        window.location.href = '/';
       } else {
         console.error('Logout failed');
       }
@@ -113,4 +120,4 @@ const LoginButton = () => {
   );
 };
 
-export default LoginButton;
+export default LoginButton;
