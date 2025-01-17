@@ -49,7 +49,7 @@ function bidspace_request_password_reset($request) {
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-            <img src="' . get_template_directory_uri() . '/src/images/logo.png" alt="Bidspace Logo" style="max-width: 150px;">
+            <img src="' . get_template_directory_uri() . '/src/assets/images/bidspace_logo.png" alt="Bidspace Logo" style="max-width: 150px;">
         </div>
         
         <div style="background: #f9f9f9; border-radius: 10px; padding: 30px; margin-bottom: 30px;">
@@ -61,10 +61,19 @@ function bidspace_request_password_reset($request) {
             
             <div style="background: #fff; padding: 20px; border-radius: 5px; text-align: center; margin: 30px 0;">
                 <p style="font-size: 18px; margin-bottom: 10px;">თქვენი დადასტურების კოდია:</p>
-                <h1 style="color: #000; font-size: 32px; margin: 0;">' . $verification_code . '</h1>
+                <div style="position: relative; display: inline-block;">
+                    <h1 style="color: #000; font-size: 32px; margin: 0; padding: 10px 20px; background: #f5f5f5; border-radius: 5px; letter-spacing: 3px;">' . $verification_code . '</h1>
+                    <button onclick="navigator.clipboard.writeText(\'' . $verification_code . '\')" style="position: absolute; top: 50%; right: -40px; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 5px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        </svg>
+                    </button>
+                </div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">დააჭირეთ კოდს ან ღილაკს კოპირებისთვის</p>
             </div>
             
-            <p style="color: #666; font-size: 14px;">კოდი მოქმედებს 30 წუთის განმავლობაში.</p>
+            <p style="color: #666; font-size: 14px;">კოდი მოქმედებს 60 წამის განმავლობაში.</p>
             
             <p style="color: #666; margin-top: 30px;">თუ თქვენ არ მოგითხოვიათ პაროლის აღდგენა, გთხოვთ უგულებელყოთ ეს შეტყობინება.</p>
         </div>
@@ -83,7 +92,7 @@ function bidspace_request_password_reset($request) {
         "გამარჯობა,\n\n" .
         "მივიღეთ თქვენი მოთხოვნა Bidspace-ზე პაროლის აღდგენის შესახებ.\n\n" .
         "თქვენი დადასტურების კოდია: %s\n\n" .
-        "კოდი მოქმედებს 30 წუთის განმავლობაში.\n\n" .
+        "კოდი მოქმედებს 60 წამის განმავლობაში.\n\n" .
         "თუ თქვენ არ მოგითხოვიათ პაროლის აღდგენა, გთხოვთ უგულებელყოთ ეს შეტყობინება.\n\n" .
         "ეს არის ავტომატური შეტყობინება, გთხოვთ არ უპასუხოთ.",
         $verification_code
