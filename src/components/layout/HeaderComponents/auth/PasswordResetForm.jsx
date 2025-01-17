@@ -296,7 +296,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         <button
           type="button"
           onClick={() => setIsPasswordReset(false)}
-          className="font-bold hover:underline"
+          className="font-bold hover:underline text-gray-800"
         >
           უკან დაბრუნება
         </button>
