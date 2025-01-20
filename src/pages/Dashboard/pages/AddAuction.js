@@ -356,11 +356,11 @@ const AddAuction = () => {
     <DashboardLayout>
       <div className="flex flex-col lg:flex-row -mx-3 justify-between gap-6 h-full">
         {/* Left side - Form */}
-        <div className="w-full lg:w-8/12 px-4 h-[80vh] overflow-y-auto lg:pr-5">
-          <h2 className="text-2xl font-bold mt-3 mb-6">აუქციონის დამატება</h2>
+        <div className="w-full lg:w-8/12 px-2 md:px-4 h-[calc(100vh-100px)] md:h-[80vh] overflow-y-auto lg:pr-5">
+          <h2 className="text-xl md:text-2xl font-bold mt-2 md:mt-3 mb-4 md:mb-6">აუქციონის დამატება</h2>
           
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+            <div className="bg-red-50 border-l-4 border-red-400 p-3 md:p-4 mb-4 mx-1 md:mx-0">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -387,11 +387,11 @@ const AddAuction = () => {
 
           {successMessage}
 
-          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6" id="add-auction-form">
+          <form onSubmit={handleSubmit} className="space-y-3 md:space-y-6" id="add-auction-form">
             {/* Step 1: Title */}
             <div id="step1" style={{ display: showStep(1) ? 'block' : 'none' }}>
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">სათაური</label>
+              <div className="px-1 md:px-0">
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">სათაური</label>
                 <Input
                   id="title"
                   name="title"
@@ -405,13 +405,13 @@ const AddAuction = () => {
 
             {/* Step 2: Category Selection */}
             <div id="step2" style={{ display: showStep(2) ? 'block' : 'none' }}>
-              <h3 className="text-lg font-medium mb-4">აირჩიეთ კატეგორია</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <h3 className="text-lg font-medium mb-3 px-1 md:px-0">აირჩიეთ კატეგორია</h3>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-4 mt-2 md:mt-4 px-1 md:px-0">
                 {['თეატრი-კინო', 'ივენთები', 'სპორტი', 'მოგზაურობა'].map(category => (
                   <button
                     key={category}
                     type="button"
-                    className={`p-4 border-2 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer ${
+                    className={`p-3 md:p-4 border-2 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer ${
                       formData.category === category 
                       ? 'bg-[#00AEEF] border-[#00AEEF] text-white' 
                       : 'border-gray-200 text-gray-700 hover:border-[#00AEEF] hover:text-[#00AEEF]'
@@ -426,7 +426,7 @@ const AddAuction = () => {
 
             {/* Step 3: Category Fields */}
             <div id="step3" style={{ display: showStep(3) ? 'block' : 'none' }}>
-              <div id="category-fields" className="mt-4">
+              <div id="category-fields" className="mt-3 md:mt-4 px-1 md:px-0">
                 {/* City Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">ქალაქი</label>
@@ -435,13 +435,13 @@ const AddAuction = () => {
                       { value: 'tbilisi', label: 'თბილისი' },
                       { value: 'batumi', label: 'ბათუმი' },
                       { value: 'kutaisi', label: 'ქუთაისი' },
-                      { value: 'skhva_qalaqebi', label: 'სხვა ქალაქები' },
+                      { value: 'skhva_qalaqebi', label: 'სხვა' },
                       { value: 'sazgvargaret', label: 'საზღვარგარეთ' }
                     ].map(city => (
                       <button
                         key={city.value}
                         type="button"
-                        className={`px-4 py-2 rounded-md transition-all duration-300 ${
+                        className={`flex-1 min-w-[100px] px-2 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-md transition-all duration-300 ${
                           formData.city === city.value 
                           ? 'bg-[#00AEEF] text-white' 
                           : 'bg-gray-100 hover:bg-gray-200'
@@ -460,7 +460,7 @@ const AddAuction = () => {
                       value={formData.skhva_qalaqebi}
                       onChange={handleChange}
                       placeholder="ჩაწერეთ ქალაქი"
-                      className="mt-2"
+                      className="mt-2 w-full"
                     />
                   )}
 
@@ -471,69 +471,71 @@ const AddAuction = () => {
                       value={formData.sazgvargaret}
                       onChange={handleChange}
                       placeholder="ჩაწერეთ ქვეყანა"
-                      className="mt-2"
+                      className="mt-2 w-full"
                     />
                   )}
                 </div>
 
                 {/* Common Fields */}
-                <div className="mt-4">
-                  <label htmlFor="start_date" className="block text-sm font-medium text-gray-700">დაწყების თარიღი</label>
-                  <DateTimePicker
-                    id="start_date"
-                    date={formData.start_date}
-                    setDate={(value) => handleChange({ target: { name: 'start_date', value } })}
-                    className="mt-1 block w-full"
-                  />
-                </div>
+                <div className="space-y-3 md:space-y-4 mt-4">
+                  <div className="mt-3 md:mt-4">
+                    <label htmlFor="start_date" className="block text-sm font-medium text-gray-700">დაწყების თარიღი</label>
+                    <DateTimePicker
+                      id="start_date"
+                      date={formData.start_date}
+                      setDate={(value) => handleChange({ target: { name: 'start_date', value } })}
+                      className="mt-1 block w-full"
+                    />
+                  </div>
 
-                <div className="mt-4">
-                  <label htmlFor="ticket_price" className="block text-sm font-medium text-gray-700">ბილეთის ფასი</label>
-                  <Input
-                    type="number"
-                    id="ticket_price"
-                    name="ticket_price"
-                    value={formData.ticket_price}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full"
-                  />
-                </div>
+                  <div className="mt-3 md:mt-4">
+                    <label htmlFor="ticket_price" className="block text-sm font-medium text-gray-700">ბილეთის ფასი</label>
+                    <Input
+                      type="number"
+                      id="ticket_price"
+                      name="ticket_price"
+                      value={formData.ticket_price}
+                      onChange={handleChange}
+                      required
+                      className="mt-1 block w-full"
+                    />
+                  </div>
 
-                <div className="mt-4">
-                  <label htmlFor="ticket_quantity" className="block text-sm font-medium text-gray-700">ბილეთების რაოდენობა</label>
-                  <Input
-                    type="number"
-                    id="ticket_quantity"
-                    name="ticket_quantity"
-                    value={formData.ticket_quantity}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full"
-                  />
-                </div>
+                  <div className="mt-3 md:mt-4">
+                    <label htmlFor="ticket_quantity" className="block text-sm font-medium text-gray-700">ბილეთების რაოდენობა</label>
+                    <Input
+                      type="number"
+                      id="ticket_quantity"
+                      name="ticket_quantity"
+                      value={formData.ticket_quantity}
+                      onChange={handleChange}
+                      required
+                      className="mt-1 block w-full"
+                    />
+                  </div>
 
-                {/* Category-specific Fields */}
-                {renderCategorySpecificFields()}
+                  {/* Category-specific Fields */}
+                  {renderCategorySpecificFields()}
 
-                <div className="mt-4">
-                  <label htmlFor="ticket_information" className="block text-sm font-medium text-gray-700">ბილეთის ინფორმაცია</label>
-                  <Textarea
-                    id="ticket_information"
-                    name="ticket_information"
-                    value={formData.ticket_information}
-                    onChange={handleChange}
-                    rows="4"
-                    className="mt-1 block w-full"
-                  />
+                  <div className="mt-3 md:mt-4">
+                    <label htmlFor="ticket_information" className="block text-sm font-medium text-gray-700">ბილეთის ინფორმაცია</label>
+                    <Textarea
+                      id="ticket_information"
+                      name="ticket_information"
+                      value={formData.ticket_information}
+                      onChange={handleChange}
+                      rows="4"
+                      className="mt-1 block w-full"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Step 4: Auction Details */}
             <div id="step4" style={{ display: showStep(4) ? 'block' : 'none' }}>
-              <h3 className="text-lg font-medium mb-4">აუქციონის დეტალები</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h3 className="text-lg font-medium mb-3 md:mb-4 px-1 md:px-0">აუქციონის დეტალები</h3>
+              <div className="space-y-3 md:space-y-4 px-1 md:px-0">
                 <div>
                   <label htmlFor="start_time" className="block text-sm font-medium text-gray-700">დაწყების დრო</label>
                   <DateTimePicker
@@ -554,7 +556,7 @@ const AddAuction = () => {
                 </div>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-3 md:mt-4">
                 <label htmlFor="auction_price" className="block text-sm font-medium text-gray-700">აუქციონის ფასი</label>
                 <Input
                   type="number"
@@ -567,7 +569,7 @@ const AddAuction = () => {
                 />
               </div>
 
-              <div className="mt-4">
+              <div className="mt-3 md:mt-4">
                 <label htmlFor="min_bid_price" className="block text-sm font-medium text-gray-700">მინიმალური ბიდი</label>
                 <Input
                   type="number"
@@ -580,7 +582,7 @@ const AddAuction = () => {
                 />
               </div>
 
-              <div className="mt-4">
+              <div className="mt-3 md:mt-4">
                 <label htmlFor="buy_now" className="block text-sm font-medium text-gray-700">ახლავე ყიდვის ფასი</label>
                 <Input
                   type="number"
@@ -592,7 +594,7 @@ const AddAuction = () => {
                 />
               </div>
 
-              <div className="mt-4">
+              <div className="mt-3 md:mt-4">
                 <label htmlFor="featured_image" className="block text-sm font-medium text-gray-700">მთავარი სურათი</label>
                 {formData.featured_image ? (
                   <div className="mt-2 relative">
@@ -639,7 +641,7 @@ const AddAuction = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`mt-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white transition-colors duration-200 ${
+                className={`mt-4 w-full md:w-auto inline-flex justify-center py-3 md:py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white transition-colors duration-200 ${
                   isSubmitting 
                   ? 'bg-gray-400 cursor-not-allowed' 
                   : 'bg-[#00AEEF] hover:bg-[#0096cc] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00AEEF]'
@@ -652,7 +654,7 @@ const AddAuction = () => {
         </div>
 
         {/* Right side - Preview */}
-        <div className="w-full lg:w-4/12 mt-6 lg:mt-0 px-3 lg:px-6 lg:border-l">
+        <div className="hidden lg:block w-full lg:w-4/12 mt-6 lg:mt-0 px-3 lg:px-6 lg:border-l">
           <h2 className="text-2xl font-bold mb-6">აუქციონის დეტალები</h2>
           <div className="bg-white rounded-2xl p-4 shadow-lg flex flex-col justify-between sticky top-0">
             <div className="relative h-[180px]">
