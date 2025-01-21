@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Carousel, CarouselContent, CarouselItem } from '../../../components/ui/carousel';
+import AuctionItem from '../../../pages/AuctionArchive/components/AuctionItem';
 
 const SkeletonLoader = () => (
   <div className="bg-white rounded-2xl p-4 shadow-lg flex flex-col justify-between animate-pulse">
@@ -129,8 +131,8 @@ const RelatedAuctions = ({ currentAuctionId = '' }) => {
   useEffect(() => {
     const fetchRelatedAuctions = async () => {
       try {
-        // მხოლოდ მიმდინარე აუქციონის გამორიცხვა
-        const endpoint = `/wp-json/wp/v2/auction?_embed&per_page=3&exclude=${currentAuctionId}&orderby=date&order=desc`;
+        // Changed per_page from 3 to 12
+        const endpoint = `/wp-json/wp/v2/auction?_embed&per_page=12&exclude=${currentAuctionId}&orderby=date&order=desc`;
         console.log('Fetching from:', endpoint);
 
         const response = await fetch(endpoint, {
@@ -208,82 +210,12 @@ const RelatedAuctions = ({ currentAuctionId = '' }) => {
     }
   };
 
-  const renderAuctionCard = (auction) => (
-    <div key={auction.id} className="bg-white rounded-2xl p-3 sm:p-4 shadow-lg flex flex-col justify-between">
-      <Link to={getAuctionLink(auction.id)} className="flex flex-col gap-3 sm:gap-4">
-        <div className="relative" style={{ height: '150px sm:height-[180px]' }}>
-          <img
-            src={getFeaturedImageUrl(auction)}
-            alt={auction.title.rendered}  
-            className="w-full h-full object-cover rounded-xl"
-            onError={handleImageError}
-          />
-          <div 
-            className="absolute top-2 left-2 px-2 py-1 rounded-full text-white text-xs sm:text-sm" 
-            style={getBadgeStyle(auction)}
-          >
-            {getAuctionStatus(auction)}
-          </div>
-        </div>
-        <div className="flex justify-between gap-3 sm:gap-6 items-center">
-          <h4 className="text-base sm:text-lg font-bold line-clamp-2" dangerouslySetInnerHTML={{ __html: auction.title.rendered }}></h4>
-          <img src="/heart_icon.svg" alt="heart icon" className="w-5 h-5 sm:w-6 sm:h-6" style={{ cursor: 'pointer' }} />  
-        </div>
-        <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-6">
-          <div className="w-full sm:w-1/2 flex flex-col items-start">
-            <h5 className="text-sm sm:text-lg font-normal">{texts.ticketPrice}</h5>
-            <span className="text-sm sm:text-lg font-normal">{auction.meta.ticket_price} {texts.currency}</span>
-          </div>
-          <div className="w-full sm:w-1/2 flex flex-col items-start">  
-            <h5 className="text-sm sm:text-lg font-normal">{texts.currentPrice}</h5>
-            <span className="text-sm sm:text-lg font-normal" style={{color: '#00AEEF'}}>
-              {auction.meta.auction_price} {texts.currency}
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex flex-col items-center my-4">
-          {new Date(auction.meta.start_time).getTime() > Date.now() ? (
-            <>
-              <p className="text-lg font-bold mb-4">{texts.auctionWillStart}</p>
-              <AuctionTimer endDate={auction.meta.start_time} texts={texts} />
-            </>
-          ) : new Date(auction.meta.due_time).getTime() > Date.now() ? (
-            <>
-              <p className="text-lg font-bold mb-4">{texts.auctionWillEnd}</p>
-              <AuctionTimer endDate={auction.meta.due_time} texts={texts} />
-            </>
-          ) : (
-            <p className="text-lg font-bold mb-4">{texts.auctionEnded}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2 sm:gap-3 mt-3 sm:mt-4">
-          <Link 
-            to={getAuctionLink(auction.id)} 
-            className="w-full p-2 sm:p-3 text-white text-center text-sm sm:text-base rounded-full" 
-            style={{ backgroundColor: '#00AEEF' }}
-          >
-            {texts.placeBid}
-          </Link>
-          <Link
-            to={getAuctionLink(auction.id)}  
-            className="w-full p-2 sm:p-3 text-center text-sm sm:text-base rounded-full"
-            style={{ backgroundColor: '#E6E6E6' }}
-          >
-            {texts.buyNow} {auction.meta.buy_now}{texts.currency}
-          </Link>
-        </div>
-      </Link>
-    </div>
-  );
-
   if (loading) {
     return (
       <div className="w-full bg-[#E6E6E6] p-3 sm:p-5 rounded-2xl">
         <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-center">{texts.relatedAuctionsTitle}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {[...Array(3)].map((_, index) => (
+          {[...Array(12)].map((_, index) => ( // Changed from 3 to 12
             <SkeletonLoader key={index} />
           ))}
         </div>
@@ -310,9 +242,35 @@ const RelatedAuctions = ({ currentAuctionId = '' }) => {
   return (
     <div className="w-full bg-[#E6E6E6] p-3 sm:p-5 rounded-2xl">
       <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-center">{texts.relatedAuctionsTitle}</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {relatedAuctions.map(auction => renderAuctionCard(auction))}
-      </div>
+      <Carousel 
+        className="w-full" 
+        opts={{
+          dragFree: true,
+          containScroll: "trimSnaps",
+          slidesToScroll: 1,
+          align: "start",
+          breakpoints: {
+            '(min-width: 1024px)': { slidesToShow: 3.5 },
+            '(min-width: 768px)': { slidesToShow: 2.5 },
+            '(max-width: 767px)': { slidesToShow: 1.5 }
+          }
+        }}
+      >
+        <CarouselContent>
+          {relatedAuctions.map(auction => (
+            <CarouselItem key={auction.id} className="basis-[85%] md:basis-[45%] lg:basis-[30%]">
+              <AuctionItem
+                auction={auction}
+                texts={texts}
+                wishlist={[]}
+                onWishlistToggle={() => {}}
+                getFeaturedImageUrl={getFeaturedImageUrl}
+                handleImageError={handleImageError}
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
     </div>
   );
 };
