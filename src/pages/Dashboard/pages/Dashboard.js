@@ -46,7 +46,14 @@ const Dashboard = () => {
     try {
       console.log('Fetching auctions for user:', user);
       // Get all auctions
-      const allResponse = await fetch('/wp-json/wp/v2/auction?per_page=100');
+      const allResponse = await fetch('/wp-json/wp/v2/auction?per_page=100&_embed', {
+          headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-API-Key': window.wpApiSettings?.apiKey || ''
+          },
+          credentials: 'include'
+        });
       if (!allResponse.ok) throw new Error('Failed to fetch all auctions');
       const allAuctions = await allResponse.json();
 

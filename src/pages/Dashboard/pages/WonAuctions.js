@@ -19,7 +19,14 @@ const WonAuctions = () => {
 
             try {
                 console.log('Fetching auctions for user:', user);
-                const response = await fetch('/wp-json/wp/v2/auction?per_page=100');
+                const response = await fetch('/wp-json/wp/v2/auction?per_page=100&_embed', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-API-Key': window.wpApiSettings?.apiKey || ''
+                    },
+                    credentials: 'include'
+                });
                 if (!response.ok) throw new Error('Failed to fetch auctions');
                 
                 const allAuctions = await response.json();

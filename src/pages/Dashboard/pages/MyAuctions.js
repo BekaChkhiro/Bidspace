@@ -31,7 +31,14 @@ const MyAuctions = () => {
 
   const fetchMyAuctions = async () => {
     try {
-      const response = await fetch(`/wp-json/wp/v2/auction?author=${user.id}`);
+      const response = await fetch(`/wp-json/wp/v2/auction?author=${user.id}&per_page=100&_embed`, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
+        },
+        credentials: 'include'
+      });
       const data = await response.json();
       console.log('Received auctions data:', data);
       setAuctions(data);
