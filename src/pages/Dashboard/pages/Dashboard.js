@@ -48,9 +48,10 @@ const Dashboard = () => {
       // Get all auctions
       const allResponse = await fetch('/wp-json/wp/v2/auction?per_page=100&_embed', {
           headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'X-API-Key': window.wpApiSettings?.apiKey || ''
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-API-Key': window.wpApiSettings?.apiKey || '',
+            'Authorization': `Bearer ${window.wpApiSettings?.authToken || ''}`
           },
           credentials: 'include'
         });
@@ -58,7 +59,15 @@ const Dashboard = () => {
       const allAuctions = await allResponse.json();
 
       // Get user's auctions
-      const userResponse = await fetch(`/wp-json/wp/v2/auction?author=${user.id}&per_page=100`);
+      const userResponse = await fetch(`/wp-json/wp/v2/auction?author=${user.id}&per_page=100`, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-API-Key': window.wpApiSettings?.apiKey || '',
+            'Authorization': `Bearer ${window.wpApiSettings?.authToken || ''}`
+          },
+          credentials: 'include'
+        });
       if (!userResponse.ok) throw new Error('Failed to fetch user auctions');
       const userAuctions = await userResponse.json();
       

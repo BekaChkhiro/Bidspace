@@ -58,25 +58,25 @@ const AuctionItem = ({
           : 'bg-[#E5ECF6]'
       }`}
     >
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold">{auction.title.rendered}</h3>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <h3 className="text-lg sm:text-xl font-semibold">{auction.title.rendered}</h3>
         {showStatus && status === 'planned' && (
-          <span className="px-3 py-1 bg-[#FDB022] text-white rounded-full text-sm">
+          <span className="mt-2 sm:mt-0 px-3 py-1 bg-[#FDB022] text-white rounded-full text-sm">
             დაგეგმილი
           </span>
         )}
       </div>
-      <div className="flex justify-between items-center">
-        <div className="w-2/6 flex justify-start gap-3">
-          <img src={dateIcon} alt="date icon" />
-          <span className="text-[#6F7181]">{auction.meta?.due_time || 'თარიღი არ არის'}</span>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2">
+          <img src={dateIcon} alt="date icon" className="w-4 h-4" />
+          <span className="text-[#6F7181] text-sm sm:text-base">{auction.meta?.due_time || 'თარიღი არ არის'}</span>
         </div>
-        <div className="w-1/5 flex justify-start gap-3">
-          <img src={locationIcon} alt="map icon" />
-          <span className="text-[#6F7181]">{auction.meta?.city || 'მდებარეობა არ არის'}</span>
+        <div className="flex items-center gap-2">
+          <img src={locationIcon} alt="map icon" className="w-4 h-4" />
+          <span className="text-[#6F7181] text-sm sm:text-base">{auction.meta?.city || 'მდებარეობა არ არის'}</span>
         </div>
       </div>
-      <div className="flex justify-end gap-4">
+      <div className="flex justify-end gap-2 sm:gap-4">
         {renderActions()}
       </div>
     </div>

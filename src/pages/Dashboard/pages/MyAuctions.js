@@ -138,9 +138,9 @@ const MyAuctions = () => {
       if (auctions.length === 0) return null;
       
       return (
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">{title}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="mb-6 lg:mb-8">
+          <h2 className="text-lg sm:text-xl font-bold mb-3 lg:mb-4">{title}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
             {auctions.map(auction => (
               <AuctionItem
                 key={auction.id}
@@ -155,7 +155,7 @@ const MyAuctions = () => {
     };
 
     return (
-      <div>
+      <div className="space-y-6 lg:space-y-8">
         {renderSection(groupedAuctions.planned, 'დაგეგმილი აუქციონები', 'planned')}
         {renderSection(groupedAuctions.active, 'მიმდინარე აუქციონები', 'active')}
         {renderSection(groupedAuctions.ended, 'დასრულებული აუქციონები', 'ended')}
@@ -165,18 +165,16 @@ const MyAuctions = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 md:px-6">
-        <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">ჩემი აუქციონები</h1>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 lg:mb-6">ჩემი აუქციონები</h1>
         
-        <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+        <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow">
           {loading ? (
-            <div className="text-center">
+            <div className="text-center py-8">
               <p className="text-[#6F7181]">იტვირთება...</p>
             </div>
           ) : auctions.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {renderAuctionsList()}
-            </div>
+            renderAuctionsList()
           ) : (
             <div className="border p-4 rounded">
               <p className="text-[#6F7181]">ჯერ არ გაქვთ აუქციონები</p>
