@@ -133,7 +133,14 @@ const RelatedAuctions = ({ currentAuctionId = '' }) => {
         const endpoint = `/wp-json/wp/v2/auction?_embed&per_page=3&exclude=${currentAuctionId}&orderby=date&order=desc`;
         console.log('Fetching from:', endpoint);
 
-        const response = await fetch(endpoint);
+        const response = await fetch(endpoint, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-API-Key': window.wpApiSettings?.apiKey || ''
+          }
+        });
+        
         console.log('Response status:', response.status);
 
         if (!response.ok) {

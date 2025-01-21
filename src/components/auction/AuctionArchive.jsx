@@ -134,14 +134,24 @@ const AuctionArchive = () => {
   useEffect(() => {
     const fetchAuctions = async () => {
       try {
-        const response = await fetch('/wp-json/wp/v2/auction?_embed&per_page=3&orderby=date&order=desc');
+        const response = await fetch('/wp-json/wp/v2/auction?_embed&per_page=3&orderby=date&order=desc', {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-API-Key': window.wpApiSettings?.apiKey || ''
+          }
+        });
+
         if (!response.ok) {
-          throw new Error('Failed to fetch auctions');
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch auctions');
         }
+
         const data = await response.json();
         setAuctions(data);
         setLoading(false);
       } catch (err) {
+        console.error('Error fetching auctions:', err);
         setError('აუქციონების ჩატვირთვისას მოხდა შეცდომა');
         setLoading(false);
       }
@@ -194,6 +204,28 @@ const AuctionArchive = () => {
     }
   };
 
+  const handleLikeToggle = async (e, auctionId) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`/wp-json/custom/v1/wishlist/toggle/${auctionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': window.wpApiSettings?.nonce,
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle wishlist');
+      }
+
+      // Handle successful response
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+    }
+  };
+
   const renderAuctionCard = (auction) => (
     <div key={auction.id} className="bg-white rounded-2xl p-4 shadow-lg flex flex-col justify-between">
       <Link to={getAuctionLink(auction.id)} className="flex flex-col gap-4">
@@ -213,7 +245,7 @@ const AuctionArchive = () => {
         </div>
         <div className="flex justify-between gap-6 items-center">
           <h4 className="text-lg font-bold" dangerouslySetInnerHTML={{ __html: auction.title.rendered }}></h4>
-          <img src="/heart_icon.svg" alt="heart icon" style={{ cursor: 'pointer' }} />  
+          <img src="/heart_icon.svg" alt="heart icon" style={{ cursor: 'pointer' }} onClick={(e) => handleLikeToggle(e, auction.id)} />  
         </div>
         <div className="flex justify-between gap-6 items-center">
           <div className="w-1/2 flex flex-col items-start">

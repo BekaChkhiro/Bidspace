@@ -41,7 +41,7 @@ function add_cors_http_header() {
     header("Access-Control-Allow-Origin: *");
     header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE");
     header("Access-Control-Allow-Credentials: true");
-    header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+    header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, X-API-Key");
     
     if ('OPTIONS' == $_SERVER['REQUEST_METHOD']) {
         status_header(200);
@@ -75,7 +75,7 @@ function add_cors_headers_for_rest() {
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE');
         header('Access-Control-Allow-Credentials: true');
-        header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, X-API-Key');
         return $value;
     });
 }
@@ -94,7 +94,8 @@ function enqueue_wp_api_settings() {
     wp_enqueue_script('wp-api');
     wp_localize_script('wp-api', 'wpApiSettings', array(
         'root' => esc_url_raw(rest_url()),
-        'nonce' => wp_create_nonce('wp_rest')
+        'nonce' => wp_create_nonce('wp_rest'),
+        'apiKey' => get_option('bidspace_api_key', '')
     ));
 }
 add_action('wp_enqueue_scripts', 'enqueue_wp_api_settings');
@@ -148,5 +149,65 @@ function bidspace_customize_register($wp_customize) {
 }
 add_action('customize_register', 'bidspace_customize_register');
 
-/* registration */
+// Add API Key management page
+function bidspace_add_api_key_page() {
+    add_options_page(
+        'API გასაღების მართვა',
+        'API გასაღები',
+        'manage_options',
+        'bidspace-api-key',
+        'bidspace_render_api_key_page'
+    );
+}
+add_action('admin_menu', 'bidspace_add_api_key_page');
+
+// Render API Key management page
+function bidspace_render_api_key_page() {
+    if (isset($_POST['generate_new_key']) && check_admin_referer('generate_new_key_action', 'generate_new_key_nonce')) {
+        $new_key = wp_generate_password(32, false);
+        update_option('bidspace_api_key', $new_key);
+        echo '<div class="notice notice-success"><p>API გასაღები წარმატებით განახლდა!</p></div>';
+    }
+
+    $current_key = get_option('bidspace_api_key', '');
+    ?>
+    <div class="wrap">
+        <h1>API გასაღების მართვა</h1>
+        <div class="card" style="max-width: 800px; padding: 20px; margin-top: 20px;">
+            <h2>მიმდინარე API გასაღები</h2>
+            <div style="background: #f1f1f1; padding: 10px; margin: 10px 0;">
+                <code style="font-size: 16px;"><?php echo esc_html($current_key); ?></code>
+            </div>
+            <form method="post">
+                <?php wp_nonce_field('generate_new_key_action', 'generate_new_key_nonce'); ?>
+                <input type="submit" name="generate_new_key" class="button button-primary" value="ახალი გასაღების გენერაცია">
+            </form>
+        </div>
+    </div>
+    <?php
+}
+
+// Add API key verification
+add_filter('rest_pre_dispatch', function($result, $server, $request) {
+    if (strpos($request->get_route(), '/wp/v2/auction') === false) {
+        return $result;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        return $result;
+    }
+
+    $api_key = $request->get_header('X-API-Key');
+    $valid_key = get_option('bidspace_api_key', '');
+
+    if (!$api_key || $api_key !== $valid_key) {
+        return new WP_Error(
+            'rest_forbidden',
+            'არასწორი API გასაღები',
+            array('status' => 401)
+        );
+    }
+
+    return $result;
+}, 10, 3);
 

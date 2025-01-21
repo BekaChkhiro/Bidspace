@@ -94,7 +94,8 @@ const TheatreCinemaCarousel = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': window.wpApiSettings?.nonce
+          'X-WP-Nonce': window.wpApiSettings?.nonce,
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
         }
       });
 
@@ -121,7 +122,11 @@ const TheatreCinemaCarousel = () => {
   useEffect(() => {
     const fetchWishlist = async () => {
       try {
-        const response = await fetch('/wp-json/custom/v1/wishlist');
+        const response = await fetch('/wp-json/custom/v1/wishlist', {
+          headers: {
+            'X-API-Key': window.wpApiSettings?.apiKey || ''
+          }
+        });
         if (response.ok) {
           const data = await response.json();
           setWishlist(data.map(Number));
@@ -140,7 +145,8 @@ const TheatreCinemaCarousel = () => {
         const response = await fetch('/wp-json/wp/v2/auction?per_page=100&_embed', {
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-API-Key': window.wpApiSettings?.apiKey || ''
           },
           credentials: 'include'
         });

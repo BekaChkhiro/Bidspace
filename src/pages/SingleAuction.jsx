@@ -38,17 +38,25 @@ function SingleAuction() {
     console.log('Current user ID:', currentUserId);
     console.log('Current user name:', currentUserName);
     console.log('Nonce:', window.bidspaceSettings?.nonce);
+    console.log('API Key:', window.wpApiSettings?.apiKey);
     console.log('Full auction data:', auction);
     console.log('Auction ID:', id); // დავამატოთ აუქციონის ID-ის ლოგი
     
     // შევამოწმოთ API endpoint-ის მისაწვდომობა
-    fetch(`${window.location.origin}/wp-json/wp/v2/auction/${id}`)
+    fetch(`${window.location.origin}/wp-json/wp/v2/auction/${id}`, {
+      headers: {
+        'X-API-Key': window.wpApiSettings?.apiKey || ''
+      }
+    })
       .then(response => {
-        console.log('API Response:', response);
+        if (!response.ok) throw new Error('API response was not ok');
         return response.json();
       })
       .then(data => console.log('Auction API Data:', data))
-      .catch(error => console.error('API Error:', error));
+      .catch(error => {
+        console.error('API Error:', error);
+        setError(error.message);
+      });
   }, [currentUserId, currentUserName, auction, id]);
 
   // აუქციონის მონაცემების შემოწმება
@@ -100,7 +108,8 @@ function SingleAuction() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': window.bidspaceSettings.restNonce
+          'X-WP-Nonce': window.bidspaceSettings.restNonce,
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -140,13 +149,15 @@ function SingleAuction() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': window.bidspaceSettings.restNonce
+          'X-WP-Nonce': window.bidspaceSettings.restNonce,
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
         },
         body: JSON.stringify({ bid_amount: bidAmount })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit bid');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit bid');
       }
 
       const bidData = await response.json();
@@ -203,7 +214,7 @@ function SingleAuction() {
   // თუ აუქციონი არ არსებობს
   if (!auction) {
     return (
-      <div className="w-full min-h-screen flex items-center justify-center bg-[#E6E6E6]">
+      <div className="w-full min-h-screen flex items-centerjustify-center bg-[#E6E6E6]">
         <div className="text-center text-gray-600">
           <p>აუქციონი ვერ მოიძებნა</p>
           <button

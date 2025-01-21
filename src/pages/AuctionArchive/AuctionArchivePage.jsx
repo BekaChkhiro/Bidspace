@@ -144,10 +144,10 @@ const AuctionArchivePage = () => {
   
       let url = `/wp-json/wp/v2/auction?_embed&per_page=${auctionsPerPage}&page=${page}`;
       
+      // Add filter parameters
       if (mainFilters?.city) {
         url += `&city=${encodeURIComponent(mainFilters.city)}`;
       }
-
       if (mainFilters?.auctionPrice?.min) {
         url += `&min_price=${mainFilters.auctionPrice.min}`;
       }
@@ -168,19 +168,23 @@ const AuctionArchivePage = () => {
       if (dateFilter?.to) {
         url += `&meta_query[1][key]=start_date&meta_query[1][value]=${dateFilter.to.toISOString()}&meta_query[1][compare]=<=&meta_query[1][type]=DATETIME`;
       }
-  
-      console.log('Fetching URL:', url);
-  
-      const response = await fetch(url);
+
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-API-Key': window.wpApiSettings?.apiKey || '',
+          'X-WP-Nonce': window.wpApiSettings?.nonce
+        },
+        credentials: 'include'
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch auctions');
+        throw new Error(`Server responded with ${response.status}`);
       }
   
       const totalPagesHeader = response.headers.get('X-WP-TotalPages');
       const data = await response.json();
-      
-      console.log('Response data:', data);
       
       if (isInitialLoad) {
         setAuctions(data);
@@ -192,9 +196,12 @@ const AuctionArchivePage = () => {
       }
       
       setHasMore(page < parseInt(totalPagesHeader || '1'));
+      setError(null);
+
     } catch (err) {
       console.error('Fetch error:', err);
       setError('აუქციონების ჩატვირთვისას მოხდა შეცდომა');
+      toast('აუქციონების ჩატვირთვა ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან.');
     } finally {
       setLoading(false);
       setLoadingMore(false);
