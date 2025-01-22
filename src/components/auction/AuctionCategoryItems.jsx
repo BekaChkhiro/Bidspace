@@ -16,7 +16,12 @@ const AuctionCategoryItems = () => {
   const location = useLocation();
   
   const getActiveStyle = (path) => {
-    return location.pathname === path ? {
+    // Remove trailing slash from current location path
+    const currentPath = location.pathname.replace(/\/$/, '');
+    // Remove trailing slash from category path
+    const categoryPath = path.replace(/\/$/, '');
+    
+    return currentPath === categoryPath ? {
       backgroundColor: '#00adef29',
       border: '1px solid #00adef'
     } : {};
