@@ -46,7 +46,8 @@ const AuctionTheaterCinemaPage = () => {
       const response = await fetch(`/wp-json/wp/v2/auction?per_page=100&_embed`, {
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
         },
         credentials: 'include'
       });

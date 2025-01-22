@@ -21,14 +21,27 @@ const SearchInput = ({ variant }) => {
         setIsLoading(true);
         setError(null);
         
-        const initialResponse = await fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=1`);
+        const initialResponse = await fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=1`, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-API-Key': window.wpApiSettings?.apiKey || ''
+          },
+          credentials: 'include'
+        });
         const totalPagesCount = parseInt(initialResponse.headers.get('X-WP-TotalPages'));
         setTotalPages(totalPagesCount);
 
         const allAuctionsPromises = [];
         for (let page = 1; page <= totalPagesCount; page++) {
-          const promise = fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=${page}`)
-            .then(response => response.json());
+          const promise = fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=${page}`, {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'X-API-Key': window.wpApiSettings?.apiKey || ''
+            },
+            credentials: 'include'
+          }).then(response => response.json());
           allAuctionsPromises.push(promise);
         }
 
