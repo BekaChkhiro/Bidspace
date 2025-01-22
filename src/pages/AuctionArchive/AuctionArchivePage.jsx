@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import AuctionArchiveFilterContainer from './Filters/AuctionArchiveFilterContainer';
 import AuctionCategoryItems from '../../components/auction/AuctionCategoryItems';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../components/core/context/AuthContext';
 import useCustomToast from '../../components/toast/CustomToast';
 import AuctionItem from './components/AuctionItem';
@@ -18,18 +16,6 @@ const AuctionArchivePage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [wishlist, setWishlist] = useState([]);
   const auctionsPerPage = 9;
-  const [dateFilter, setDateFilter] = useState(() => {
-    const savedFilter = localStorage.getItem('auctionDateFilter');
-    if (savedFilter) {
-      const parsed = JSON.parse(savedFilter);
-      return {
-        from: new Date(parsed.from),
-        to: new Date(parsed.to)
-      };
-    }
-    return null;
-  });
-  const [mainFilters, setMainFilters] = useState(null);
 
   const texts = {
     pageTitle: "აუქციონები",
@@ -58,14 +44,6 @@ const AuctionArchivePage = () => {
       document.title = 'აუქციონი';
     };
   }, []);
-
-  useEffect(() => {
-    if (dateFilter) {
-      localStorage.setItem('auctionDateFilter', JSON.stringify(dateFilter));
-    } else {
-      localStorage.removeItem('auctionDateFilter');
-    }
-  }, [dateFilter]);
 
   useEffect(() => {
     if (user?.id) {
@@ -144,37 +122,11 @@ const AuctionArchivePage = () => {
   
       let url = `/wp-json/wp/v2/auction?_embed&per_page=${auctionsPerPage}&page=${page}`;
       
-      // Add filter parameters
-      if (mainFilters?.city) {
-        url += `&city=${encodeURIComponent(mainFilters.city)}`;
-      }
-      if (mainFilters?.auctionPrice?.min) {
-        url += `&min_price=${mainFilters.auctionPrice.min}`;
-      }
-      if (mainFilters?.auctionPrice?.max) {
-        url += `&max_price=${mainFilters.auctionPrice.max}`;
-      }
-
-      if (mainFilters?.instantPrice?.min) {
-        url += `&min_buy_now=${mainFilters.instantPrice.min}`;
-      }
-      if (mainFilters?.instantPrice?.max) {
-        url += `&max_buy_now=${mainFilters.instantPrice.max}`;
-      }
-
-      if (dateFilter?.from) {
-        url += `&meta_query[0][key]=start_date&meta_query[0][value]=${dateFilter.from.toISOString()}&meta_query[0][compare]=>=&meta_query[0][type]=DATETIME`;
-      }
-      if (dateFilter?.to) {
-        url += `&meta_query[1][key]=start_date&meta_query[1][value]=${dateFilter.to.toISOString()}&meta_query[1][compare]=<=&meta_query[1][type]=DATETIME`;
-      }
-
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'X-API-Key': window.wpApiSettings?.apiKey || '',
-          'X-WP-Nonce': window.wpApiSettings?.nonce
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
         },
         credentials: 'include'
       });
@@ -212,14 +164,6 @@ const AuctionArchivePage = () => {
     fetchAuctions(1);
   }, []);
 
-  useEffect(() => {
-    if (dateFilter || mainFilters) {
-      setCurrentPage(1);
-      setAuctions([]);
-      fetchAuctions(1);
-    }
-  }, [dateFilter, mainFilters]);
-
   const handleLoadMore = () => {
     const nextPage = currentPage + 1;
     setCurrentPage(nextPage);
@@ -237,23 +181,6 @@ const AuctionArchivePage = () => {
   const handleImageError = (event) => {
     event.target.src = '/placeholder.jpg';
   };
-
-  const handleDateFilterChange = (dateRange) => {
-    setDateFilter(dateRange);
-  };
-
-  const handleMainFilterChange = (filters) => {
-    console.log('Received filters:', filters);
-    setMainFilters(filters);
-    setCurrentPage(1);
-    setAuctions([]);
-    fetchAuctions(1);
-  };
-
-  useEffect(() => {
-    console.log('Current mainFilters:', mainFilters);
-    console.log('Current dateFilter:', dateFilter);
-  }, [mainFilters, dateFilter]);
 
   if (loading) {
     return (
@@ -284,10 +211,6 @@ const AuctionArchivePage = () => {
     <div className="w-full bg-[#E6E6E6] px-16 py-10 flex flex-col gap-10">
       <div className="auction-archive flex flex-col gap-12">
         <AuctionCategoryItems />
-        <AuctionArchiveFilterContainer 
-          onDateFilterChange={handleDateFilterChange}
-          onMainFilterChange={handleMainFilterChange}
-        />
         {auctions.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

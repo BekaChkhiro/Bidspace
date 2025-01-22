@@ -16,12 +16,21 @@ const SearchBar = () => {
         setIsLoading(true);
         setError(null);
         
-        const initialResponse = await fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=1`);
+        const fetchOptions = {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-API-Key': window.wpApiSettings?.apiKey || ''
+          },
+          credentials: 'include'
+        };
+        
+        const initialResponse = await fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=1`, fetchOptions);
         const totalPagesCount = parseInt(initialResponse.headers.get('X-WP-TotalPages'));
 
         const allAuctionsPromises = [];
         for (let page = 1; page <= totalPagesCount; page++) {
-          const promise = fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=${page}`)
+          const promise = fetch(`${window.location.origin}/wp-json/wp/v2/auction?per_page=100&page=${page}`, fetchOptions)
             .then(response => response.json());
           allAuctionsPromises.push(promise);
         }
@@ -41,9 +50,18 @@ const SearchBar = () => {
 
   useEffect(() => {
     const fetchFeaturedImages = async (auctions) => {
+      const fetchOptions = {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
+        },
+        credentials: 'include'
+      };
+
       const imagePromises = auctions.map(async (auction) => {
         if (auction.featured_media) {
-          const response = await fetch(`${window.location.origin}/wp-json/wp/v2/media/${auction.featured_media}`);
+          const response = await fetch(`${window.location.origin}/wp-json/wp/v2/media/${auction.featured_media}`, fetchOptions);
           const data = await response.json();
           return { id: auction.id, imageUrl: data.source_url };
         }
