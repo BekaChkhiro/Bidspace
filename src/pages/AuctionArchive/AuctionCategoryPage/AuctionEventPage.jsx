@@ -4,6 +4,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 import AuctionCategoryItems from '../../../components/auction/AuctionCategoryItems';
 import { useAuth } from '../../../components/core/context/AuthContext';
 import useCustomToast from '../../../components/toast/CustomToast';
+import AuctionDateFilter from '../Filters/AuctionDateFilter';
 
 const AuctionEventPage = () => {
   const { user } = useAuth();
@@ -14,47 +15,62 @@ const AuctionEventPage = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [wishlist, setWishlist] = useState([]);
-  
-  useEffect(() => {
-    const fetchAuctions = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`/wp-json/wp/v2/auction?per_page=100&_embed`, {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'X-API-Key': window.wpApiSettings?.apiKey || ''
-          },
-          credentials: 'include'
-        });
-        
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Error response:', errorText);
-          throw new Error(`მონაცემების ჩატვირთვა ვერ მოხერხდა (სტატუსი: ${response.status})`);
-        }
-        
-        const data = await response.json();
-        console.log('Fetched data with media:', data);
-        
-        const sportAuctions = data.filter(auction => 
-          auction.meta.ticket_category === "ივენთები"
-        );
-        console.log('Filtered sport auctions:', sportAuctions);
-        
-        setAuctions(sportAuctions);
-        setHasMore(false);
-        setLoading(false);
-      } catch (err) {
-        console.error('Fetch error:', err);
-        setError(err.message);
-        setLoading(false);
-      }
-    };
+  const [dateFilter, setDateFilter] = useState(() => {
+    const savedFilter = localStorage.getItem('auctionDateFilter');
+    return savedFilter ? JSON.parse(savedFilter) : null;
+  });
 
+  const handleDateFilterChange = (filter) => {
+    setDateFilter(filter);
+    fetchAuctions(filter);
+  };
+
+  const fetchAuctions = async (dateFilterValue = dateFilter) => {
+    try {
+      setLoading(true);
+      let url = `/wp-json/wp/v2/auction?per_page=100&_embed`;
+      
+      if (dateFilterValue) {
+        url += `&after=${dateFilterValue.from}&before=${dateFilterValue.to}`;
+      }
+      
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
+        },
+        credentials: 'include'
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`მონაცემების ჩატვირთვა ვერ მოხერხდა (სტატუსი: ${response.status})`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched data with media:', data);
+      
+      const sportAuctions = data.filter(auction => 
+        auction.meta.ticket_category === "ივენთები"
+      );
+      console.log('Filtered sport auctions:', sportAuctions);
+      
+      setAuctions(sportAuctions);
+      setHasMore(false);
+      setLoading(false);
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAuctions();
   }, []);
 
@@ -204,7 +220,12 @@ const AuctionEventPage = () => {
   return (
     <div className="w-full bg-[#E6E6E6] px-16 py-10 flex flex-col gap-10">
       <div className="auction-archive flex flex-col gap-12">
-        <AuctionCategoryItems />
+        <div className="flex justify-between items-center">
+          <AuctionCategoryItems />
+        </div>
+        <AuctionDateFilter 
+          onDateFilterChange={handleDateFilterChange}
+        />
         {auctions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {auctions.map(auction => (

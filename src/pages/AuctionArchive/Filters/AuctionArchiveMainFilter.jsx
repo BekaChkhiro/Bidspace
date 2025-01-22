@@ -46,7 +46,9 @@ const AuctionArchiveMainFilter = ({ onFilterChange }) => {
   // დავამატოთ ფილტრაციის ფუნქცია
   const handleFilter = () => {
     console.log('Sending filters:', filters); // დებაგისთვის
-    onFilterChange(filters);
+    if (onFilterChange) {
+      onFilterChange(filters);
+    }
     setIsOpen(false);
   };
 

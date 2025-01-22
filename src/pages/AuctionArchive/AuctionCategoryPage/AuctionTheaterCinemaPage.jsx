@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AuctionItem from '../components/AuctionItem';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import AuctionCategoryItems from '../../../components/auction/AuctionCategoryItems';
+import AuctionDateFilter from '../Filters/AuctionDateFilter';
 import { useAuth } from '../../../components/core/context/AuthContext';
 import useCustomToast from '../../../components/toast/CustomToast';
 
@@ -14,7 +15,11 @@ const AuctionTheaterCinemaPage = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [wishlist, setWishlist] = useState([]);
-  
+  const [dateFilter, setDateFilter] = useState(() => {
+    const savedFilter = localStorage.getItem('auctionDateFilter');
+    return savedFilter ? JSON.parse(savedFilter) : null;
+  });
+
   useEffect(() => {
     if (user?.id) {
       fetchUserWishlist();
@@ -40,10 +45,22 @@ const AuctionTheaterCinemaPage = () => {
     }
   };
 
-  const fetchAuctions = async () => {
+  const handleDateFilterChange = (filter) => {
+    setDateFilter(filter);
+    fetchAuctions(filter);
+  };
+
+  const fetchAuctions = async (dateFilterValue = dateFilter) => {
     try {
       setLoading(true);
-      const response = await fetch(`/wp-json/wp/v2/auction?per_page=100&_embed`, {
+      let url = `/wp-json/wp/v2/auction?per_page=100&_embed`;
+      
+      // Add date filter parameters if they exist
+      if (dateFilterValue) {
+        url += `&after=${dateFilterValue.from}&before=${dateFilterValue.to}`;
+      }
+      
+      const response = await fetch(url, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -204,7 +221,12 @@ const AuctionTheaterCinemaPage = () => {
   return (
     <div className="w-full bg-[#E6E6E6] px-16 py-10 flex flex-col gap-10">
       <div className="auction-archive flex flex-col gap-12">
-        <AuctionCategoryItems />
+        <div className="flex justify-between items-center">
+          <AuctionCategoryItems />
+        </div>
+        <AuctionDateFilter 
+          onDateFilterChange={handleDateFilterChange}
+        />
         {auctions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {auctions.map(auction => (

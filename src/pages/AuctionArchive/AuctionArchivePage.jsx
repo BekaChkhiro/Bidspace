@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AuctionCategoryItems from '../../components/auction/AuctionCategoryItems';
+import AuctionDateFilter from './Filters/AuctionDateFilter';
 import { useAuth } from '../../components/core/context/AuthContext';
 import useCustomToast from '../../components/toast/CustomToast';
 import AuctionItem from './components/AuctionItem';
@@ -15,6 +16,19 @@ const AuctionArchivePage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [wishlist, setWishlist] = useState([]);
+  const [dateFilter, setDateFilter] = useState(null);
+  const [mainFilters, setMainFilters] = useState({
+    categories: [],
+    city: '',
+    auctionPrice: {
+      min: '',
+      max: ''
+    },
+    instantPrice: {
+      min: '',
+      max: ''
+    }
+  });
   const auctionsPerPage = 9;
 
   const texts = {
@@ -115,13 +129,52 @@ const AuctionArchivePage = () => {
     }
   };
 
-  const fetchAuctions = async (page) => {
+  const handleDateFilterChange = (filter) => {
+    setDateFilter(filter);
+    setCurrentPage(1);
+    fetchAuctions(1, filter);
+  };
+
+  const handleMainFilterChange = (filters) => {
+    setMainFilters(filters);
+    setCurrentPage(1);
+    fetchAuctions(1, dateFilter, filters);
+  };
+
+  const fetchAuctions = async (page, dateFilterValue = dateFilter, mainFiltersValue = mainFilters) => {
     try {
       const isInitialLoad = page === 1;
       isInitialLoad ? setLoading(true) : setLoadingMore(true);
   
       let url = `/wp-json/wp/v2/auction?_embed&per_page=${auctionsPerPage}&page=${page}`;
       
+      // Add date filter parameters
+      if (dateFilterValue) {
+        url += `&after=${dateFilterValue.from}&before=${dateFilterValue.to}`;
+      }
+
+      // Add main filter parameters
+      if (mainFiltersValue) {
+        if (mainFiltersValue.categories.length > 0) {
+          url += `&categories=${mainFiltersValue.categories.join(',')}`;
+        }
+        if (mainFiltersValue.city) {
+          url += `&city=${mainFiltersValue.city}`;
+        }
+        if (mainFiltersValue.auctionPrice.min) {
+          url += `&min_price=${mainFiltersValue.auctionPrice.min}`;
+        }
+        if (mainFiltersValue.auctionPrice.max) {
+          url += `&max_price=${mainFiltersValue.auctionPrice.max}`;
+        }
+        if (mainFiltersValue.instantPrice.min) {
+          url += `&min_instant_price=${mainFiltersValue.instantPrice.min}`;
+        }
+        if (mainFiltersValue.instantPrice.max) {
+          url += `&max_instant_price=${mainFiltersValue.instantPrice.max}`;
+        }
+      }
+
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json',
@@ -210,7 +263,10 @@ const AuctionArchivePage = () => {
   return (
     <div className="w-full bg-[#E6E6E6] px-16 py-10 flex flex-col gap-10">
       <div className="auction-archive flex flex-col gap-12">
-        <AuctionCategoryItems />
+        <div className="flex justify-between items-center">
+          <AuctionCategoryItems />
+        </div>
+        <AuctionDateFilter onDateFilterChange={handleDateFilterChange} />
         {auctions.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
