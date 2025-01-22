@@ -993,3 +993,78 @@ function bidspace_register_user_rest_fields() {
     ));
 }
 add_action('rest_api_init', 'bidspace_register_user_rest_fields');
+
+function bidspace_filter_auctions($query) {
+    if (!is_admin() && $query->is_main_query() && is_post_type_archive('auction')) {
+        $meta_query = array('relation' => 'AND');
+
+        // Fix auction price filter
+        if (isset($_GET['auctionPriceMin']) && isset($_GET['auctionPriceMax'])) {
+            $meta_query[] = array(
+                'relation' => 'AND',
+                array(
+                    'key' => 'auction_price',
+                    'value' => (int)$_GET['auctionPriceMin'],
+                    'type' => 'NUMERIC',
+                    'compare' => '>='
+                ),
+                array(
+                    'key' => 'auction_price',
+                    'value' => (int)$_GET['auctionPriceMax'],
+                    'type' => 'NUMERIC',
+                    'compare' => '<='
+                )
+            );
+        } elseif (isset($_GET['auctionPriceMin'])) {
+            $meta_query[] = array(
+                'key' => 'auction_price',
+                'value' => (int)$_GET['auctionPriceMin'],
+                'type' => 'NUMERIC',
+                'compare' => '>='
+            );
+        } elseif (isset($_GET['auctionPriceMax'])) {
+            $meta_query[] = array(
+                'key' => 'auction_price',
+                'value' => (int)$_GET['auctionPriceMax'],
+                'type' => 'NUMERIC',
+                'compare' => '<='
+            );
+        }
+
+        // Keep existing buy now filter
+        if (isset($_GET['buyNowMin']) && isset($_GET['buyNowMax'])) {
+            $meta_query[] = array(
+                'relation' => 'AND',
+                array(
+                    'key' => 'buy_now',
+                    'value' => (int)$_GET['buyNowMin'],
+                    'type' => 'NUMERIC',
+                    'compare' => '>='
+                ),
+                array(
+                    'key' => 'buy_now',
+                    'value' => (int)$_GET['buyNowMax'],
+                    'type' => 'NUMERIC',
+                    'compare' => '<='
+                )
+            );
+        } elseif (isset($_GET['buyNowMin'])) {
+            $meta_query[] = array(
+                'key' => 'buy_now',
+                'value' => (int)$_GET['buyNowMin'],
+                'type' => 'NUMERIC',
+                'compare' => '>='
+            );
+        } elseif (isset($_GET['buyNowMax'])) {
+            $meta_query[] = array(
+                'key' => 'buy_now',
+                'value' => (int)$_GET['buyNowMax'],
+                'type' => 'NUMERIC',
+                'compare' => '<='
+            );
+        }
+
+        $query->set('meta_query', $meta_query);
+    }
+}
+add_action('pre_get_posts', 'bidspace_filter_auctions');

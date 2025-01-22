@@ -1,35 +1,52 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const AuctionDateFilter = ({ onDateFilterChange }) => {
+const AuctionDateFilter = ({ onDateFilterChange, currentDateFilter }) => {
   const filterRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedRange, setSelectedRange] = useState(() => {
-    const savedFilter = localStorage.getItem('auctionDateFilter');
-    if (savedFilter) {
-      const parsed = JSON.parse(savedFilter);
-      return {
-        from: new Date(parsed.from),
-        to: new Date(parsed.to)
-      };
-    }
-    return null;
-  });
-  const [dateRange, setDateRange] = useState(() => {
-    if (selectedRange) {
-      return {
-        from: new Date(selectedRange.from),
-        to: new Date(selectedRange.to)
-      };
-    }
-    return {
+  
+  // განვაახლოთ selectedRange-ის ინიციალიზაცია
+  const [selectedRange, setSelectedRange] = useState(
+    currentDateFilter ? {
+      from: new Date(currentDateFilter.from),
+      to: new Date(currentDateFilter.to)
+    } : null
+  );
+
+  // განვაახლოთ dateRange-ის ინიციალიზაცია
+  const [dateRange, setDateRange] = useState(
+    currentDateFilter ? {
+      from: new Date(currentDateFilter.from),
+      to: new Date(currentDateFilter.to)
+    } : {
       from: null,
       to: null
-    };
-  });
-  const [activeMonths, setActiveMonths] = useState([selectedRange?.from || new Date()]);
-  const [activeDates, setActiveDates] = useState([]); // Make sure this is declared
+    }
+  );
 
-  // Add new useEffect for handling month change on open
+  // დავამატოთ ეფექტი currentDateFilter-ის ცვლილებების დასაჭერად
+  useEffect(() => {
+    if (!currentDateFilter) {
+      setSelectedRange(null);
+      setDateRange({
+        from: null,
+        to: null
+      });
+      localStorage.removeItem('auctionDateFilter');
+    } else {
+      setSelectedRange({
+        from: new Date(currentDateFilter.from),
+        to: new Date(currentDateFilter.to)
+      });
+      setDateRange({
+        from: new Date(currentDateFilter.from),
+        to: new Date(currentDateFilter.to)
+      });
+    }
+  }, [currentDateFilter]);
+
+  const [activeMonths, setActiveMonths] = useState([selectedRange?.from || new Date()]);
+  const [activeDates, setActiveDates] = useState([]);
+
   useEffect(() => {
     if (isOpen && selectedRange?.from) {
       setActiveMonths([new Date(selectedRange.from)]);
@@ -37,12 +54,11 @@ const AuctionDateFilter = ({ onDateFilterChange }) => {
   }, [isOpen, selectedRange]);
 
   useEffect(() => {
-    if (activeMonths[0]) { // Add check to ensure activeMonths exists
+    if (activeMonths[0]) {
       fetchActiveDates();
     }
   }, [activeMonths]);
 
-  // Add new useEffect to sync dateRange with selectedRange when popup opens
   useEffect(() => {
     if (isOpen && selectedRange) {
       setDateRange({
@@ -65,6 +81,18 @@ const AuctionDateFilter = ({ onDateFilterChange }) => {
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
 
@@ -175,16 +203,16 @@ const AuctionDateFilter = ({ onDateFilterChange }) => {
         setActiveDates([...new Set(dates)]);
       } catch (error) {
         console.error('Error parsing response:', error);
-        setActiveDates([]); // Reset to empty array on error
+        setActiveDates([]);
       }
     } catch (error) {
       console.error('Error fetching active dates:', error);
-      setActiveDates([]); // Reset to empty array on error
+      setActiveDates([]);
     }
   };
 
   const isActiveDate = (day, monthIndex) => {
-    if (!day || !activeDates) return false; // Add null check
+    if (!day || !activeDates) return false;
     const currentDate = new Date(
       activeMonths[monthIndex].getFullYear(),
       activeMonths[monthIndex].getMonth(),
@@ -254,11 +282,11 @@ const AuctionDateFilter = ({ onDateFilterChange }) => {
   };
 
   return (
-    <div className="relative" ref={filterRef}>
+    <div className="relative w-full md:w-auto" ref={filterRef}>
       <button
         className={`flex items-center justify-between gap-3 px-5 py-2.5 border border-gray-200 
-        rounded-full bg-white hover:border-gray-300 transition-colors duration-200 
-        ${selectedRange ? 'w-56' : 'w-52'}`}
+        rounded-full bg-white hover:border-gray-300 transition-colors duration-200 w-full
+        md:w-auto ${selectedRange ? 'md:w-56' : 'md:w-52'}`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <svg
@@ -278,7 +306,7 @@ const AuctionDateFilter = ({ onDateFilterChange }) => {
           <line x1="8" y1="2" x2="8" y2="6"></line>
           <line x1="3" y1="10" x2="21" y2="10"></line>
         </svg>
-        <span className="text-sm text-gray-700">
+        <span className="text-xs text-gray-700 md:text-sm">
           {selectedRange ? 
             `${formatDate(selectedRange.from)} - ${formatDate(selectedRange.to)}` : 
             "აირჩიეთ თარიღი"}
@@ -286,102 +314,124 @@ const AuctionDateFilter = ({ onDateFilterChange }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-2 p-5 bg-white rounded-xl shadow-lg shadow-gray-200/70 z-50 w-[320px]
-          border border-gray-100 transform transition-all duration-200">
-          <div>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-1">
-                <button 
-                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  onClick={() => handleMonthNavigation(-1)}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </div>
-              <span className="font-medium text-gray-800">
-                {monthNames[activeMonths[0].getMonth()]} 2024
-              </span>
-              <div className="flex items-center gap-1">
-                <button 
-                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  onClick={() => handleMonthNavigation(1)}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </div>
+        <>
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden" 
+            onClick={() => setIsOpen(false)}
+          />
+          <button 
+            onClick={() => setIsOpen(false)} 
+            className="fixed left-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden 
+              w-10 h-10 flex items-center justify-center bg-white rounded-full 
+              shadow-lg z-50 text-black text-xl"
+            style={{ bottom: '540px' }}
+          >
+            ✕
+          </button>
+          <div className="fixed md:absolute md:top-full left-0 right-0 md:right-auto 
+            h-[540px] md:h-auto bottom-0 md:bottom-auto md:mt-2 p-5 bg-white md:rounded-2xl 
+            shadow-lg shadow-gray-200/70 z-50 w-full md:w-80 border border-gray-200 
+            transition-all duration-300 ease-out transform md:transform-none
+            translate-y-0 md:translate-y-0 rounded-t-2xl md:rounded-t-2xl
+            overflow-y-auto">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 md:hidden">
+              <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+              <h2 className="text-lg font-medium">აირჩიეთ თარიღი</h2>
             </div>
-
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {dayNames.map(day => (
-                <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-1">
-              {generateCalendarDays(activeMonths[0]).map((day, dayIndex) => {
-                const isWeekend = (dayIndex + 1) % 7 === 0 || dayIndex % 7 === 0;
-                const hasEvent = isActiveDate(day, 0);
-                return (
-                  <div
-                    key={dayIndex}
-                    className={`
-                      relative flex items-center justify-center h-9 text-sm
-                      transition-all duration-200 rounded-lg
-                      ${!day ? 'text-gray-300 cursor-default' : 'cursor-pointer hover:bg-gray-50'}
-                      ${isWeekend && !isStartDate(day, 0) && !isEndDate(day, 0) ? 'text-red-500' : ''}
-                      ${day && isStartDate(day, 0) ? 'bg-gray-900 !text-white hover:bg-black' : ''}
-                      ${day && isEndDate(day, 0) ? 'bg-gray-900 !text-white hover:bg-black' : ''}
-                      ${day && isInRange(day, 0) && !isStartDate(day, 0) && !isEndDate(day, 0) 
-                        ? 'bg-gray-100 text-gray-700' : 'text-gray-700'}
-                    `}
-                    onClick={() => handleDateClick(day, 0)}
+            <div>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-1">
+                  <button 
+                    className="p-2 hover:bg-gray-50 rounded-xl transition-colors"
+                    onClick={() => handleMonthNavigation(-1)}
                   >
-                    {day}
-                    {hasEvent && (
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 
-                        bg-red-500 rounded-full"></div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center justify-between gap-4 mt-5 pt-4 border-t border-gray-100">
-            <div className="w-full flex justify-center items-center gap-2 text-sm text-gray-600">
-              {dateRange.from && dateRange.to && (
-                <span className='text-lg'>
-                  {formatDate(dateRange.from)} - {formatDate(dateRange.to)}
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+                <span className="font-medium text-gray-900">
+                  {monthNames[activeMonths[0].getMonth()]} {activeMonths[0].getFullYear()}
                 </span>
-              )}
+                <div className="flex items-center gap-1">
+                  <button 
+                    className="p-2 hover:bg-gray-50 rounded-xl transition-colors"
+                    onClick={() => handleMonthNavigation(1)}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {dayNames.map(day => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {generateCalendarDays(activeMonths[0]).map((day, dayIndex) => {
+                  const isWeekend = (dayIndex + 1) % 7 === 0 || dayIndex % 7 === 0;
+                  const hasEvent = isActiveDate(day, 0);
+                  return (
+                    <div
+                      key={dayIndex}
+                      className={`
+                        relative flex items-center justify-center h-10 text-sm font-medium
+                        transition-all duration-200 rounded-xl
+                        ${!day ? 'text-gray-300 cursor-default' : 'cursor-pointer hover:bg-gray-50'}
+                        ${isWeekend && !isStartDate(day, 0) && !isEndDate(day, 0) ? 'text-red-500' : ''}
+                        ${day && isStartDate(day, 0) ? 'bg-gray-900 !text-white hover:bg-black' : ''}
+                        ${day && isEndDate(day, 0) ? 'bg-gray-900 !text-white hover:bg-black' : ''}
+                        ${day && isInRange(day, 0) && !isStartDate(day, 0) && !isEndDate(day, 0) 
+                          ? 'bg-gray-100 text-gray-700' : 'text-gray-900'}
+                      `}
+                      onClick={() => handleDateClick(day, 0)}
+                    >
+                      {day}
+                      {hasEvent && (
+                        <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 
+                          bg-red-500 rounded-full"></div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="w-full justify-between items-center flex gap-2">
-              <button 
-                className="px-4 py-2 text-sm rounded-lg border border-gray-200 
-                  hover:bg-gray-50 transition-colors duration-200"
-                onClick={handleClear}
-              >
-                გაუქმება
-              </button>
-              <button 
-                className={`px-4 py-2 text-sm rounded-lg text-white transition-colors duration-200
-                  ${dateRange.from && dateRange.to 
-                    ? 'bg-black hover:bg-gray-800 cursor-pointer' 
-                    : 'bg-gray-200 cursor-not-allowed'}`}
-                onClick={handleFilter}
-                disabled={!dateRange.from || !dateRange.to}
-              >
-                ფილტრი
-              </button>
+
+            <div className="flex flex-col items-center justify-between gap-4 mt-5 pt-4 border-t border-gray-100">
+              <div className="w-full flex justify-center items-center gap-2 text-sm text-gray-900">
+                {dateRange.from && dateRange.to && (
+                  <span className='text-base font-medium'>
+                    {formatDate(dateRange.from)} - {formatDate(dateRange.to)}
+                  </span>
+                )}
+              </div>
+              <div className="w-full justify-between items-center flex gap-2">
+                <button 
+                  className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 
+                    hover:bg-gray-50 transition-colors duration-200 font-medium"
+                  onClick={handleClear}
+                >
+                  გაუქმება
+                </button>
+                <button 
+                  className={`flex-1 px-4 py-2.5 text-sm rounded-xl text-white transition-colors duration-200 font-medium
+                    ${dateRange.from && dateRange.to 
+                      ? 'bg-gray-900 hover:bg-black cursor-pointer' 
+                      : 'bg-gray-200 cursor-not-allowed'}`}
+                  onClick={handleFilter}
+                  disabled={!dateRange.from || !dateRange.to}
+                >
+                  არჩევა
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

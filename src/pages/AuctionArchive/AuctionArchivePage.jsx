@@ -5,6 +5,8 @@ import { useAuth } from '../../components/core/context/AuthContext';
 import useCustomToast from '../../components/toast/CustomToast';
 import AuctionItem from './components/AuctionItem';
 import { SkeletonLoader } from './components/SkeletonLoader';
+import FilterPopup from './components/FilterPopup'; // Import the new FilterPopup component
+import ActiveFilters from './components/ActiveFilters';
 
 const AuctionArchivePage = () => {
   const { user } = useAuth();
@@ -29,6 +31,7 @@ const AuctionArchivePage = () => {
       max: ''
     }
   });
+  const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false); // State to manage popup visibility
   const auctionsPerPage = 9;
 
   const texts = {
@@ -139,6 +142,37 @@ const AuctionArchivePage = () => {
     setMainFilters(filters);
     setCurrentPage(1);
     fetchAuctions(1, dateFilter, filters);
+  };
+
+  const handleFilterButtonClick = () => {
+    setIsFilterPopupOpen(!isFilterPopupOpen);
+  };
+
+  const handleFilterPopupClose = () => {
+    setIsFilterPopupOpen(false);
+  };
+
+  const handleFilterApply = (filters) => {
+    setMainFilters(filters);
+    setCurrentPage(1);
+    fetchAuctions(1, dateFilter, filters);
+    setIsFilterPopupOpen(false);
+  };
+
+  const handleRemoveFilter = (filterKey) => {
+    const newFilters = { ...mainFilters };
+    if (filterKey === 'city') {
+      newFilters.city = '';
+    } else {
+      newFilters[filterKey] = { min: '', max: '' };
+    }
+    setMainFilters(newFilters);
+    fetchAuctions(1, dateFilter, newFilters);
+  };
+
+  const handleRemoveDateFilter = () => {
+    setDateFilter(null);
+    fetchAuctions(1, null, mainFilters);
   };
 
   const fetchAuctions = async (page, dateFilterValue = dateFilter, mainFiltersValue = mainFilters) => {
@@ -261,15 +295,54 @@ const AuctionArchivePage = () => {
   }
 
   return (
-    <div className="w-full bg-[#E6E6E6] px-16 py-10 flex flex-col gap-10">
-      <div className="auction-archive flex flex-col gap-12">
-        <div className="flex justify-between items-center">
+    <div className="w-full bg-[#E6E6E6] px-4 md:px-8 lg:px-16 py-6 md:py-10 flex flex-col gap-6 md:gap-10">
+      <div className="auction-archive flex flex-col gap-6 md:gap-8">
+        <div className="flex justify-between items-center relative">
           <AuctionCategoryItems />
         </div>
-        <AuctionDateFilter onDateFilterChange={handleDateFilterChange} />
+        
+        {/* Filters Section */}
+        <div className='flex flex-col gap-4'>
+          <div className='flex flex-row md:flex-row gap-4 md:items-center relative'>
+            <div className="w-3/5 md:w-auto">
+              <AuctionDateFilter 
+                onDateFilterChange={handleDateFilterChange}
+                currentDateFilter={dateFilter}
+              />
+            </div>
+            <div className="w-2/5 md:w-auto md:ml-auto">
+              <button
+                onClick={handleFilterButtonClick}
+                className="w-full md:w-auto min-w-[120px] px-6 py-2.5 text-xs md:text-sm rounded-full border border-[#D9D9D9] 
+                  bg-white text-gray-700 hover:bg-gray-50"
+              >
+                ფილტრი
+              </button>
+            </div>
+            {isFilterPopupOpen && (
+              <FilterPopup
+                onClose={handleFilterPopupClose}
+                onApply={handleFilterApply}
+                currentFilters={mainFilters}
+              />
+            )}
+          </div>
+          
+          {/* Active Filters */}
+          {(dateFilter || Object.values(mainFilters).some(v => v && v.length !== 0 || (typeof v === 'object' && v.min))) && (
+            <ActiveFilters
+              filters={mainFilters}
+              dateFilter={dateFilter}
+              onRemoveFilter={handleRemoveFilter}
+              onRemoveDateFilter={handleRemoveDateFilter}
+            />
+          )}
+        </div>
+
+        {/* Auctions Grid */}
         {auctions.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {auctions.map(auction => (
                 <AuctionItem
                   key={auction.id}
@@ -282,20 +355,10 @@ const AuctionArchivePage = () => {
                 />
               ))}
             </div>
-            {hasMore && (
-              <div className="flex justify-center mt-8">
-                <button
-                  onClick={handleLoadMore}
-                  disabled={loadingMore}
-                  className="px-12 py-2.5 rounded-full border border-[#D9D9D9] bg-white text-black hover:bg-gray-50 disabled:bg-gray-200 disabled:cursor-not-allowed min-w-[200px]"
-                >
-                  {loadingMore ? texts.loading : texts.loadMore}
-                </button>
-              </div>
-            )}
+            {/* ...existing load more button... */}
           </>
         ) : (
-          <p>{texts.noAuctionsFound}</p>
+          <p className="text-center py-8">{texts.noAuctionsFound}</p>
         )}
       </div>
     </div>
