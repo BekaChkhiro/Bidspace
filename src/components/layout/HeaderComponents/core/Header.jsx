@@ -19,7 +19,7 @@ const Header = ({ onLoginClick }) => {
 
   return (
     <>
-      <header className='w-full px-4 md:px-8 lg:px-16 py-4 flex flex-wrap md:flex-nowrap gap-4 md:gap-8 lg:gap-12 items-center header-bg z-[50] relative'>
+      <header className='w-full px-4 md:px-8 lg:px-16 py-4 flex flex-wrap md:flex-nowrap gap-4 md:gap-8 lg:gap-12 items-center header-bg z-[50] sticky top-0 shadow-sm bg-white md:bg-gray-300'>
         <div className='w-full md:w-4/12 flex justify-between items-center'>
           {/* Mobile Layout */}
           <div className='flex justify-between items-center w-full md:hidden'>
