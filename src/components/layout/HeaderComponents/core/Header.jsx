@@ -21,20 +21,42 @@ const Header = ({ onLoginClick }) => {
     <>
       <header className='w-full px-4 md:px-8 lg:px-16 py-4 flex flex-wrap md:flex-nowrap gap-4 md:gap-8 lg:gap-12 items-center header-bg z-[50] relative'>
         <div className='w-full md:w-4/12 flex justify-between items-center'>
-          <div className='w-1/3'>
+          {/* Mobile Layout */}
+          <div className='flex justify-between items-center w-full md:hidden'>
+            <div className='w-1/3 flex justify-start items-center'>
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {mobileMenuOpen ? <HiX size={24} /> : <HiMenu size={24} />}
+              </button>
+            </div>
+            <div className='w-1/3 flex justify-center items-center'>
+              <Link to='/'>
+                <img src={bidspaceLogo} alt='Bidspace Logo' className='max-w-[120px]' />
+              </Link>
+            </div>
+            
+            <div className='w-1/3 flex justify-end items-center'>
+              {isAuthenticated ? (
+                <UserProfileDropdown user={user} />
+              ) : (
+                <button 
+                  onClick={onLoginClick}
+                  className="py-2 px-4 bg-black text-white rounded-full hover:bg-gray-900 transition-colors text-sm font-medium"
+                >
+                  შესვლა
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className='hidden md:block w-1/3'>
             <Link to='/'>
-              <img src={bidspaceLogo} alt='Bidspace Logo' className='max-w-[120px] md:max-w-full' />
+              <img src={bidspaceLogo} alt='Bidspace Logo' className='max-w-full' />
             </Link>
           </div>
-          <div className='w-2/3 hidden md:block'>
+          <div className='hidden md:block w-2/3'>
             <SearchInput />
           </div>
-          <button 
-            className='md:hidden'
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <HiX size={24} /> : <HiMenu size={24} />}
-          </button>
         </div>
 
         <div className='hidden md:flex w-8/12 justify-between items-center'>

@@ -46,14 +46,14 @@ const UserProfileDropdown = ({ user }) => {
     <div className="relative z-[9999]" ref={dropdownRef}>
       <div 
         onClick={toggleDropdown}
-        className="flex items-center gap-2 p-2 bg-white rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
+        className="flex items-center gap-2 p-0.5 md:p-2 bg-white rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
       >
         <div
           className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-medium"
         >
           {user?.name?.charAt(0).toUpperCase() || 'U'}
         </div>
-        <span className="font-medium">{user?.name}</span>
+        <span className="hidden md:inline font-medium">{user?.name}</span>
       </div>
       {showDropdown && (
         <div className="absolute right-0 mt-6 w-64 bg-white rounded-lg shadow-lg py-2 z-[9999] border border-[#e5e5e5]">

@@ -117,20 +117,6 @@ const MobileSidebar = ({ isOpen, onLoginClick, languageIcon, onClose }) => {
           <img className='w-5 h-5' src={languageIcon} alt='Language Icon' />
           <span className="font-medium">ქარ</span>
             </button>
-
-            {isAuthenticated ? (
-          <UserProfileDropdown user={user} />
-            ) : (
-          <button 
-            onClick={() => {
-                  onLoginClick();
-                  onClose();
-                }}
-                className="w-full py-3 px-8 bg-black text-white rounded-full hover:bg-gray-900 transition-colors text-base font-semibold shadow-sm"
-              >
-                შესვლა
-              </button>
-            )}
           </div>
         </div>
       </div>
