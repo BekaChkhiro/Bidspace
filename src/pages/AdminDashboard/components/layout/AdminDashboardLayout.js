@@ -22,6 +22,9 @@ const AdminDashboardLayout = ({ children }) => {
           <Link to="/">
             <img src={BidspaceLogo} alt="Bidspace Logo" className="w-24 md:w-28" />
           </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <AdminNav />
+          </div>
           <div className='hidden md:flex w-4/5 justify-end gap-6 items-center'>
             <SearchBar />
             <UserProfile />
@@ -31,11 +34,6 @@ const AdminDashboardLayout = ({ children }) => {
           </div>
         </div>
 
-        {/* Navigation Container - Always Visible */}
-        <div className="mt-[73px] hidden md:block">
-          <AdminNav />
-        </div>
-
         {/* Mobile Navigation Drawer */}
       <div className={`md:hidden fixed inset-0 z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
         <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMobileMenuOpen(false)}></div>
@@ -43,7 +41,7 @@ const AdminDashboardLayout = ({ children }) => {
       </div>
 
       {/* Page Content */}
-      <div className="p-4 md:p-6 mt-[73px] md:mt-[0px]">
+      <div className="p-4 md:p-6 mt-[20px] md:mt-[60px]">
         {children}
       </div>
     </div>

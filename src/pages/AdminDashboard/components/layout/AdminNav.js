@@ -3,12 +3,10 @@ import { NavLink } from 'react-router-dom';
 
 const AdminNav = ({ isMobile, onClose }) => {
   const navItems = [
-    { path: '/admin', label: 'სამართავი პანელი' },
+    { path: '/admin', label: 'პანელი' },
     { path: '/admin/auctions', label: 'აუქციონები' },
     { path: '/admin/users', label: 'მომხმარებლები' },
     { path: '/admin/payments', label: 'გადახდები' },
-    { path: '/admin/analytics', label: 'ანალიტიკა' },
-    { path: '/admin/reports', label: 'რეპორტები' },
     { path: '/admin/settings', label: 'პარამეტრები' },
   ];
 
