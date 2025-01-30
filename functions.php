@@ -211,3 +211,95 @@ add_filter('rest_pre_dispatch', function($result, $server, $request) {
     return $result;
 }, 10, 3);
 
+// Add REST API nonce to admin-ajax.php
+function bidspace_add_rest_nonce() {
+    wp_enqueue_script('wp-api');
+    wp_localize_script('wp-api', 'wpApiSettings', array(
+        'root' => esc_url_raw(rest_url()),
+        'nonce' => wp_create_nonce('wp_rest')
+    ));
+}
+add_action('wp_enqueue_scripts', 'bidspace_add_rest_nonce');
+add_action('admin_enqueue_scripts', 'bidspace_add_rest_nonce');
+
+// გავაუმჯობესოთ CORS და აუთენთიფიკაციის ჰენდლინგი
+function bidspace_customize_rest_cors() {
+    remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
+    
+    add_filter('rest_pre_serve_request', function($value) {
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Credentials: true');
+        header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, X-WP-Nonce, X-API-Key');
+        
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
+            status_header(200);
+            exit();
+        }
+        
+        return $value;
+    });
+}
+add_action('rest_api_init', 'bidspace_customize_rest_cors', 15);
+
+
+// გავაუმჯობესოთ nonce-ის გამოყენება
+function bidspace_enqueue_rest_api_settings() {
+    // ძველი სკრიპტების წაშლა
+    wp_dequeue_script('wp-api');
+    
+    // ახალი სკრიპტების დამატება
+    wp_enqueue_script('wp-api');
+    wp_localize_script('wp-api', 'wpApiSettings', array(
+        'root' => esc_url_raw(rest_url()),
+        'nonce' => wp_create_nonce('wp_rest'),
+        'apiKey' => get_option('bidspace_api_key', ''),
+        'user' => array(
+            'can_edit' => current_user_can('edit_others_auctions')
+        )
+    ));
+}
+remove_action('wp_enqueue_scripts', 'enqueue_wp_api_settings');
+add_action('wp_enqueue_scripts', 'bidspace_enqueue_rest_api_settings');
+add_action('admin_enqueue_scripts', 'bidspace_enqueue_rest_api_settings');
+
+// შევცვალოთ API ავთენტიფიკაციის ლოგიკა
+function bidspace_api_auth_handler($result, $server, $request) {
+    // OPTIONS რექვესთებისთვის ყოველთვის დავაბრუნოთ true
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        return true;
+    }
+
+    // /auction ენდპოინტისთვის
+    if (strpos($request->get_route(), '/wp/v2/auction') !== false) {
+        // GET რექვესთებისთვის არ მოვითხოვოთ API key
+        if ($request->get_method() === 'GET') {
+            return $result;
+        }
+
+        // ადმინისტრატორებისთვის არ მოვითხოვოთ API key
+        if (current_user_can('administrator')) {
+            return $result;
+        }
+
+        // სხვა შემთხვევებში შევამოწმოთ API key
+        $api_key = $request->get_header('X-API-Key');
+        $valid_key = get_option('bidspace_api_key', '');
+
+        if (!$api_key || $api_key !== $valid_key) {
+            return new WP_Error(
+                'rest_forbidden',
+                'არასწორი API გასაღები',
+                array('status' => 401)
+            );
+        }
+    }
+
+    return $result;
+}
+
+// წავშალოთ ძველი ფილტრი და დავამატოთ ახალი
+remove_filter('rest_pre_dispatch', 'bidspace_api_auth_handler');
+add_filter('rest_pre_dispatch', 'bidspace_api_auth_handler', 10, 3);
+
+

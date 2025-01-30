@@ -157,9 +157,10 @@ const TheatreCinemaCarousel = () => {
 
         const data = await response.json();
         
-        // ფილტრაცია ticket_category-ის მიხედვით
+        // ფილტრაცია ticket_category-ის და visibility-ის მიხედვით
         const theatreCinemaAuctions = data.filter(auction => 
-          auction.meta.ticket_category === "თეატრი-კინო"
+          auction.meta.ticket_category === "თეატრი-კინო" && 
+          auction.meta.visibility === true
         );
 
         if (theatreCinemaAuctions.length === 0) {

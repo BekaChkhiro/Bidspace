@@ -39,7 +39,8 @@ const EditAuctionSidebar = ({ auction, onClose }) => {
     min_bid_price: auction.meta.min_bid_price || '',
     ticket_information: auction.meta.ticket_information || '',
     skhva_qalaqebi: auction.meta.skhva_qalaqebi || '',
-    sazgvargaret: auction.meta.sazgvargaret || ''
+    sazgvargaret: auction.meta.sazgvargaret || '',
+    visibility: auction.meta.visibility || false
   });
 
   const [showOtherCity, setShowOtherCity] = useState(auction.meta.city === 'skhva_qalaqebi');
@@ -47,6 +48,7 @@ const EditAuctionSidebar = ({ auction, onClose }) => {
 
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleCitySelect = (city) => {
     setFormData(prev => ({
@@ -96,73 +98,59 @@ const EditAuctionSidebar = ({ auction, onClose }) => {
     ));
   };
 
+  // შევცვალოთ validateForm ფუნქცია
   const validateForm = (data) => {
-    const errors = {};
-    if (!data.title) errors.title = 'სათაური სავალდებულოა';
-    if (!data.category) errors.category = 'კატეგორია სავალდებულოა';
-    if (!data.city) errors.city = 'ქალაქი სავალდებულოა';
-    if (!data.ticket_price) errors.ticket_price = 'ბილეთის ფასი სავალდებულოა';
-    if (!data.start_time) errors.start_time = 'დაწყების დრო სავალდებულოა';
-    if (!data.due_time) errors.due_time = 'დასრულების დრო სავალდებულოა';
-    return Object.keys(errors).length ? errors : null;
+    // მხოლოდ title არის სავალდებულო
+    if (!data.title?.trim()) {
+      return { title: 'სათაური სავალდებულოა' };
+    }
+    return null;
   };
 
+  // შევცვალოთ handleSubmit ფუნქცია
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
-
-    const validationErrors = validateForm(formData);
-    if (validationErrors) {
-      setError('გთხოვთ შეავსოთ ყველა სავალდებულო ველი');
-      setIsSubmitting(false);
-      return;
-    }
-
+    
     try {
-      const response = await fetch(`/wp-json/wp/v2/auction/${auction.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': wpApiSettings.nonce
-        },
-        body: JSON.stringify({
-          title: formData.title,
-          meta: {
-            category: formData.category,
-            ticket_category: formData.ticket_category,
-            start_date: formData.start_date,
-            city: formData.city,
-            ticket_price: formData.ticket_price,
-            ticket_quantity: formData.ticket_quantity,
-            hall: formData.hall,
-            row: formData.row,
-            place: formData.place,
-            sector: formData.sector,
-            start_time: formData.start_time,
-            due_time: formData.due_time,
-            auction_price: formData.auction_price,
-            buy_now: formData.buy_now,
-            min_bid_price: formData.min_bid_price,
-            ticket_information: formData.ticket_information,
-            skhva_qalaqebi: formData.skhva_qalaqebi,
-            sazgvargaret: formData.sazgvargaret
-          }
-        })
-      });
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': window.wpApiSettings?.nonce || ''
+        };
 
-      if (!response.ok) {
-        throw new Error('Failed to update auction');
-      }
+        // API key-ს დავამატებთ მხოლოდ თუ არ არის ადმინი
+        if (!window.wpApiSettings?.isAdmin) {
+            headers['X-API-Key'] = window.wpApiSettings?.apiKey || '';
+        }
 
-      onClose(true);
+        const response = await fetch(`/wp-json/wp/v2/auction/${auction.id}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: headers,
+            body: JSON.stringify({
+                title: formData.title,
+                status: 'publish',
+                meta: formData
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'განახლება ვერ მოხერხდა');
+        }
+
+        const updatedAuction = await response.json();
+        setSuccessMessage('აუქციონი წარმატებით განახლდა');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        onClose(true);
     } catch (error) {
-      console.error('Error updating auction:', error);
-      setError('აუქციონის განახლება ვერ მოხერხდა');
+        console.error('Error updating auction:', error);
+        setError(error.message || 'განახლება ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან.');
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
-  };
+};
 
   const handleDelete = async () => {
     if (!window.confirm('ნამდვილად გსურთ აუქციონის წაშლა?')) {
@@ -170,22 +158,73 @@ const EditAuctionSidebar = ({ auction, onClose }) => {
     }
 
     try {
-      const response = await fetch(`/wp-json/wp/v2/auction/${auction.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': wpApiSettings.nonce
+        const wpNonce = window.wpApiSettings?.nonce;
+        if (!wpNonce) {
+            throw new Error('Authentication token not found');
         }
+
+        const response = await fetch(`/wp-json/wp/v2/auction/${auction.id}`, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': wpNonce
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete auction');
+        }
+
+        onClose(true);
+    } catch (error) {
+        console.error('Error deleting auction:', error);
+        setError('აუქციონის წაშლა ვერ მოხერხდა');
+    }
+};
+
+  const handleApprove = async () => {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': window.wpApiSettings?.nonce || ''
+      };
+
+      if (!window.wpApiSettings?.isAdmin) {
+        headers['X-API-Key'] = window.wpApiSettings?.apiKey || '';
+      }
+
+      const response = await fetch(`/wp-json/wp/v2/auction/${auction.id}`, {
+        method: 'PUT',
+        headers: headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          meta: {
+            ...formData,
+            visibility: true
+          }
+        })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete auction');
+        throw new Error('Failed to approve auction');
       }
 
-      onClose(true);
+      setFormData(prev => ({
+        ...prev,
+        visibility: true
+      }));
+
+      setSuccessMessage('აუქციონი წარმატებით გამოქვეყნდა');
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Error deleting auction:', error);
-      alert('აუქციონის წაშლა ვერ მოხერხდა');
+      console.error('Error approving auction:', error);
+      setError('აუქციონის გამოქვეყნება ვერ მოხერხდა');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -194,6 +233,20 @@ const EditAuctionSidebar = ({ auction, onClose }) => {
 
   return (
     <>
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          {successMessage}
+        </div>
+      )}
+      
+      {/* Error Message */}
+      {error && (
+        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          {error}
+        </div>
+      )}
+
       <CSSTransition
         in={true}
         appear={true}
@@ -307,22 +360,52 @@ const EditAuctionSidebar = ({ auction, onClose }) => {
                 />
               </div>
 
-              {/* Submit Button - Improved mobile layout */}
+              {/* Submit Button section */}
               <div className="sticky bottom-0 bg-gradient-to-t from-white via-white to-white/90 border-t backdrop-blur-sm px-3 sm:px-6 lg:px-8 py-3 sm:py-4 mt-4 sm:mt-6">
-                <div className="flex gap-2 sm:gap-4">
+                <div className="flex gap-2 sm:gap-4 flex-wrap">
+                  {/* შენახვის ღილაკი */}
                   <button
                     type="submit"
-                    className="flex-1 px-3 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-600 to-green-500 text-white text-sm sm:text-base font-medium rounded-lg hover:from-green-700 hover:to-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 active:scale-[0.98]"
+                    disabled={isSubmitting}
+                    className="flex-1 px-3 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm sm:text-base font-medium rounded-lg hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    დადასტურება
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        მიმდინარეობს რედაქტირება...
+                      </span>
+                    ) : 'რედაქტირება'}
                   </button>
+                  {/* წაშლის ღილაკი */}
                   <button
                     type="button"
                     onClick={handleDelete}
-                    className="px-3 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-red-50 to-red-50/80 text-red-600 text-sm sm:text-base font-medium rounded-lg hover:from-red-100 hover:to-red-100/80 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 active:scale-[0.98]"
+                    disabled={isSubmitting}
+                    className="px-3 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-red-50 to-red-50/80 text-red-600 text-sm sm:text-base font-medium rounded-lg hover:from-red-100 hover:to-red-100/80 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     წაშლა
                   </button>
+                  {/* დადასტურების სტატუსი/ღილაკი */}
+                  {formData.visibility ? (
+                    <div className="px-3 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-50 to-green-50/80 text-green-600 text-sm sm:text-base font-medium rounded-lg flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      დადასტურებული
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleApprove}
+                      disabled={isSubmitting}
+                      className="px-3 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-50 to-green-50/80 text-green-600 text-sm sm:text-base font-medium rounded-lg hover:from-green-100 hover:to-green-100/80 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      დადასტურება
+                    </button>
+                  )}
                 </div>
               </div>
             </form>
@@ -334,3 +417,4 @@ const EditAuctionSidebar = ({ auction, onClose }) => {
 };
 
 export default EditAuctionSidebar;
+

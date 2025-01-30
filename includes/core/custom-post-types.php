@@ -53,6 +53,7 @@ if (!function_exists('bidspace_register_auction_post_type')) {
             'supports'           => array('title', 'editor', 'thumbnail', 'author'),
             'show_in_rest'       => true,
             'rest_base'          => 'auction',
+            'rest_controller_class' => 'WP_REST_Posts_Controller',
         );
 
         register_post_type('auction', $args);
@@ -70,12 +71,16 @@ if (!function_exists('bidspace_register_auction_post_type')) {
 }
 add_action('init', 'bidspace_register_auction_post_type');
 
-// Add auction capabilities to administrator role
+// Add auction capabilities to roles
 function bidspace_add_auction_caps() {
-    // Get the administrator role
+    // Get roles
     $admin = get_role('administrator');
+    $editor = get_role('editor');
+    $author = get_role('author');
+    $contributor = get_role('contributor');
+    $subscriber = get_role('subscriber');
     
-    // Add auction capabilities
+    // Admin gets all capabilities
     $admin->add_cap('edit_auction');
     $admin->add_cap('read_auction');
     $admin->add_cap('delete_auction');
@@ -89,6 +94,24 @@ function bidspace_add_auction_caps() {
     $admin->add_cap('delete_others_auctions');
     $admin->add_cap('edit_private_auctions');
     $admin->add_cap('edit_published_auctions');
+
+    // Other roles get limited capabilities
+    $roles = array($editor, $author, $contributor, $subscriber);
+    foreach($roles as $role) {
+        if($role) {
+            // Basic auction capabilities
+            $role->add_cap('read_auction');
+            $role->add_cap('publish_auctions');
+            $role->add_cap('delete_auction');
+            $role->add_cap('edit_auction'); // Can edit own auctions only
+            $role->add_cap('delete_published_auctions'); // Can delete own published auctions
+            
+            // Remove capabilities for editing others' auctions
+            $role->remove_cap('edit_others_auctions');
+            $role->remove_cap('delete_others_auctions');
+            $role->remove_cap('edit_published_auctions');
+        }
+    }
 }
 add_action('admin_init', 'bidspace_add_auction_caps');
 
@@ -159,6 +182,7 @@ function render_auction_details_meta_box($post) {
             <button type="button" class="tab-button" onclick="openTab(event, 'comments-tab')">Comments</button>
             <button type="button" class="tab-button" onclick="openTab(event, 'ticket-category-tab')">Ticket Category</button>
             <button type="button" class="tab-button" onclick="openTab(event, 'user-info')">User Info</button>
+            <button type="button" class="tab-button" onclick="openTab(event, 'visibility-settings')">Visibility Settings</button>
         </div>
 
         <div id="auction-info" class="tab-content" style="display: block;">
@@ -432,6 +456,17 @@ function render_auction_details_meta_box($post) {
                        value="<?php echo esc_attr($piradi_nomeri); ?>" class="widefat">
             </p>
         </div>
+
+        <div id="visibility-settings" class="tab-content">
+            <h3>Visibility Settings</h3>
+            <p>
+                <label for="visibility">Visibility:</label>
+                <select name="visibility" id="visibility" class="widefat">
+                    <option value="0" <?php selected(get_post_meta($post->ID, 'visibility', true), '0'); ?>>Hidden</option>
+                    <option value="1" <?php selected(get_post_meta($post->ID, 'visibility', true), '1'); ?>>Visible</option>
+                </select>
+            </p>
+        </div>
     </div>
 
     <style>
@@ -579,7 +614,8 @@ function save_auction_meta($post_id) {
         'ticket_information',
         'ticket_category',
         'phone_number',
-        'piradi_nomeri'
+        'piradi_nomeri',
+        'visibility'  // Add this line
     );
 
     foreach ($fields as $field) {
@@ -816,6 +852,15 @@ function bidspace_register_auction_meta() {
                 )
             )
         ),
+        'visibility' => array(
+            'type' => 'boolean',
+            'description' => 'Auction visibility status',
+            'single' => true,
+            'default' => false,
+            'sanitize_callback' => function($value) {
+                return (bool) $value;
+            },
+        ),
     );
 
     foreach ($meta_fields as $field => $args) {
@@ -838,14 +883,16 @@ function bidspace_rest_prepare_auction($response, $post, $request) {
         return $response;
     }
 
-    // Get all registered meta keys
-    $registered_meta = get_registered_meta_keys('post', 'auction');
+    // აუცილებლად დავამატოთ ყველა მეტა ველი პასუხში
+    $meta_fields = get_post_meta($post->ID);
+    $response->data['meta'] = array();
     
-    foreach ($registered_meta as $meta_key => $meta_value) {
-        // Add meta value to response if it exists
-        $meta_data = get_post_meta($post->ID, $meta_key, true);
-        if ($meta_data) {
-            $response->data['meta'][$meta_key] = $meta_data;
+    foreach ($meta_fields as $key => $value) {
+        // Boolean ველების სწორი კონვერტაცია
+        if ($key === 'visibility') {
+            $response->data['meta'][$key] = (bool) $value[0];
+        } else {
+            $response->data['meta'][$key] = $value[0];
         }
     }
 
@@ -1068,3 +1115,103 @@ function bidspace_filter_auctions($query) {
     }
 }
 add_action('pre_get_posts', 'bidspace_filter_auctions');
+
+// Add this new function after bidspace_register_auction_meta()
+function bidspace_customize_auction_rest_api() {
+    // Add custom permissions for REST API
+    add_filter('rest_auction_query', function($args, $request) {
+        if (current_user_can('edit_others_auctions')) {
+            // Allow administrators to view all auctions
+            unset($args['author']);
+        }
+        return $args;
+    }, 10, 2);
+
+    // Add custom permissions check for editing auctions
+    add_filter('rest_pre_dispatch', function($result, $server, $request) {
+        if (strpos($request->get_route(), '/wp/v2/auction') === false) {
+            return $result;
+        }
+
+        // Get the request method
+        $method = $request->get_method();
+        
+        // For POST (create) and DELETE methods
+        if ($method === 'POST' || $method === 'DELETE') {
+            if (!is_user_logged_in()) {
+                return new WP_Error(
+                    'rest_forbidden',
+                    'You must be logged in to perform this action.',
+                    array('status' => rest_authorization_required_code())
+                );
+            }
+            return $result;
+        }
+        
+        // For PUT/PATCH (edit) methods
+        if ($method === 'PUT' || $method === 'PATCH') {
+            if (!current_user_can('edit_others_auctions')) {
+                return new WP_Error(
+                    'rest_forbidden',
+                    'Sorry, you are not allowed to edit auctions.',
+                    array('status' => rest_authorization_required_code())
+                );
+            }
+        }
+
+        return $result;
+    }, 10, 3);
+    
+    // Add filter for own auctions
+    add_filter('rest_auction_permissions_check', function($response, $request) {
+        if ($request->get_method() === 'PUT' || $request->get_method() === 'PATCH') {
+            $post = get_post($request['id']);
+            if (!current_user_can('edit_others_auctions') && $post->post_author != get_current_user_id()) {
+                return new WP_Error(
+                    'rest_forbidden',
+                    'Sorry, you can only edit your own auctions.',
+                    array('status' => rest_authorization_required_code())
+                );
+            }
+        }
+        return $response;
+    }, 10, 2);
+}
+add_action('rest_api_init', 'bidspace_customize_auction_rest_api');
+
+// Add filter to modify auction queries based on visibility
+function bidspace_filter_auctions_by_visibility($query) {
+    if (!is_admin() && $query->is_main_query() && is_post_type_archive('auction')) {
+        $meta_query = $query->get('meta_query', array());
+        
+        // Add visibility check
+        $meta_query[] = array(
+            'key' => 'visibility',
+            'value' => '1',
+            'compare' => '='
+        );
+        
+        $query->set('meta_query', $meta_query);
+    }
+}
+add_action('pre_get_posts', 'bidspace_filter_auctions_by_visibility');
+
+// დავამატოთ REST API-ის query ფილტრი
+add_filter('rest_auction_query', function($args, $request) {
+    // ადმინისტრატორებისთვის ყველა აუქციონის ჩვენება
+    if (!current_user_can('administrator')) {
+        $meta_query = array(
+            array(
+                'key'     => 'visibility',
+                'value'   => '1',
+                'compare' => '='
+            )
+        );
+        
+        $args['meta_query'] = isset($args['meta_query']) 
+            ? array_merge($args['meta_query'], $meta_query) 
+            : $meta_query;
+    }
+    
+    return $args;
+}, 10, 2);
