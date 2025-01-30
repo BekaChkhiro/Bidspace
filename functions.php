@@ -81,13 +81,11 @@ function add_cors_headers_for_rest() {
 }
 add_action('rest_api_init', 'add_cors_headers_for_rest', 15);
 
-add_action('after_setup_theme', 'show_admin_bar_for_admins');
-
-function show_admin_bar_for_admins() {
-    if (!current_user_can('administrator')) {
-        add_filter('show_admin_bar', '__return_false');
-    }
+// Hide WordPress admin bar for all users
+function hide_admin_bar_for_all_users() {
+    add_filter('show_admin_bar', '__return_false');
 }
+add_action('after_setup_theme', 'hide_admin_bar_for_all_users');
 
 // Enqueue WordPress REST API nonce
 function enqueue_wp_api_settings() {

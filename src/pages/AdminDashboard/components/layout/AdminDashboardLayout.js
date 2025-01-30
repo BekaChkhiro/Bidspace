@@ -41,7 +41,7 @@ const AdminDashboardLayout = ({ children }) => {
       </div>
 
       {/* Page Content */}
-      <div className="p-4 md:p-6 mt-[20px] md:mt-[60px]">
+      <div className="p-4 md:p-6 mt-[73px] md:mt-[95px]">
         {children}
       </div>
     </div>

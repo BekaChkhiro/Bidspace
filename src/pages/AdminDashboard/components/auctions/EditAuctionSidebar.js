@@ -21,26 +21,26 @@ const EditAuctionSidebar = ({ auction, onClose }) => {
   }, []);
 
   const [formData, setFormData] = useState({
-    title: auction.title.rendered || '',
-    category: auction.meta.category || '',
-    ticket_category: auction.meta.ticket_category || '',
-    start_date: auction.meta.start_date || '',
-    city: auction.meta.city || '',
-    ticket_price: auction.meta.ticket_price || '',
-    ticket_quantity: auction.meta.ticket_quantity || '',
-    hall: auction.meta.hall || '',
-    row: auction.meta.row || '',
-    place: auction.meta.place || '',
-    sector: auction.meta.sector || '',
-    start_time: auction.meta.start_time || '',
-    due_time: auction.meta.due_time || '',
-    auction_price: auction.meta.auction_price || '',
-    buy_now: auction.meta.buy_now || '',
-    min_bid_price: auction.meta.min_bid_price || '',
-    ticket_information: auction.meta.ticket_information || '',
-    skhva_qalaqebi: auction.meta.skhva_qalaqebi || '',
-    sazgvargaret: auction.meta.sazgvargaret || '',
-    visibility: auction.meta.visibility || false
+    title: auction.title?.rendered || '',
+    category: auction.meta?.category || '',
+    ticket_category: auction.meta?.ticket_category || '',
+    start_date: auction.meta?.start_date || '',
+    city: auction.meta?.city || '',
+    ticket_price: auction.meta?.ticket_price || '',
+    ticket_quantity: auction.meta?.ticket_quantity || '',
+    hall: auction.meta?.hall || '',
+    row: auction.meta?.row || '',
+    place: auction.meta?.place || '',
+    sector: auction.meta?.sector || '',
+    start_time: auction.meta?.start_time || '',
+    due_time: auction.meta?.due_time || '',
+    auction_price: auction.meta?.auction_price || '',
+    buy_now: auction.meta?.buy_now || '',
+    min_bid_price: auction.meta?.min_bid_price || '',
+    ticket_information: auction.meta?.ticket_information || '',
+    skhva_qalaqebi: auction.meta?.skhva_qalaqebi || '',
+    sazgvargaret: auction.meta?.sazgvargaret || '',
+    visibility: auction.meta?.visibility || false
   });
 
   const [showOtherCity, setShowOtherCity] = useState(auction.meta.city === 'skhva_qalaqebi');
@@ -226,6 +226,7 @@ const handleDelete = async () => {
 
       setSuccessMessage('აუქციონი წარმატებით გამოქვეყნდა');
       setTimeout(() => setSuccessMessage(''), 3000);
+      onClose(true); // Notify parent component to refresh data
     } catch (error) {
       console.error('Error approving auction:', error);
       setError('აუქციონის გამოქვეყნება ვერ მოხერხდა');
@@ -379,7 +380,7 @@ const handleDelete = async () => {
                       <span className="flex items-center justify-center">
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938ლ3-2.647z"></path>
                         </svg>
                         მიმდინარეობს რედაქტირება...
                       </span>
