@@ -7,11 +7,16 @@ import { useAuth } from '../../../core/context/AuthContext';
 import UserProfileDropdown from '../user/UserProfileDropdown';
 import { HiMenu, HiX } from 'react-icons/hi'; // Add this import
 import MobileSidebar from '../mobile/MobileSidebar';
+import AdminLoginButton from '../auth/AdminLoginButton';
 
 const Header = ({ onLoginClick }) => {
   const { isAuthenticated, user } = useAuth();
   const [showDropdown, setShowDropdown] = React.useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
+  // Add console log to debug
+  console.log('Current user:', user);
+  console.log('User role:', user?.role);
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
@@ -36,7 +41,11 @@ const Header = ({ onLoginClick }) => {
             
             <div className='w-1/3 flex justify-end items-center'>
               {isAuthenticated ? (
-                <UserProfileDropdown user={user} />
+                user?.roles?.includes('administrator') ? (
+                  <AdminLoginButton user={user} />
+                ) : (
+                  <UserProfileDropdown user={user} />
+                )
               ) : (
                 <button 
                   onClick={onLoginClick}
@@ -87,7 +96,11 @@ const Header = ({ onLoginClick }) => {
             </button>
 
             {isAuthenticated ? (
-              <UserProfileDropdown user={user} />
+              user?.roles?.includes('administrator') ? (
+                <AdminLoginButton user={user} />
+              ) : (
+                <UserProfileDropdown user={user} />
+              )
             ) : (
               <button 
                 onClick={onLoginClick}

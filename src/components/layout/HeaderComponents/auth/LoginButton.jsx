@@ -43,7 +43,7 @@ const LoginButton = () => {
     <div className="relative dropdown-container">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white"
+        className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white"
       >
         B
       </button>

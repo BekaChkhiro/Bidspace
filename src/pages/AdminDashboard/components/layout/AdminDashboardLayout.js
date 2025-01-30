@@ -20,7 +20,7 @@ const AdminDashboardLayout = ({ children }) => {
             </svg>
           </button>
           <Link to="/">
-            <img src={BidspaceLogo} alt="Bidspace Logo" className="w-24 md:w-28" />
+            <img src={BidspaceLogo} alt="Bidspace Logo" className="w-24 md:w-42" />
           </Link>
           <div className="hidden md:flex items-center gap-6">
             <AdminNav />
