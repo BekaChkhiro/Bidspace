@@ -15,11 +15,23 @@ const Auctions = () => {
   const [isEditSidebarOpen, setIsEditSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const auctionsPerPage = 10;
+  const [visibilityFilter, setVisibilityFilter] = useState('all'); // Add this state
 
-  // Filter auctions based on search term
-  const filteredAuctions = auctions.filter(auction => 
-    auction.title.rendered.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Update the filtering logic to include visibility
+  const filteredAuctions = auctions.filter(auction => {
+    // First filter by search term
+    const matchesSearch = auction.title.rendered.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Then filter by visibility if needed
+    if (visibilityFilter === 'visible') {
+      return matchesSearch && auction.meta.visibility === true;
+    } else if (visibilityFilter === 'hidden') {
+      return matchesSearch && auction.meta.visibility === false;
+    }
+    
+    // If filter is 'all', just return search results
+    return matchesSearch;
+  });
 
   // Get current auctions for pagination
   const indexOfLastAuction = currentPage * auctionsPerPage;
@@ -38,11 +50,13 @@ const Auctions = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/wp-json/wp/v2/auction/?per_page=100&_embed', {
+      
+      const response = await fetch('/wp-json/wp/v2/auction?per_page=100&_embed', {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'X-API-Key': window.wpApiSettings?.apiKey || ''
+          'X-API-Key': window.wpApiSettings?.apiKey || '',
+          'X-WP-Admin': 'true'  // ეს ჰედერი მიუთითებს რომ მოთხოვნა ადმინ პანელიდან მოდის
         },
         credentials: 'include'
       });
@@ -61,6 +75,19 @@ const Auctions = () => {
     }
   };
 
+  // Add visibility indicator in table row
+  const getVisibilityBadge = (visibility) => {
+    return visibility ? (
+      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+        დადასტურებული
+      </span>
+    ) : (
+      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+        დასადასტურებელი
+      </span>
+    );
+  };
+
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} />;
 
@@ -68,7 +95,16 @@ const Auctions = () => {
     <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-3 sm:space-y-0">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900">აუქციონები</h2>
-        <div className="w-full sm:w-auto">
+        <div className="flex items-center space-x-4">
+          <select
+            value={visibilityFilter}
+            onChange={(e) => setVisibilityFilter(e.target.value)}
+            className="rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+          >
+            <option value="all">ყველა</option>
+            <option value="visible">დადასტურებული</option>
+            <option value="hidden">დაუდასტურებელი</option>
+          </select>
           <SearchInput value={searchTerm} onChange={setSearchTerm} />
         </div>
       </div>
@@ -89,6 +125,9 @@ const Auctions = () => {
       </th>
       <th className="hidden sm:table-cell px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
         თარიღი
+      </th>
+      <th className="hidden sm:table-cell px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        სტატუსი
       </th>
       <th className="px-3 sm:px-6 py-2 sm:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
         მოქმედება
@@ -129,6 +168,9 @@ const Auctions = () => {
         </td>
         <td className="hidden sm:table-cell px-3 sm:px-6 py-3 text-sm text-gray-500">
           {formatDate(auction.meta.start_time)}
+        </td>
+        <td className="hidden sm:table-cell px-3 sm:px-6 py-3">
+          {getVisibilityBadge(auction.meta.visibility)}
         </td>
         <td className="px-3 sm:px-6 py-3 text-right">
           <button

@@ -1181,10 +1181,23 @@ add_action('rest_api_init', 'bidspace_customize_auction_rest_api');
 
 // Add filter to modify auction queries based on visibility
 function bidspace_filter_auctions_by_visibility($query) {
-    if (!is_admin() && $query->is_main_query() && is_post_type_archive('auction')) {
+    // Skip filter for admin area
+    if (is_admin()) {
+        return;
+    }
+
+    // Skip filter for admin REST API requests
+    if (defined('REST_REQUEST') && REST_REQUEST && 
+        (isset($_SERVER['HTTP_X_WP_ADMIN']) || 
+         (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], '/wp-admin/') !== false) ||
+         current_user_can('administrator'))) {
+        return;
+    }
+
+    // Only apply filter for frontend queries and non-admin users
+    if (!current_user_can('administrator') && $query->is_main_query() && is_post_type_archive('auction')) {
         $meta_query = $query->get('meta_query', array());
         
-        // Add visibility check
         $meta_query[] = array(
             'key' => 'visibility',
             'value' => '1',

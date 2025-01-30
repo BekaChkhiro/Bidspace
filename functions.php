@@ -228,9 +228,9 @@ function bidspace_customize_rest_cors() {
     
     add_filter('rest_pre_serve_request', function($value) {
         header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
         header('Access-Control-Allow-Credentials: true');
-        header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, X-WP-Nonce, X-API-Key');
+        header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, X-WP-Nonce, X-API-Key, X-WP-Admin');
         
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
             status_header(200);
@@ -241,7 +241,6 @@ function bidspace_customize_rest_cors() {
     });
 }
 add_action('rest_api_init', 'bidspace_customize_rest_cors', 15);
-
 
 // გავაუმჯობესოთ nonce-ის გამოყენება
 function bidspace_enqueue_rest_api_settings() {
@@ -272,14 +271,29 @@ function bidspace_api_auth_handler($result, $server, $request) {
 
     // /auction ენდპოინტისთვის
     if (strpos($request->get_route(), '/wp/v2/auction') !== false) {
+        // ადმინისტრატორებისთვის ყველა მოქმედება დაშვებულია
+        if (current_user_can('administrator')) {
+            return $result;
+        }
+
         // GET რექვესთებისთვის არ მოვითხოვოთ API key
         if ($request->get_method() === 'GET') {
             return $result;
         }
 
-        // ადმინისტრატორებისთვის არ მოვითხოვოთ API key
-        if (current_user_can('administrator')) {
-            return $result;
+        // DELETE რექვესთებისთვის შევამოწმოთ ნონსი და API key
+        if ($request->get_method() === 'DELETE') {
+            $nonce_verified = wp_verify_nonce($request->get_header('X-WP-Nonce'), 'wp_rest');
+            $api_key = $request->get_header('X-API-Key');
+            $valid_key = get_option('bidspace_api_key', '');
+
+            if (!$nonce_verified || !$api_key || $api_key !== $valid_key) {
+                return new WP_Error(
+                    'rest_forbidden',
+                    'უფლებამოსილების შემოწმება ვერ მოხერხდა',
+                    array('status' => 401)
+                );
+            }
         }
 
         // სხვა შემთხვევებში შევამოწმოთ API key
@@ -301,5 +315,34 @@ function bidspace_api_auth_handler($result, $server, $request) {
 // წავშალოთ ძველი ფილტრი და დავამატოთ ახალი
 remove_filter('rest_pre_dispatch', 'bidspace_api_auth_handler');
 add_filter('rest_pre_dispatch', 'bidspace_api_auth_handler', 10, 3);
+
+// Remove all existing auction query filters first
+remove_all_filters('rest_auction_query');
+
+// Add new simplified filter that doesn't check visibility for admin dashboard
+add_filter('rest_auction_query', function($args, $request) {
+    // Check if request is from admin dashboard
+    $is_admin_request = 
+        isset($_SERVER['HTTP_X_WP_ADMIN']) || 
+        (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], '/wp-admin/') !== false);
+
+    // For admin dashboard requests, return all auctions without visibility filtering
+    if ($is_admin_request) {
+        return $args;
+    }
+
+    // For frontend requests, keep visibility filter
+    if (!isset($args['meta_query'])) {
+        $args['meta_query'] = array();
+    }
+    
+    $args['meta_query'][] = array(
+        'key' => 'visibility',
+        'value' => '1',
+        'compare' => '='
+    );
+    
+    return $args;
+}, 10, 2);
 
 

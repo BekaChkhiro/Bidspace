@@ -152,34 +152,40 @@ const EditAuctionSidebar = ({ auction, onClose }) => {
     }
 };
 
-  const handleDelete = async () => {
+const handleDelete = async () => {
     if (!window.confirm('ნამდვილად გსურთ აუქციონის წაშლა?')) {
-      return;
+        return;
     }
 
     try {
-        const wpNonce = window.wpApiSettings?.nonce;
-        if (!wpNonce) {
-            throw new Error('Authentication token not found');
-        }
+        setIsSubmitting(true);
+        setError(null);
 
         const response = await fetch(`/wp-json/wp/v2/auction/${auction.id}`, {
             method: 'DELETE',
-            credentials: 'same-origin',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
-                'X-WP-Nonce': wpNonce
+                'X-WP-Nonce': window.wpApiSettings?.nonce || '',
+                'X-API-Key': window.wpApiSettings?.apiKey || '',
+                'X-WP-Admin': 'true'
             }
         });
 
         if (!response.ok) {
-            throw new Error('Failed to delete auction');
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'აუქციონის წაშლა ვერ მოხერხდა');
         }
 
-        onClose(true);
+        setSuccessMessage('აუქციონი წარმატებით წაიშალა');
+        setTimeout(() => {
+            onClose(true);
+        }, 1500);
     } catch (error) {
         console.error('Error deleting auction:', error);
-        setError('აუქციონის წაშლა ვერ მოხერხდა');
+        setError(error.message || 'აუქციონის წაშლა ვერ მოხერხდა');
+    } finally {
+        setIsSubmitting(false);
     }
 };
 
