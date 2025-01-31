@@ -199,24 +199,28 @@ const handleDelete = async () => {
         'X-WP-Nonce': window.wpApiSettings?.nonce || ''
       };
 
+      // Add API key header if not admin
       if (!window.wpApiSettings?.isAdmin) {
         headers['X-API-Key'] = window.wpApiSettings?.apiKey || '';
       }
 
+      // First, update the visibility in meta
       const response = await fetch(`/wp-json/wp/v2/auction/${auction.id}`, {
         method: 'PUT',
         headers: headers,
         credentials: 'include',
         body: JSON.stringify({
+          status: 'publish',
           meta: {
-            ...formData,
+            ...auction.meta,
             visibility: true
           }
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to approve auction');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'აუქციონის დადასტურება ვერ მოხერხდა');
       }
 
       setFormData(prev => ({
@@ -224,12 +228,14 @@ const handleDelete = async () => {
         visibility: true
       }));
 
-      setSuccessMessage('აუქციონი წარმატებით გამოქვეყნდა');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      onClose(true); // Notify parent component to refresh data
+      setSuccessMessage('აუქციონი წარმატებით დადასტურდა');
+      setTimeout(() => {
+        setSuccessMessage('');
+        onClose(true);
+      }, 1500);
     } catch (error) {
       console.error('Error approving auction:', error);
-      setError('აუქციონის გამოქვეყნება ვერ მოხერხდა');
+      setError(error.message || 'აუქციონის დადასტურება ვერ მოხერხდა');
     } finally {
       setIsSubmitting(false);
     }
@@ -380,7 +386,7 @@ const handleDelete = async () => {
                       <span className="flex items-center justify-center">
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938ლ3-2.647z"></path>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                         მიმდინარეობს რედაქტირება...
                       </span>
