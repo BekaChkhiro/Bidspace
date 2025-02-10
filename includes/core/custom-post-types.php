@@ -1045,7 +1045,7 @@ function bidspace_filter_auctions($query) {
     if (!is_admin() && $query->is_main_query() && is_post_type_archive('auction')) {
         $meta_query = array('relation' => 'AND');
 
-        // Fix auction price filter
+        // Price filter logic
         if (isset($_GET['auctionPriceMin']) && isset($_GET['auctionPriceMax'])) {
             $meta_query[] = array(
                 'relation' => 'AND',
@@ -1078,7 +1078,7 @@ function bidspace_filter_auctions($query) {
             );
         }
 
-        // Keep existing buy now filter
+        // Buy now filter logic
         if (isset($_GET['buyNowMin']) && isset($_GET['buyNowMax'])) {
             $meta_query[] = array(
                 'relation' => 'AND',
@@ -1111,6 +1111,16 @@ function bidspace_filter_auctions($query) {
             );
         }
 
+        // City filter logic
+        if (isset($_GET['city']) && $_GET['city'] !== '') {
+            $meta_query[] = array(
+                'key' => 'city',
+                'value' => sanitize_text_field($_GET['city']),
+                'compare' => '='
+            );
+        }
+
+        // Apply meta query
         $query->set('meta_query', $meta_query);
     }
 }

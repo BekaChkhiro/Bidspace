@@ -317,28 +317,39 @@ add_filter('rest_pre_dispatch', 'bidspace_api_auth_handler', 10, 3);
 // Remove all existing auction query filters first
 remove_all_filters('rest_auction_query');
 
-// Add new simplified filter that doesn't check visibility for admin dashboard
+// Add new filter that handles both visibility and city filtering
 add_filter('rest_auction_query', function($args, $request) {
     // Check if request is from admin dashboard
     $is_admin_request = 
         isset($_SERVER['HTTP_X_WP_ADMIN']) || 
         (isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], '/wp-admin/') !== false);
 
-    // For admin dashboard requests, return all auctions without visibility filtering
-    if ($is_admin_request) {
-        return $args;
+    if (!$is_admin_request) {
+        if (!isset($args['meta_query'])) {
+            $args['meta_query'] = array();
+        }
+        
+        // Add visibility filter for non-admin requests
+        $args['meta_query'][] = array(
+            'key' => 'visibility',
+            'value' => '1',
+            'compare' => '='
+        );
+        
+        // Add city filter if provided
+        if (!empty($request['city'])) {
+            $args['meta_query'][] = array(
+                'key' => 'city',
+                'value' => sanitize_text_field($request['city']),
+                'compare' => '='
+            );
+        }
+        
+        // Set meta_query relation to AND
+        if (count($args['meta_query']) > 1) {
+            $args['meta_query']['relation'] = 'AND';
+        }
     }
-
-    // For frontend requests, keep visibility filter
-    if (!isset($args['meta_query'])) {
-        $args['meta_query'] = array();
-    }
-    
-    $args['meta_query'][] = array(
-        'key' => 'visibility',
-        'value' => '1',
-        'compare' => '='
-    );
     
     return $args;
 }, 10, 2);
