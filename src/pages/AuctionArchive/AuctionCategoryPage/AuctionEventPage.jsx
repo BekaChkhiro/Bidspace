@@ -282,7 +282,7 @@ const AuctionEventPage = () => {
   }
 
   return (
-    <div className="w-full bg-[#E6E6E6] px-4 md:px-8 lg:px-16 py-6 md:py-10 flex flex-col gap-6 md:gap-10">
+    <div className="w-full bg-[#E6E6E6] px-4 md:px-8 lg:px-16 py-6 md:py-10 flex flex-col gap-10">
       <div className="auction-archive flex flex-col gap-6 md:gap-8">
         <div className="flex justify-between items-center">
           <AuctionCategoryItems />
