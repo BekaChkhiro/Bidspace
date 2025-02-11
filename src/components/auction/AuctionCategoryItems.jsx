@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
-} from '../ui/carousel'
-// Remove slick carousel imports
+} from '../ui/carousel';
 import cinemaImage from '../assets/images/auction-categories/cinema_category_image.png';
 import eventsImage from '../assets/images/auction-categories/events_category_image.png';
 import sportImage from '../assets/images/auction-categories/sport_category_image.png';
@@ -14,11 +13,10 @@ import menuIcon from '../assets/icons/menu_icon.svg';
 
 const AuctionCategoryItems = () => {
   const location = useLocation();
+  const carouselRef = useRef(null);
   
   const getActiveStyle = (path) => {
-    // Remove trailing slash from current location path
     const currentPath = location.pathname.replace(/\/$/, '');
-    // Remove trailing slash from category path
     const categoryPath = path.replace(/\/$/, '');
     
     return currentPath === categoryPath ? {
@@ -34,6 +32,39 @@ const AuctionCategoryItems = () => {
     { path: '/sport', title: 'სპორტი', image: sportImage },
     { path: '/travel', title: 'მოგზაურობა', image: travelImage },
   ];
+
+  const scrollToActiveItem = () => {
+    if (window.innerWidth <= 768) {
+      const activeItemIndex = categoryItems.findIndex(
+        item => item.path.replace(/\/$/, '') === location.pathname.replace(/\/$/, '')
+      );
+      
+      if (activeItemIndex !== -1 && carouselRef.current) {
+        const scrollContainer = carouselRef.current.querySelector('[role="region"]');
+        if (scrollContainer) {
+          const itemWidth = scrollContainer.offsetWidth * 0.4; // 40% as defined in basis-[40%]
+          const scrollPosition = activeItemIndex * itemWidth - (scrollContainer.offsetWidth - itemWidth) / 2;
+          scrollContainer.scrollTo({
+            left: scrollPosition,
+            behavior: 'smooth'
+          });
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    // Initial scroll after a short delay to ensure layout is ready
+    const initialScrollTimeout = setTimeout(scrollToActiveItem, 200);
+    
+    // Add resize listener to handle orientation changes
+    window.addEventListener('resize', scrollToActiveItem);
+    
+    return () => {
+      clearTimeout(initialScrollTimeout);
+      window.removeEventListener('resize', scrollToActiveItem);
+    };
+  }, [location.pathname]);
 
   return (
     <>
@@ -58,11 +89,12 @@ const AuctionCategoryItems = () => {
       {/* Mobile version */}
       <div className="md:hidden w-full">
         <Carousel 
+          ref={carouselRef}
           opts={{
             dragFree: true,
             containScroll: "trimSnaps",
             skipSnaps: false,
-            align: 'start',
+            align: 'center',
             breakpoints: {
               '(max-width: 768px)': { slidesToShow: 2.5 }
             }
