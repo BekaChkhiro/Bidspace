@@ -80,8 +80,16 @@ function SingleAuction() {
     return () => clearInterval(interval);
   }, []);
 
-  // გვერდის სათაურის დაყენება
+  // გვერდის სათაურის დაყენება და visibility-ის შემოწმება
   useEffect(() => {
+    if (!auction) return;
+
+    // პირდაპირ დავაბრუნოთ თუ visibility არის false
+    if (auction.meta?.visibility === false) {
+      setError('auction_not_visible');
+      return;
+    }
+
     if (auction?.title?.rendered) {
       const cleanTitle = auction.title.rendered.replace(/<[^>]*>/g, '');
       document.title = `${cleanTitle}`;
@@ -92,7 +100,7 @@ function SingleAuction() {
     return () => {
       document.title = 'აუქციონი';
     };
-  }, [auction?.title?.rendered]);
+  }, [auction]);
 
   const handleCommentSubmit = async (commentText) => {
     if (!window.bidspaceSettings?.userId) {
@@ -211,15 +219,15 @@ function SingleAuction() {
     );
   }
 
-  // თუ აუქციონი არ არსებობს
-  if (!auction) {
+  // თუ აუქციონი არ არსებობს ან არ არის ხილვადი
+  if (!auction || auction.meta?.visibility === false) {
     return (
-      <div className="w-full min-h-screen flex items-centerjustify-center bg-[#E6E6E6]">
+      <div className="w-full min-h-screen flex items-center justify-center bg-[#E6E6E6]">
         <div className="text-center text-gray-600">
-          <p>აუქციონი ვერ მოიძებნა</p>
+          <p>აუქციონი არ არის ხელმისაწვდომი</p>
           <button
             onClick={() => window.location.href = '/'}
-            className="mt-4 px-4 py-2 bg-[#00AEEF] text-white rounded-lg"
+            className="mt-4 px-4 py-2 bg-[#00AEEF] text-white rounded-lg hover:bg-[#009bd6] transition-colors"
           >
             მთავარ გვერდზე დაბრუნება
           </button>
