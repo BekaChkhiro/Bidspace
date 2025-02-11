@@ -5,6 +5,7 @@ import AuctionCategoryItems from '../../../components/auction/AuctionCategoryIte
 import { useAuth } from '../../../components/core/context/AuthContext';
 import useCustomToast from '../../../components/toast/CustomToast';
 import AuctionFilters from '../components/AuctionFilters';
+import NoAuctionsFound from '../components/NoAuctionsFound';
 
 const AuctionTheaterCinemaPage = () => {
   const { user } = useAuth();
@@ -311,7 +312,7 @@ const AuctionTheaterCinemaPage = () => {
             ))}
           </div>
         ) : (
-          <p>{texts.noAuctionsFound}</p>
+          <NoAuctionsFound message={texts.noAuctionsFound} />
         )}
       </div>
     </div>

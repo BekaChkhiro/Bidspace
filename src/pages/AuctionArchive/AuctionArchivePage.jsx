@@ -5,6 +5,7 @@ import useCustomToast from '../../components/toast/CustomToast';
 import AuctionItem from './components/AuctionItem';
 import { SkeletonLoader } from './components/SkeletonLoader';
 import AuctionFilters from './components/AuctionFilters';
+import NoAuctionsFound from './components/NoAuctionsFound';
 
 const AuctionArchivePage = () => {
   const { user } = useAuth();
@@ -342,7 +343,7 @@ const AuctionArchivePage = () => {
             {loadingMore && <p className="text-center">{texts.loading}</p>}
           </>
         ) : (
-          <p className="text-center py-8">{texts.noAuctionsFound}</p>
+          <NoAuctionsFound message={texts.noAuctionsFound} />
         )}
       </div>
     </div>
