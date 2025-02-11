@@ -17,13 +17,13 @@ const AuctionFilters = ({
   return (
     <div className='flex flex-col gap-4'>
       <div className='flex flex-row md:flex-row gap-4 md:items-center relative'>
-        <div className="w-3/5 md:w-auto">
+        <div className="w-2/4 md:w-auto">
           <AuctionDateFilter 
             onDateFilterChange={onDateFilterChange}
             currentDateFilter={dateFilter}
           />
         </div>
-        <div className="w-2/5 md:w-auto md:ml-auto">
+        <div className="w-2/4 md:w-auto md:ml-auto">
           <button
             onClick={onFilterButtonClick}
             className="w-full md:w-auto min-w-[120px] px-6 py-2.5 text-xs md:text-sm rounded-full border border-[#D9D9D9] 

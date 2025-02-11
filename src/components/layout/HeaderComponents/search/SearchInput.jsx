@@ -13,7 +13,6 @@ const SearchInput = ({ variant }) => {
   const [featuredImages, setFeaturedImages] = useState({});
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const fetchAllAuctions = async () => {
@@ -157,8 +156,6 @@ const SearchInput = ({ variant }) => {
     return `${day} ${months[month]}, ${year}`;
   };
 
-  const displayedAuctions = showAll ? filteredAuctions : filteredAuctions.slice(0, 3);
-
   return (
     <div className="relative w-full">
       <form onSubmit={handleSearch}>
@@ -204,52 +201,42 @@ const SearchInput = ({ variant }) => {
           ) : error ? (
             <div className="px-4 py-3 text-red-500 text-center">{error}</div>
           ) : filteredAuctions.length > 0 ? (
-            <>
-              <div className="divide-y divide-gray-100">
-                {displayedAuctions.map((auction) => (
-                  <Link
-                    key={auction.id}
-                    to={`/auction/${auction.id}`}
-                    className="search-result-card block hover:bg-gray-50 px-3 py-2.5 md:p-3"
-                    onClick={handleAuctionClick}
-                  >
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={featuredImages[auction.id]} 
-                        alt={auction.title.rendered} 
-                        className="w-14 h-14 md:w-16 md:h-16 object-cover rounded flex-shrink-0"
-                      />
-                      <div className="flex flex-col min-w-0 gap-1">
-                        <h3 className="font-bold text-gray-900 text-sm md:text-base truncate">
-                          {auction.title.rendered}
-                        </h3>
-                        <div className="flex items-center gap-4 text-xs md:text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <img src={calendarIcon} alt="date icon" className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                            <span>{formatDate(auction.date)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <img src={locationIcon} alt="map icon" className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                            <span>{auction.meta.city}</span>
-                          </div>
+            <div className="divide-y divide-gray-100">
+              {filteredAuctions.map((auction) => (
+                <Link
+                  key={auction.id}
+                  to={`/auction/${auction.id}`}
+                  className="search-result-card block hover:bg-gray-50 px-3 py-2.5 md:p-3"
+                  onClick={handleAuctionClick}
+                >
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={featuredImages[auction.id]} 
+                      alt={auction.title.rendered} 
+                      className="w-14 h-14 md:w-16 md:h-16 object-cover rounded flex-shrink-0"
+                    />
+                    <div className="flex flex-col min-w-0 gap-1">
+                      <h3 className="font-bold text-gray-900 text-sm md:text-base truncate">
+                        {auction.title.rendered}
+                      </h3>
+                      <div className="flex items-center gap-4 text-xs md:text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <img src={calendarIcon} alt="date icon" className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                          <span>{formatDate(auction.date)}</span>
                         </div>
-                        <div className="text-xs md:text-sm font-semibold text-gray-900">
-                          მიმდინარე ფასი: {auction.meta.auction_price}₾
+                        <div className="flex items-center gap-1">
+                          <img src={locationIcon} alt="map icon" className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                          <span>{auction.meta.city}</span>
                         </div>
                       </div>
+                      <div className="text-xs md:text-sm font-semibold text-gray-900">
+                        მიმდინარე ფასი: {auction.meta.auction_price}₾
+                      </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
-              {filteredAuctions.length > 3 && !showAll && (
-                <button
-                  onClick={() => setShowAll(true)}
-                  className="w-full py-2.5 text-sm text-center text-gray-600 hover:bg-gray-50 border-t"
-                >
-                  მეტის ნახვა ({filteredAuctions.length - 3})
-                </button>
-              )}
-            </>
+                  </div>
+                </Link>
+              ))}
+            </div>
           ) : (
             <div className="px-4 py-3 text-gray-500 text-center">
               აუქციონი ვერ მოიძებნა
