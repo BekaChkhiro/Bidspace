@@ -4,7 +4,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 import AuctionCategoryItems from '../../../components/auction/AuctionCategoryItems';
 import { useAuth } from '../../../components/core/context/AuthContext';
 import useCustomToast from '../../../components/toast/CustomToast';
-import AuctionDateFilter from '../Filters/AuctionDateFilter';
+import AuctionFilters from '../components/AuctionFilters';
 
 const AuctionSportPage = () => {
   const { user } = useAuth();
@@ -20,18 +20,81 @@ const AuctionSportPage = () => {
     return savedFilter ? JSON.parse(savedFilter) : null;
   });
 
+  const [mainFilters, setMainFilters] = useState(() => {
+    const savedFilters = localStorage.getItem('auctionMainFilters');
+    return savedFilters ? JSON.parse(savedFilters) : {
+      categories: [],
+      city: '',
+      auctionPrice: {
+        min: '',
+        max: ''
+      }
+    };
+  });
+
+  const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false);
+
   const handleDateFilterChange = (filter) => {
     setDateFilter(filter);
+    localStorage.setItem('auctionDateFilter', JSON.stringify(filter));
     fetchAuctions(filter);
   };
 
-  const fetchAuctions = async (dateFilterValue = dateFilter) => {
+  const handleFilterButtonClick = () => {
+    setIsFilterPopupOpen(!isFilterPopupOpen);
+  };
+
+  const handleFilterPopupClose = () => {
+    setIsFilterPopupOpen(false);
+  };
+
+  const handleFilterApply = (filters) => {
+    setMainFilters(filters);
+    localStorage.setItem('auctionMainFilters', JSON.stringify(filters));
+    fetchAuctions(dateFilter, filters);
+    setIsFilterPopupOpen(false);
+  };
+
+  const handleRemoveFilter = (filterKey) => {
+    const newFilters = { ...mainFilters };
+    if (filterKey === 'city') {
+      newFilters.city = '';
+    } else {
+      newFilters[filterKey] = { min: '', max: '' };
+    }
+    setMainFilters(newFilters);
+    localStorage.setItem('auctionMainFilters', JSON.stringify(newFilters));
+    fetchAuctions(dateFilter, newFilters);
+  };
+
+  const handleRemoveDateFilter = () => {
+    setDateFilter(null);
+    localStorage.removeItem('auctionDateFilter');
+    fetchAuctions(null, mainFilters);
+  };
+
+  const fetchAuctions = async (dateFilterValue = dateFilter, mainFiltersValue = mainFilters) => {
     try {
       setLoading(true);
       let url = `/wp-json/wp/v2/auction?per_page=100&_embed`;
       
       if (dateFilterValue) {
         url += `&after=${dateFilterValue.from}&before=${dateFilterValue.to}`;
+      }
+
+      if (mainFiltersValue) {
+        if (mainFiltersValue.categories.length > 0) {
+          url += `&categories=${mainFiltersValue.categories.join(',')}`;
+        }
+        if (mainFiltersValue.city) {
+          url += `&city=${mainFiltersValue.city}`;
+        }
+        if (mainFiltersValue.auctionPrice.min) {
+          url += `&min_price=${mainFiltersValue.auctionPrice.min}`;
+        }
+        if (mainFiltersValue.auctionPrice.max) {
+          url += `&max_price=${mainFiltersValue.auctionPrice.max}`;
+        }
       }
       
       const response = await fetch(url, {
@@ -223,8 +286,16 @@ const AuctionSportPage = () => {
         <div className="flex justify-between items-center">
           <AuctionCategoryItems />
         </div>
-        <AuctionDateFilter 
+        <AuctionFilters
+          dateFilter={dateFilter}
+          mainFilters={mainFilters}
+          isFilterPopupOpen={isFilterPopupOpen}
           onDateFilterChange={handleDateFilterChange}
+          onFilterButtonClick={handleFilterButtonClick}
+          onFilterPopupClose={handleFilterPopupClose}
+          onFilterApply={handleFilterApply}
+          onRemoveFilter={handleRemoveFilter}
+          onRemoveDateFilter={handleRemoveDateFilter}
         />
         {auctions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

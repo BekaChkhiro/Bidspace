@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import AuctionCategoryItems from '../../components/auction/AuctionCategoryItems';
-import AuctionDateFilter from './Filters/AuctionDateFilter';
 import { useAuth } from '../../components/core/context/AuthContext';
 import useCustomToast from '../../components/toast/CustomToast';
 import AuctionItem from './components/AuctionItem';
 import { SkeletonLoader } from './components/SkeletonLoader';
-import FilterPopup from './components/FilterPopup'; // Import the new FilterPopup component
-import ActiveFilters from './components/ActiveFilters';
+import AuctionFilters from './components/AuctionFilters';
 
 const AuctionArchivePage = () => {
   const { user } = useAuth();
@@ -18,19 +16,25 @@ const AuctionArchivePage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [wishlist, setWishlist] = useState([]);
-  const [dateFilter, setDateFilter] = useState(null);
-  const [mainFilters, setMainFilters] = useState({
-    categories: [],
-    city: '',
-    auctionPrice: {
-      min: '',
-      max: ''
-    },
-    instantPrice: {
-      min: '',
-      max: ''
-    }
+  
+  // Initialize filters from localStorage
+  const [dateFilter, setDateFilter] = useState(() => {
+    const savedFilter = localStorage.getItem('auctionDateFilter');
+    return savedFilter ? JSON.parse(savedFilter) : null;
   });
+
+  const [mainFilters, setMainFilters] = useState(() => {
+    const savedFilters = localStorage.getItem('auctionMainFilters');
+    return savedFilters ? JSON.parse(savedFilters) : {
+      categories: [],
+      city: '',
+      auctionPrice: {
+        min: '',
+        max: ''
+      }
+    };
+  });
+
   const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false); // State to manage popup visibility
   const auctionsPerPage = 9;
 
@@ -134,6 +138,7 @@ const AuctionArchivePage = () => {
 
   const handleDateFilterChange = (filter) => {
     setDateFilter(filter);
+    localStorage.setItem('auctionDateFilter', JSON.stringify(filter));
     setCurrentPage(1);
     fetchAuctions(1, filter);
   };
@@ -154,6 +159,7 @@ const AuctionArchivePage = () => {
 
   const handleFilterApply = (filters) => {
     setMainFilters(filters);
+    localStorage.setItem('auctionMainFilters', JSON.stringify(filters));
     setCurrentPage(1);
     fetchAuctions(1, dateFilter, filters);
     setIsFilterPopupOpen(false);
@@ -167,11 +173,13 @@ const AuctionArchivePage = () => {
       newFilters[filterKey] = { min: '', max: '' };
     }
     setMainFilters(newFilters);
+    localStorage.setItem('auctionMainFilters', JSON.stringify(newFilters));
     fetchAuctions(1, dateFilter, newFilters);
   };
 
   const handleRemoveDateFilter = () => {
     setDateFilter(null);
+    localStorage.removeItem('auctionDateFilter');
     fetchAuctions(1, null, mainFilters);
   };
 
@@ -200,12 +208,6 @@ const AuctionArchivePage = () => {
         }
         if (mainFiltersValue.auctionPrice.max) {
           url += `&max_price=${mainFiltersValue.auctionPrice.max}`;
-        }
-        if (mainFiltersValue.instantPrice.min) {
-          url += `&min_instant_price=${mainFiltersValue.instantPrice.min}`;
-        }
-        if (mainFiltersValue.instantPrice.max) {
-          url += `&max_instant_price=${mainFiltersValue.instantPrice.max}`;
         }
       }
 
@@ -301,43 +303,17 @@ const AuctionArchivePage = () => {
           <AuctionCategoryItems />
         </div>
         
-        {/* Filters Section */}
-        <div className='flex flex-col gap-4'>
-          <div className='flex flex-row md:flex-row gap-4 md:items-center relative'>
-            <div className="w-3/5 md:w-auto">
-              <AuctionDateFilter 
-                onDateFilterChange={handleDateFilterChange}
-                currentDateFilter={dateFilter}
-              />
-            </div>
-            <div className="w-2/5 md:w-auto md:ml-auto">
-              <button
-                onClick={handleFilterButtonClick}
-                className="w-full md:w-auto min-w-[120px] px-6 py-2.5 text-xs md:text-sm rounded-full border border-[#D9D9D9] 
-                  bg-white text-gray-700 hover:bg-gray-50"
-              >
-                ფილტრი
-              </button>
-            </div>
-            {isFilterPopupOpen && (
-              <FilterPopup
-                onClose={handleFilterPopupClose}
-                onApply={handleFilterApply}
-                currentFilters={mainFilters}
-              />
-            )}
-          </div>
-          
-          {/* Active Filters */}
-          {(dateFilter || Object.values(mainFilters).some(v => v && v.length !== 0 || (typeof v === 'object' && v.min))) && (
-            <ActiveFilters
-              filters={mainFilters}
-              dateFilter={dateFilter}
-              onRemoveFilter={handleRemoveFilter}
-              onRemoveDateFilter={handleRemoveDateFilter}
-            />
-          )}
-        </div>
+        <AuctionFilters
+          dateFilter={dateFilter}
+          mainFilters={mainFilters}
+          isFilterPopupOpen={isFilterPopupOpen}
+          onDateFilterChange={handleDateFilterChange}
+          onFilterButtonClick={handleFilterButtonClick}
+          onFilterPopupClose={handleFilterPopupClose}
+          onFilterApply={handleFilterApply}
+          onRemoveFilter={handleRemoveFilter}
+          onRemoveDateFilter={handleRemoveDateFilter}
+        />
 
         {/* Auctions Grid */}
         {auctions.length > 0 ? (
@@ -355,7 +331,15 @@ const AuctionArchivePage = () => {
                 />
               ))}
             </div>
-            {/* ...existing load more button... */}
+            {hasMore && !loadingMore && (
+              <button 
+                onClick={handleLoadMore}
+                className="mx-auto px-6 py-2 bg-white rounded-full border border-[#D9D9D9] hover:bg-gray-50"
+              >
+                {texts.loadMore}
+              </button>
+            )}
+            {loadingMore && <p className="text-center">{texts.loading}</p>}
           </>
         ) : (
           <p className="text-center py-8">{texts.noAuctionsFound}</p>

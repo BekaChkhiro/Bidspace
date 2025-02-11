@@ -317,7 +317,7 @@ add_filter('rest_pre_dispatch', 'bidspace_api_auth_handler', 10, 3);
 // Remove all existing auction query filters first
 remove_all_filters('rest_auction_query');
 
-// Add new filter that handles both visibility and city filtering
+// Add new filter that handles visibility, city, and price filtering
 add_filter('rest_auction_query', function($args, $request) {
     // Check if request is from admin dashboard
     $is_admin_request = 
@@ -328,27 +328,64 @@ add_filter('rest_auction_query', function($args, $request) {
         if (!isset($args['meta_query'])) {
             $args['meta_query'] = array();
         }
+
+        $meta_query = array();
         
         // Add visibility filter for non-admin requests
-        $args['meta_query'][] = array(
+        $meta_query[] = array(
             'key' => 'visibility',
             'value' => '1',
             'compare' => '='
         );
         
+        // Add price filter if provided
+        $min_price = $request->get_param('min_price');
+        $max_price = $request->get_param('max_price');
+        
+        if ($min_price !== null || $max_price !== null) {
+            $price_query = array();
+            
+            if ($min_price !== null && is_numeric($min_price)) {
+                $price_query[] = array(
+                    'key' => 'auction_price',
+                    'value' => floatval($min_price),
+                    'type' => 'NUMERIC',
+                    'compare' => '>='
+                );
+            }
+            
+            if ($max_price !== null && is_numeric($max_price)) {
+                $price_query[] = array(
+                    'key' => 'auction_price',
+                    'value' => floatval($max_price),
+                    'type' => 'NUMERIC',
+                    'compare' => '<='
+                );
+            }
+            
+            if (!empty($price_query)) {
+                if (count($price_query) > 1) {
+                    $price_query['relation'] = 'AND';
+                }
+                $meta_query[] = $price_query;
+            }
+        }
+        
         // Add city filter if provided
-        if (!empty($request['city'])) {
-            $args['meta_query'][] = array(
+        if ($request->get_param('city')) {
+            $meta_query[] = array(
                 'key' => 'city',
-                'value' => sanitize_text_field($request['city']),
+                'value' => sanitize_text_field($request->get_param('city')),
                 'compare' => '='
             );
         }
         
         // Set meta_query relation to AND
-        if (count($args['meta_query']) > 1) {
-            $args['meta_query']['relation'] = 'AND';
+        if (count($meta_query) > 1) {
+            $meta_query['relation'] = 'AND';
         }
+        
+        $args['meta_query'] = $meta_query;
     }
     
     return $args;

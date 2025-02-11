@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import AuctionItem from '../components/AuctionItem';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import AuctionCategoryItems from '../../../components/auction/AuctionCategoryItems';
-import AuctionDateFilter from '../Filters/AuctionDateFilter';
 import { useAuth } from '../../../components/core/context/AuthContext';
 import useCustomToast from '../../../components/toast/CustomToast';
+import AuctionFilters from '../components/AuctionFilters';
 
 const AuctionTheaterCinemaPage = () => {
   const { user } = useAuth();
@@ -12,13 +12,123 @@ const AuctionTheaterCinemaPage = () => {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [wishlist, setWishlist] = useState([]);
+  
+  // Filter states
   const [dateFilter, setDateFilter] = useState(() => {
     const savedFilter = localStorage.getItem('auctionDateFilter');
     return savedFilter ? JSON.parse(savedFilter) : null;
   });
+  
+  const [mainFilters, setMainFilters] = useState(() => {
+    const savedFilters = localStorage.getItem('auctionMainFilters');
+    return savedFilters ? JSON.parse(savedFilters) : {
+      categories: [],
+      city: '',
+      auctionPrice: {
+        min: '',
+        max: ''
+      }
+    };
+  });
+  
+  const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false);
+
+  // Filter handlers
+  const handleDateFilterChange = (filter) => {
+    setDateFilter(filter);
+    localStorage.setItem('auctionDateFilter', JSON.stringify(filter));
+    fetchAuctions(filter, mainFilters);
+  };
+
+  const handleFilterButtonClick = () => {
+    setIsFilterPopupOpen(!isFilterPopupOpen);
+  };
+
+  const handleFilterPopupClose = () => {
+    setIsFilterPopupOpen(false);
+  };
+
+  const handleFilterApply = (filters) => {
+    setMainFilters(filters);
+    localStorage.setItem('auctionMainFilters', JSON.stringify(filters));
+    fetchAuctions(dateFilter, filters);
+    setIsFilterPopupOpen(false);
+  };
+
+  const handleRemoveFilter = (filterKey) => {
+    const newFilters = { ...mainFilters };
+    if (filterKey === 'city') {
+      newFilters.city = '';
+    } else {
+      newFilters[filterKey] = { min: '', max: '' };
+    }
+    setMainFilters(newFilters);
+    localStorage.setItem('auctionMainFilters', JSON.stringify(newFilters));
+    fetchAuctions(dateFilter, newFilters);
+  };
+
+  const handleRemoveDateFilter = () => {
+    setDateFilter(null);
+    localStorage.removeItem('auctionDateFilter');
+    fetchAuctions(null, mainFilters);
+  };
+
+  // Modified fetchAuctions to include filters
+  const fetchAuctions = async (dateFilterValue = dateFilter, mainFiltersValue = mainFilters) => {
+    try {
+      setLoading(true);
+      let url = `/wp-json/wp/v2/auction?per_page=100&_embed`;
+      
+      // Add date filter parameters
+      if (dateFilterValue) {
+        url += `&after=${dateFilterValue.from}&before=${dateFilterValue.to}`;
+      }
+
+      // Add main filter parameters
+      if (mainFiltersValue) {
+        if (mainFiltersValue.categories.length > 0) {
+          url += `&categories=${mainFiltersValue.categories.join(',')}`;
+        }
+        if (mainFiltersValue.city) {
+          url += `&city=${mainFiltersValue.city}`;
+        }
+        if (mainFiltersValue.auctionPrice.min) {
+          url += `&min_price=${mainFiltersValue.auctionPrice.min}`;
+        }
+        if (mainFiltersValue.auctionPrice.max) {
+          url += `&max_price=${mainFiltersValue.auctionPrice.max}`;
+        }
+      }
+      
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`მონაცემების ჩატვირთვა ვერ მოხერხდა (სტატუსი: ${response.status})`);
+      }
+      
+      const data = await response.json();
+      const theaterAuctions = data.filter(auction => 
+        auction.meta.ticket_category === "თეატრი-კინო"
+      );
+      
+      setAuctions(theaterAuctions);
+      setHasMore(false);
+      setLoading(false);
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (user?.id) {
@@ -42,57 +152,6 @@ const AuctionTheaterCinemaPage = () => {
       }
     } catch (error) {
       console.error('Error fetching wishlist:', error);
-    }
-  };
-
-  const handleDateFilterChange = (filter) => {
-    setDateFilter(filter);
-    fetchAuctions(filter);
-  };
-
-  const fetchAuctions = async (dateFilterValue = dateFilter) => {
-    try {
-      setLoading(true);
-      let url = `/wp-json/wp/v2/auction?per_page=100&_embed`;
-      
-      // Add date filter parameters if they exist
-      if (dateFilterValue) {
-        url += `&after=${dateFilterValue.from}&before=${dateFilterValue.to}`;
-      }
-      
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'X-API-Key': window.wpApiSettings?.apiKey || ''
-        },
-        credentials: 'include'
-      });
-      
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`მონაცემების ჩატვირთვა ვერ მოხერხდა (სტატუსი: ${response.status})`);
-      }
-      
-      const data = await response.json();
-      console.log('Fetched data with media:', data);
-      
-      const sportAuctions = data.filter(auction => 
-        auction.meta.ticket_category === "თეატრი-კინო"
-      );
-      console.log('Filtered sport auctions:', sportAuctions);
-      
-      setAuctions(sportAuctions);
-      setHasMore(false);
-      setLoading(false);
-    } catch (err) {
-      console.error('Fetch error:', err);
-      setError(err.message);
-      setLoading(false);
     }
   };
 
@@ -224,9 +283,19 @@ const AuctionTheaterCinemaPage = () => {
         <div className="flex justify-between items-center">
           <AuctionCategoryItems />
         </div>
-        <AuctionDateFilter 
+        
+        <AuctionFilters
+          dateFilter={dateFilter}
+          mainFilters={mainFilters}
+          isFilterPopupOpen={isFilterPopupOpen}
           onDateFilterChange={handleDateFilterChange}
+          onFilterButtonClick={handleFilterButtonClick}
+          onFilterPopupClose={handleFilterPopupClose}
+          onFilterApply={handleFilterApply}
+          onRemoveFilter={handleRemoveFilter}
+          onRemoveDateFilter={handleRemoveDateFilter}
         />
+
         {auctions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {auctions.map(auction => (
