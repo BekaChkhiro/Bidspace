@@ -258,7 +258,7 @@ const AuctionTravelPage = () => {
 
   if (loading) {
     return (
-      <div className="w-full bg-[#E6E6E6] px-16 py-10 flex flex-col gap-10">
+      <div className="w-full bg-[#E6E6E6] px-4 md:px-8 lg:px-16 py-6 md:py-10 flex flex-col gap-10">
         <div className="auction-archive flex flex-col gap-12">
           <AuctionCategoryItems />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
