@@ -3,6 +3,10 @@ import StatsCard from '../components/overview/StatsCard';
 import RecentSales from '../components/overview/RecentSales';
 import LoadingSpinner from '../../../components/ui-elements/LoadingSpinner';
 import { useOverviewData } from '../hooks/useOverviewData';
+import RecentAuctions from '../components/overview/RecentAuctions';
+
+// Add UserOverview component
+import UserOverview from '../components/overview/UserOverview';
 
 const Overview = () => {
   const { 
@@ -28,12 +32,12 @@ const Overview = () => {
         ))}
       </div>
 
-      {/* ბოლო გაყიდვები */}
-      {recentSales.length > 0 && (
-        <div className="mt-8">
-          <RecentSales sales={recentSales} />
-        </div>
-      )}
+      <RecentAuctions />
+
+      {/* მომხმარებლების მიმოხილვა */}
+      <UserOverview />
+
+      
     </div>
   );
 };
