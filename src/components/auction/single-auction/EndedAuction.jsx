@@ -1,8 +1,33 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import EndedWonAuction from './EndedWonAuction';
 import EndedLostAuction from './EndedLostAuction';
 
 const EndedAuction = ({ auction, currentUserId }) => {
+  useEffect(() => {
+    const sendWinnerNotification = async () => {
+      try {
+        const response = await fetch(`/wp-json/wp/v2/auction/${auction.id}/notify-winner`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': window.bidspaceSettings?.restNonce,
+            'X-API-Key': window.wpApiSettings?.apiKey || ''
+          }
+        });
+
+        if (!response.ok) {
+          console.error('Failed to send winner notification');
+        }
+      } catch (error) {
+        console.error('Error sending winner notification:', error);
+      }
+    };
+
+    if (auction?.id) {
+      sendWinnerNotification();
+    }
+  }, [auction?.id]);
+
   if (!auction) {
     return <div className="text-center py-4">აუქციონის მონაცემები არ მოიძებნა</div>;
   }
