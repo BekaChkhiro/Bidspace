@@ -76,3 +76,85 @@ function hide_admin_bar_css() {
     }
 }
 add_action('wp_head', 'hide_admin_bar_css');
+
+// Add admin menu for email testing
+function add_email_test_menu() {
+    add_menu_page(
+        'Test Email',
+        'Test Email',
+        'manage_options',
+        'test-winner-email',
+        'render_email_test_page',
+        'dashicons-email',
+        30
+    );
+}
+add_action('admin_menu', 'add_email_test_menu');
+
+function render_email_test_page() {
+    ?>
+    <div class="wrap">
+        <h1>Test Winner Email</h1>
+        <div class="card">
+            <h2>Send Test Email</h2>
+            <p>Use this form to send a test winner notification email to yourself.</p>
+            
+            <form id="test-email-form" style="margin-top: 20px;">
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="auction_id">Auction ID</label></th>
+                        <td>
+                            <input type="number" id="auction_id" name="auction_id" class="regular-text" required>
+                        </td>
+                    </tr>
+                </table>
+                
+                <div id="response-message" style="margin: 20px 0;"></div>
+                
+                <p class="submit">
+                    <button type="submit" class="button button-primary">Send Test Email</button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    jQuery(document).ready(function($) {
+        $('#test-email-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const auctionId = $('#auction_id').val();
+            const $responseDiv = $('#response-message');
+            const $submitButton = $(this).find('button[type="submit"]');
+            
+            $submitButton.prop('disabled', true).text('Sending...');
+            $responseDiv.html('').removeClass('notice-success notice-error');
+            
+            $.ajax({
+                url: '/wp-json/bidspace/v1/test-winner-email',
+                method: 'POST',
+                data: JSON.stringify({ auction_id: auctionId }),
+                contentType: 'application/json',
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader('X-WP-Nonce', wpApiSettings.nonce);
+                },
+                success: function(response) {
+                    $responseDiv
+                        .addClass('notice notice-success')
+                        .html('<p>Test email sent successfully!</p>');
+                },
+                error: function(xhr) {
+                    const message = xhr.responseJSON?.message || 'Failed to send test email';
+                    $responseDiv
+                        .addClass('notice notice-error')
+                        .html('<p>Error: ' + message + '</p>');
+                },
+                complete: function() {
+                    $submitButton.prop('disabled', false).text('Send Test Email');
+                }
+            });
+        });
+    });
+    </script>
+    <?php
+}
