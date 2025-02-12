@@ -190,6 +190,25 @@ function SingleAuction() {
     }
   };
 
+  const handleAuctionEnd = async () => {
+    try {
+      const response = await fetch(`${window.location.origin}/wp-json/wp/v2/auction/${id}/notify-winner`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': window.bidspaceSettings.restNonce,
+          'X-API-Key': window.wpApiSettings?.apiKey || ''
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to send winner notification');
+      }
+    } catch (error) {
+      console.error('Error sending winner notification:', error);
+    }
+  };
+
   // Loading ინდიკატორი
   if (isLoading) {
     return (
@@ -269,6 +288,7 @@ function SingleAuction() {
             dueTime={auction.meta?.due_time}
             currentUserId={currentUserId}
             onBidPlaced={handleBidSubmit}
+            onAuctionEnd={handleAuctionEnd}
           />
         </div>
       </div>

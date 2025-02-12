@@ -407,6 +407,55 @@ add_action('rest_api_init', function () {
     ));
 });
 
+// Register winner notification endpoint
+function register_winner_notification_endpoint() {
+    register_rest_route('wp/v2', '/auction/(?P<id>\d+)/notify-winner', array(
+        'methods' => 'POST',
+        'callback' => 'handle_winner_notification',
+        'permission_callback' => function() {
+            return is_user_logged_in();
+        },
+        'args' => array(
+            'id' => array(
+                'validate_callback' => function($param) {
+                    return is_numeric($param);
+                }
+            )
+        )
+    ));
+}
+add_action('rest_api_init', 'register_winner_notification_endpoint');
+
+function handle_winner_notification($request) {
+    $auction_id = $request['id'];
+    $auction = get_post($auction_id);
+
+    if (!$auction || $auction->post_type !== 'auction') {
+        return new WP_Error('invalid_auction', 'არასწორი აუქციონი', array('status' => 404));
+    }
+
+    // Check if notification was already sent
+    $notification_sent = get_post_meta($auction_id, 'winner_notified', true);
+    if ($notification_sent) {
+        return new WP_REST_Response(array('message' => 'შეტყობინება უკვე გაგზავნილია'), 200);
+    }
+
+    // Check if auction has ended
+    $due_time = get_post_meta($auction_id, 'due_time', true);
+    if (!$due_time || strtotime($due_time) > current_time('timestamp')) {
+        return new WP_Error('auction_not_ended', 'აუქციონი ჯერ არ დასრულებულა', array('status' => 400));
+    }
+
+    // Send notification
+    $result = check_auction_end_and_notify($auction_id);
+
+    if ($result) {
+        return new WP_REST_Response(array('message' => 'შეტყობინება წარმატებით გაიგზავნა'), 200);
+    }
+
+    return new WP_Error('notification_failed', 'შეტყობინების გაგზავნა ვერ მოხერხდა', array('status' => 500));
+}
+
 // Register auction meta
 register_rest_field('auction', 'auction_meta', array(
     'get_callback' => function($post) {

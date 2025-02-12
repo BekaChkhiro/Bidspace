@@ -33,3 +33,20 @@
 .slick-slide {
   margin: 0 4px;
 }
+
+/* Instruction page mobile styles */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Active tab styles */
+.instruction-tab-active {
+  background-color: #00AEEF;
+  color: white;
+}
