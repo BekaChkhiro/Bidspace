@@ -65,12 +65,12 @@ const FilterPopup = ({ onClose, onApply, currentFilters }) => {
         className="fixed left-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden 
           w-10 h-10 flex items-center justify-center bg-white rounded-full 
           shadow-lg z-50 text-black"
-        style={{ bottom: '590px' }}
+        style={{ bottom: '440px' }}
       >
         ✕
       </button>
       <div ref={popupRef} className="fixed md:absolute md:top-full left-0 right-0 md:left-auto 
-        h-[590px] md:h-auto bottom-0 md:bottom-auto md:mt-2 p-5 
+        h-[440px] md:h-auto bottom-0 md:bottom-auto md:mt-2 p-5 
         bg-white md:rounded-2xl md:border-gray-200
         z-50 w-full md:w-1/3 
         transition-all duration-300 ease-out transform md:transform-none
