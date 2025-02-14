@@ -8,13 +8,11 @@ import AuctionBidsList from '../components/auction/single-auction/AuctionBidsLis
 import AuctionComments from '../components/auction/single-auction/AuctionComments';
 import { useAuction } from '../components/core/context/AuctionContext';
 import { useAuctionPolling } from '../hooks/useAuctionPolling';
-import { useWebSocket } from '../hooks/useWebSocket';
 import RelatedAuctions from '../components/auction/single-auction/RelatedAuctions';
 
 function SingleAuction() {
   const { id } = useParams();
   const { auctions, bidsList, updateAuction } = useAuction();
-  const { sendBid } = useWebSocket(id);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -169,14 +167,6 @@ function SingleAuction() {
       }
 
       const bidData = await response.json();
-      
-      // Send bid update via WebSocket
-      sendBid({
-        bid_amount: bidAmount,
-        user_id: currentUserId,
-        user_name: currentUserName,
-        timestamp: new Date().toISOString()
-      });
 
       // Update local state
       updateAuction({
@@ -241,7 +231,7 @@ function SingleAuction() {
   // თუ აუქციონი არ არსებობს ან არ არის ხილვადი
   if (!auction || auction.meta?.visibility === false) {
     return (
-      <div className="w-full min-h-screen flex items-center justify-center bg-[#E6E6E6]">
+      <div className="w-full min-h-screen flex items-centerjustify-center bg-[#E6E6E6]">
         <div className="text-center text-gray-600">
           <p>აუქციონი არ არის ხელმისაწვდომი</p>
           <button
