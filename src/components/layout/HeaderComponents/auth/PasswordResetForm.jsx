@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { auth } from '../../../../lib/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber, sendPasswordResetEmail } from 'firebase/auth';
 
 const PasswordResetForm = ({ setIsPasswordReset }) => {
+  const [method, setMethod] = useState('email'); // 'email' or 'phone'
   const [step, setStep] = useState('initial'); // initial, emailSent, verificationCode, newPassword
   const [userData, setUserData] = useState({
     email: '',
+    phone: '',
     password: '',
     password_confirm: '',
     verification_code: ''
@@ -12,6 +16,58 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
+  const [confirmationResult, setConfirmationResult] = useState(null);
+
+  const initializeRecaptcha = useCallback(async () => {
+    if (method === 'phone') {
+      // Clear any existing reCAPTCHA
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+
+      try {
+        const recaptchaContainer = document.getElementById('recaptcha-container');
+        if (!recaptchaContainer) return;
+
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
+          size: 'normal',
+          callback: () => {
+            setLoading(false);
+            // მოვაშორეთ ავტომატური გამოძახება
+          },
+          'expired-callback': () => {
+            setLoading(true);
+            if (window.recaptchaVerifier) {
+              window.recaptchaVerifier.clear();
+              window.recaptchaVerifier = null;
+            }
+          }
+        });
+
+        await window.recaptchaVerifier.render();
+      } catch (error) {
+        console.error('Error initializing reCAPTCHA:', error);
+        setErrorMessage('reCAPTCHA ინიციალიზაციის შეცდომა');
+      }
+    }
+  }, [method]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (method === 'phone') {
+        initializeRecaptcha();
+      }
+    }, 1000); // Delay initialization to ensure DOM is ready
+
+    return () => {
+      clearTimeout(timer);
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    };
+  }, [method, initializeRecaptcha]);
 
   useEffect(() => {
     return () => {
@@ -46,41 +102,69 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
   };
 
   const requestPasswordReset = async () => {
-    if (!userData.email) {
-      setErrorMessage('გთხოვთ შეიყვანოთ ელ-ფოსტა');
-      return;
-    }
+    if (method === 'email') {
+      if (!userData.email) {
+        setErrorMessage('გთხოვთ შეიყვანოთ ელ-ფოსტა');
+        return;
+      }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(userData.email)) {
-      setErrorMessage('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტის მისამართი');
-      return;
-    }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userData.email)) {
+        setErrorMessage('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტის მისამართი');
+        return;
+      }
 
-    setLoading(true);
-    try {
-      const response = await fetch('/wp-json/bidspace/v1/request-password-reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email: userData.email })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      setLoading(true);
+      try {
+        await sendPasswordResetEmail(auth, userData.email);
         setStep('emailSent');
         startTimer();
         setErrorMessage('');
-      } else {
-        setErrorMessage(data.message || 'დადასტურების კოდის გაგზავნა ვერ მოხერხდა');
+      } catch (error) {
+        console.error('Error requesting password reset:', error);
+        setErrorMessage('დაფიქსირდა შეცდომა, სცადეთ თავიდან');
       }
-    } catch (error) {
-      console.error('Error requesting password reset:', error);
-      setErrorMessage('დაფიქსირდა შეცდომა, სცადეთ თავიდან');
+      setLoading(false);
+    } else {
+      if (!userData.phone) {
+        setErrorMessage('გთხოვთ შეიყვანოთ ტელეფონის ნომერი');
+        return;
+      }
+
+      const phoneRegex = /^\+995[0-9]{9}$/;
+      if (!phoneRegex.test(userData.phone)) {
+        setErrorMessage('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი (+995xxxxxxxxx)');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        if (!window.recaptchaVerifier) {
+          await initializeRecaptcha();
+          return; // Will be called again after reCAPTCHA is solved
+        }
+
+        const verifier = window.recaptchaVerifier;
+        const formattedPhone = userData.phone.startsWith('+') ? userData.phone : `+${userData.phone}`;
+        
+        const result = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+        setConfirmationResult(result);
+        setStep('verificationCode');
+        startTimer();
+        setErrorMessage('');
+      } catch (error) {
+        console.error('Error sending SMS:', error);
+        setErrorMessage('SMS-ის გაგზავნა ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან');
+        
+        // Reset reCAPTCHA on error
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        }
+        await initializeRecaptcha();
+      }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const verifyCode = async () => {
@@ -91,29 +175,27 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
 
     setLoading(true);
     try {
-      const response = await fetch('/wp-json/bidspace/v1/verify-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          email: userData.email,
-          code: userData.verification_code 
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStep('newPassword');
-        if (timer) clearInterval(timer);
-        setErrorMessage('');
+      if (method === 'phone') {
+        await confirmationResult.confirm(userData.verification_code);
       } else {
-        setErrorMessage(data.message || 'არასწორი კოდი');
+        const response = await fetch('/wp-json/bidspace/v1/verify-code', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            email: userData.email,
+            code: userData.verification_code 
+          })
+        });
+        if (!response.ok) throw new Error('Invalid code');
       }
+      setStep('newPassword');
+      if (timer) clearInterval(timer);
+      setErrorMessage('');
     } catch (error) {
       console.error('Error verifying code:', error);
-      setErrorMessage('დაფიქსირდა შეცდომა, სცადეთ თავიდან');
+      setErrorMessage('არასწორი კოდი');
     }
     setLoading(false);
   };
@@ -142,7 +224,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          email: userData.email,
+          [method === 'email' ? 'email' : 'phone']: method === 'email' ? userData.email : userData.phone,
           code: userData.verification_code,
           new_password: userData.password
         })
@@ -163,36 +245,77 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     setLoading(false);
   };
 
+  const renderMethodSelection = () => (
+    <div className="flex flex-col gap-4">
+      <h4 className="text-center text-gray-600">აირჩიეთ დადასტურების მეთოდი</h4>
+      <div className="flex gap-4">
+        <button
+          onClick={() => setMethod('email')}
+          className={`flex-1 p-4 rounded-full ${method === 'email' ? 'bg-black text-white' : 'border border-gray-600 text-gray-600'}`}
+        >
+          ელ-ფოსტა
+        </button>
+        <button
+          onClick={() => setMethod('phone')}
+          className={`flex-1 p-4 rounded-full ${method === 'phone' ? 'bg-black text-white' : 'border border-gray-600 text-gray-600'}`}
+        >
+          ტელეფონი
+        </button>
+      </div>
+    </div>
+  );
+
   const renderStep = () => {
     switch (step) {
       case 'initial':
         return (
           <>
+            {renderMethodSelection()}
             <div className="flex flex-col gap-2.5">
-              <label htmlFor="email" className="text-sm text-gray-600">ელ-ფოსტა</label>
+              <label htmlFor={method === 'email' ? 'email' : 'phone'} className="text-sm text-gray-600">
+                {method === 'email' ? 'ელ-ფოსტა' : 'ტელეფონის ნომერი'}
+              </label>
               <input
-                type="email"
-                id="email"
-                name="email"
-                value={userData.email}
+                type={method === 'email' ? 'email' : 'tel'}
+                id={method === 'email' ? 'email' : 'phone'}
+                name={method === 'email' ? 'email' : 'phone'}
+                value={method === 'email' ? userData.email : userData.phone}
                 onChange={handleInputChange}
                 className="px-3 py-2 border border-gray-600 rounded-2xl"
-                placeholder="შეიყვანეთ თქვენი ელ-ფოსტა"
+                placeholder={method === 'email' ? 'შეიყვანეთ ელ-ფოსტა' : 'შეიყვანეთ ნომერი (+995)'}
                 required
               />
             </div>
-            <button
-              type="button"
-              onClick={requestPasswordReset}
-              className="w-full text-sm bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
-              disabled={loading}
-            >
-              {loading ? 'გთხოვთ მოიცადოთ...' : 'პაროლის აღდგენის დაწყება'}
-            </button>
+            {method === 'phone' && (
+              <>
+                <div className="mt-4 flex justify-center">
+                  <div id="recaptcha-container" />
+                </div>
+                <button
+                  type="button"
+                  onClick={requestPasswordReset}
+                  className="w-full text-sm bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
+                  disabled={loading}
+                >
+                  {loading ? 'გთხოვთ მოიცადოთ...' : 'კოდის გაგზავნა'}
+                </button>
+              </>
+            )}
+            {method === 'email' && (
+              <button
+                type="button"
+                onClick={requestPasswordReset}
+                className="w-full text-sm bg-black text-white p-4 rounded-full hover:bg-gray-900 transition-colors"
+                disabled={loading}
+              >
+                {loading ? 'გთხოვთ მოიცადოთ...' : 'პაროლის აღდგენის დაწყება'}
+              </button>
+            )}
           </>
         );
 
       case 'emailSent':
+      case 'verificationCode':
         return (
           <>
             <div className="flex flex-col gap-2.5">
@@ -291,6 +414,15 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       
       <div className="flex flex-col gap-4">
         {renderStep()}
+        {method === 'phone' && step === 'initial' && (
+          <div className="mt-4">
+            <div 
+              id="recaptcha-container" 
+              className="flex justify-center"
+              style={{ transform: 'scale(0.9)' }}
+            />
+          </div>
+        )}
         <hr className="my-4" />
         
         <button

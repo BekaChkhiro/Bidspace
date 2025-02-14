@@ -555,6 +555,65 @@ add_action('rest_api_init', function() {
     ));
 });
 
+// Add phone number verification endpoint
+add_action('rest_api_init', function () {
+    register_rest_route('bidspace/v1', '/reset-password', array(
+        'methods' => 'POST',
+        'callback' => 'handle_password_reset',
+        'permission_callback' => '__return_true'
+    ));
+});
+
+function handle_password_reset($request) {
+    $params = $request->get_params();
+    $email = isset($params['email']) ? sanitize_email($params['email']) : null;
+    $phone = isset($params['phone']) ? sanitize_text_field($params['phone']) : null;
+    $code = sanitize_text_field($params['code']);
+    $new_password = sanitize_text_field($params['new_password']);
+
+    if (!$code || !$new_password) {
+        return new WP_Error('missing_data', 'Missing required data', array('status' => 400));
+    }
+
+    global $wpdb;
+
+    // Check if resetting via email or phone
+    if ($email) {
+        $user = get_user_by('email', $email);
+        $verification_key = 'password_reset_code_' . md5($email);
+    } elseif ($phone) {
+        $user = get_users(array(
+            'meta_key' => 'phone_number',
+            'meta_value' => $phone,
+            'number' => 1
+        ));
+        $user = !empty($user) ? $user[0] : null;
+        $verification_key = 'password_reset_code_' . md5($phone);
+    } else {
+        return new WP_Error('missing_identifier', 'Either email or phone is required', array('status' => 400));
+    }
+
+    if (!$user) {
+        return new WP_Error('user_not_found', 'User not found', array('status' => 404));
+    }
+
+    $stored_code = get_transient($verification_key);
+    if (!$stored_code || $stored_code !== $code) {
+        return new WP_Error('invalid_code', 'Invalid or expired verification code', array('status' => 400));
+    }
+
+    // Update the password
+    wp_set_password($new_password, $user->ID);
+    
+    // Clear the verification code
+    delete_transient($verification_key);
+
+    return array(
+        'success' => true,
+        'message' => 'Password updated successfully'
+    );
+}
+
 // Add required actions
 add_action('init', 'redirect_login_page');
 add_action('wp_login_failed', 'login_failed');

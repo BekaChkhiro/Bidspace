@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
+import { auth, initializeRecaptcha } from '../../../../lib/firebase';
+import { PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
 
 const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMessage, setIsRegistration }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationId, setVerificationId] = useState('');
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
+  const [phoneVerificationStep, setPhoneVerificationStep] = useState('initial'); // initial, sent, verified
+  const [loading, setLoading] = useState(false);
   
   // Step validation functions
   const validateStep1 = () => {
-    if (!formData.regFirstName || !formData.regLastName || !formData.regEmail) {
-      alert('გთხოვთ შეავსოთ ყველა ველი');
+    if (!formData.regEmail) {
+      alert('გთხოვთ შეიყვანოთ ელ-ფოსტა');
       return false;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,10 +42,67 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
     return true;
   };
 
+  const handleSendVerificationCode = async () => {
+    try {
+      if (!formData.regPhone) {
+        setVerificationError('გთხოვთ შეიყვანოთ ტელეფონის ნომერი');
+        return;
+      }
+
+      const phoneNumber = '+995' + formData.regPhone;
+      console.log('Sending code to:', phoneNumber);
+
+      setLoading(true);
+      const recaptchaVerifier = await initializeRecaptcha('send-code-button');
+      
+      if (!recaptchaVerifier) {
+        throw new Error('reCAPTCHA ინიციალიზაცია ვერ მოხერხდა');
+      }
+
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+      console.log('Code sent successfully');
+      
+      setVerificationId(confirmationResult.verificationId);
+      setPhoneVerificationStep('sent');
+      setVerificationError('');
+      alert('ვერიფიკაციის კოდი გამოგზავნილია');
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      setVerificationError('ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან');
+      
+      // Reset reCAPTCHA on error
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    try {
+      const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
+      await auth.signInWithCredential(credential);
+      setIsPhoneVerified(true);
+      setPhoneVerificationStep('verified');
+      setVerificationError('');
+      handleNextStep();
+    } catch (error) {
+      setVerificationError('არასწორი კოდი');
+    }
+  };
+
   const handleNextStep = () => {
     if (currentStep === 1 && validateStep1()) {
       setCurrentStep(2);
     } else if (currentStep === 2 && validateStep2()) {
+      if (!isPhoneVerified && phoneVerificationStep === 'initial') {
+        handleSendVerificationCode();
+        return;
+      } else if (!isPhoneVerified && phoneVerificationStep === 'sent') {
+        return;
+      }
       setCurrentStep(3);
     }
   };
@@ -184,16 +249,67 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             <>
               <div className="flex flex-col gap-2">
                 <label className="text-xs sm:text-sm text-gray-600">ტელეფონი</label>
-                <input
-                  name="regPhone"
-                  type="tel"
-                  value={formData.regPhone}
-                  onChange={handleInputChange}
-                  className="px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
-                  placeholder="5XXXXXXXX"
-                  required
-                />
+                <div className="flex gap-2">
+                  <input
+                    name="regPhone"
+                    type="tel"
+                    value={formData.regPhone}
+                    onChange={handleInputChange}
+                    className="flex-1 px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
+                    placeholder="5XXXXXXXX"
+                    required
+                    disabled={loading || phoneVerificationStep === 'sent'}
+                  />
+                  {!isPhoneVerified && phoneVerificationStep === 'initial' && (
+                    <button
+                      type="button"
+                      id="send-code-button"
+                      onClick={handleSendVerificationCode}
+                      className="px-4 py-2 bg-black text-white text-sm rounded-2xl disabled:bg-gray-400"
+                      disabled={loading || !formData.regPhone}
+                    >
+                      {loading ? 'იგზავნება...' : 'კოდის გაგზავნა'}
+                    </button>
+                  )}
+                </div>
               </div>
+              
+              {phoneVerificationStep === 'sent' && !isPhoneVerified && (
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs sm:text-sm text-gray-600">შეიყვანეთ კოდი</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      className="flex-1 px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
+                      placeholder="XXXXXX"
+                      maxLength={6}
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      className="px-4 py-2 bg-black text-white text-sm rounded-2xl disabled:bg-gray-400"
+                      disabled={loading || verificationCode.length !== 6}
+                    >
+                      {loading ? 'მოწმდება...' : 'დადასტურება'}
+                    </button>
+                  </div>
+                  {verificationError && (
+                    <p className="text-sm text-red-500">{verificationError}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSendVerificationCode}
+                    className="text-sm text-gray-600 underline mt-2"
+                    disabled={loading}
+                  >
+                    კოდის ხელახლა გაგზავნა
+                  </button>
+                </div>
+              )}
+
               <div className="flex flex-col gap-2">
                 <label className="text-xs sm:text-sm text-gray-600">მომხმარებლის სახელი</label>
                 <input
@@ -280,6 +396,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
               type="button"
               onClick={handleNextStep}
               className={`${currentStep === 1 ? 'w-full' : 'w-1/2'} text-xs sm:text-sm bg-black text-white p-3 sm:p-4 rounded-full hover:bg-gray-900 transition-colors`}
+              disabled={currentStep === 2 && !isPhoneVerified}
             >
               შემდეგი
             </button>
