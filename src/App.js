@@ -22,6 +22,7 @@ import DashboardRoutes from './pages/Dashboard/DashboardRoutes';
 import AdminDashboardRoutes from './pages/AdminDashboard/AdminDashboardRoutes';
 import { Toaster } from './components/ui/use-toast';
 import NotFound from './components/core/NotFound';
+import Forum from './pages/Forum';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -104,6 +105,7 @@ function App() {
                   <ScrollToTop />
                   <Routes location={location}>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/forum" element={<Forum />} />
                     <Route path="/instruction" element={<InstructioPage />} />
                     <Route path="/questions" element={<QuestionsPage />} />
                     <Route path="/auction" element={<AuctionArchivePage />} />
