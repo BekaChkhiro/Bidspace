@@ -13,11 +13,10 @@ import AddQuestion from './Forum/AddQuestion';
 
 const Forum = () => {
     return (
-        <div className="flex gap-4 w-full px-4 md:px-8 lg:px-16 py-10">
-            {/* Left Navigation */}
-            <NavigationMenu />
-
-            {/* Right Content Section */}
+        <div className="flex justify-between items-start gap-4 w-full px-4 md:px-8 lg:px-16 py-10">
+            <div className="sticky top-[116px]">
+                <NavigationMenu />
+            </div>
             <div className="flex-1">
                 <Routes>
                     <Route path="/" element={<ForumRules />} />

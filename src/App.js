@@ -72,14 +72,15 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
   const isDashboardRoute = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
+  const isForumRoute = location.pathname.startsWith('/forum');
 
   React.useEffect(() => {
-    if (!isDashboardRoute) {
+    if (!isDashboardRoute && !isForumRoute) {
       setTimeout(() => setIsLoading(false), 500);
     } else {
       setIsLoading(false);
     }
-  }, [isDashboardRoute]);
+  }, [isDashboardRoute, isForumRoute]);
 
   React.useEffect(() => {
     if (isDashboardRoute) {
