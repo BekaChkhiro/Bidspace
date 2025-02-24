@@ -144,14 +144,13 @@ const SingleForumPost = () => {
 
     return (
         <div className="w-full">
+            <article className="bg-white shadow rounded-lg p-6 mb-6">
             <button
                 onClick={() => navigate(-1)}
-                className="mb-4 text-blue-600 hover:text-blue-800 flex items-center"
+                className="w-full pb-4 border-b mb-4 text-[#00aff0] flex items-center"
             >
                 ← უკან დაბრუნება
             </button>
-
-            <article className="bg-white shadow rounded-lg p-6 mb-6">
                 {post.featured_image_url && (
                     <div className="relative h-64 mb-6 overflow-hidden rounded-lg">
                         <img 
@@ -167,7 +166,7 @@ const SingleForumPost = () => {
                         {post._embedded['wp:term'][0].map(term => (
                             <span 
                                 key={term.id}
-                                className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full mr-2"
+                                className="inline-block bg-[#00aff0] text-white text-sm px-3 py-1 rounded-full mr-2"
                             >
                                 {getCategoryLabel(term.slug)}
                             </span>
@@ -227,7 +226,7 @@ const SingleForumPost = () => {
                         <textarea
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00aff0] focus:border-transparent"
                             rows="3"
                             placeholder="დაწერეთ კომენტარი..."
                             required
@@ -236,7 +235,7 @@ const SingleForumPost = () => {
                             <button
                                 type="submit"
                                 disabled={submitting || !comment.trim()}
-                                className={`bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                                className={`bg-[#00aff0] text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                                     (submitting || !comment.trim()) ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                             >

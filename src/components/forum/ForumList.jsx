@@ -95,7 +95,7 @@ const ForumList = ({ category, title }) => {
                     className={`px-3 py-1 rounded ${
                         page === 1
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-[#00aff0] text-white'
                     }`}
                 >
                     წინა
@@ -119,7 +119,7 @@ const ForumList = ({ category, title }) => {
                             onClick={() => setPage(pageNumber)}
                             className={`px-3 py-1 rounded ${
                                 page === pageNumber
-                                    ? 'bg-blue-600 text-white'
+                                    ? 'bg-[#00aff0] text-white'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
@@ -134,7 +134,7 @@ const ForumList = ({ category, title }) => {
                     className={`px-3 py-1 rounded ${
                         page === totalPages
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-[#00aff0] text-white'
                     }`}
                 >
                     შემდეგი
@@ -222,7 +222,7 @@ const ForumList = ({ category, title }) => {
                                     </div>
 
                                     <Link to={`/forum/post/${post.id}`} className="block group">
-                                        <h2 className="text-xl font-semibold mb-2 text-gray-900 group-hover:text-blue-600 transition-colors">
+                                        <h2 className="text-xl font-semibold mb-2 text-gray-900 group-hover:text-[#00aff0] transition-colors">
                                             {post.title.rendered}
                                         </h2>
                                         <div 

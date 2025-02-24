@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/core/context/AuthContext';
 
 const AddQuestion = () => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [category, setCategory] = useState('');
-    const [categories, setCategories] = useState([]);
+    const [category, setCategory] = useState('cinema');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const { user } = useAuth();
@@ -14,18 +13,12 @@ const AddQuestion = () => {
     const [image, setImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
 
-    // Fetch categories when component mounts
-    useEffect(() => {
-        fetch('/wp-json/wp/v2/forum-categories')
-            .then(response => response.json())
-            .then(data => {
-                setCategories(data);
-                if (data.length > 0) {
-                    setCategory(data[0].id.toString());
-                }
-            })
-            .catch(err => setError('Failed to load categories'));
-    }, []);
+    const categories = [
+        { id: 'cinema', name: 'კინო-თეატრი', slug: 'cinema' },
+        { id: 'events', name: 'ივენთები', slug: 'events' },
+        { id: 'sports', name: 'სპორტი', slug: 'sports' },
+        { id: 'travel', name: 'მოგზაურობა', slug: 'travel' }
+    ];
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -41,16 +34,13 @@ const AddQuestion = () => {
         setError(null);
 
         try {
-            // Find the category slug from the selected category id
-            const selectedCategory = categories.find(cat => cat.id.toString() === category);
-            const categorySlug = selectedCategory ? [selectedCategory.slug] : [];
-
-            // Create FormData for multipart/form-data request
+            const selectedCategory = categories.find(cat => cat.id === category);
+            
             const formData = new FormData();
             formData.append('title', title);
             formData.append('content', content);
             formData.append('status', 'publish');
-            formData.append('forum_category[]', categorySlug[0]);
+            formData.append('forum_category[]', selectedCategory.slug);
             if (image) {
                 formData.append('featured_image', image);
             }
@@ -68,8 +58,8 @@ const AddQuestion = () => {
                 throw new Error(errorData.message || 'Failed to create forum post');
             }
 
-            const data = await response.json();
-            navigate('/forum');
+            // Navigate to the specific category page after successful submission
+            navigate(`/forum/${selectedCategory.slug}`);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -86,8 +76,8 @@ const AddQuestion = () => {
     }
 
     return (
-        <div className="max-w-7xl mx-auto p-4">
-            <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
+        <div className="w-full">
+            <div className="bg-white rounded-2xl shadow-lg p-4 md:p-8">
                 <h2 className="text-2xl md:text-3xl font-bold mb-8">დაამატე კითხვა</h2>
                 
                 {error && (
@@ -106,18 +96,18 @@ const AddQuestion = () => {
                                 <div 
                                     key={cat.id}
                                     className={`relative rounded-xl border-2 p-4 cursor-pointer transition-all ${
-                                        category === cat.id.toString() 
-                                            ? 'border-[#FF3D00] bg-orange-50' 
+                                        category === cat.id 
+                                            ? 'border-[#00aff0]' 
                                             : 'border-gray-200 hover:border-gray-300'
                                     }`}
-                                    onClick={() => setCategory(cat.id.toString())}
+                                    onClick={() => setCategory(cat.id)}
                                 >
                                     <input
                                         type="radio"
                                         id={`category-${cat.id}`}
                                         name="category"
                                         value={cat.id}
-                                        checked={category === cat.id.toString()}
+                                        checked={category === cat.id}
                                         onChange={(e) => setCategory(e.target.value)}
                                         className="sr-only"
                                     />
@@ -126,10 +116,10 @@ const AddQuestion = () => {
                                         className="flex items-center cursor-pointer"
                                     >
                                         <div className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                                            category === cat.id.toString() ? 'border-[#FF3D00]' : 'border-gray-400'
+                                            category === cat.id ? 'border-[#00aff0]' : 'border-gray-400'
                                         }`}>
-                                            {category === cat.id.toString() && (
-                                                <div className="w-2 h-2 rounded-full bg-[#FF3D00]" />
+                                            {category === cat.id && (
+                                                <div className="w-2 h-2 rounded-full bg-[#00aff0]" />
                                             )}
                                         </div>
                                         <span className="text-base">{cat.name}</span>
@@ -149,7 +139,7 @@ const AddQuestion = () => {
                                 id="title"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full px-5 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 shadow-sm"
+                                className="w-full px-5 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00aff0] focus:border-transparent bg-gray-50 shadow-sm"
                                 placeholder="შეიყვანეთ კითხვის სათაური"
                                 required
                             />
@@ -165,7 +155,7 @@ const AddQuestion = () => {
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             rows="6"
-                            className="w-full px-5 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 shadow-sm"
+                            className="w-full px-5 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00aff0] focus:border-transparent bg-gray-50 shadow-sm"
                             placeholder="დაწერეთ თქვენი კითხვა..."
                             required
                         />
@@ -185,7 +175,7 @@ const AddQuestion = () => {
                             />
                             <label
                                 htmlFor="forum-image"
-                                className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00aff0]"
                             >
                                 აირჩიეთ სურათი
                             </label>
@@ -217,7 +207,7 @@ const AddQuestion = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className={`bg-[#FF3D00] text-white py-4 px-10 rounded-xl hover:bg-[#FF5722] focus:outline-none focus:ring-2 focus:ring-[#FF3D00] focus:ring-offset-2 transition-colors text-base font-medium shadow-md ${
+                            className={`bg-[#00aff0] text-white py-4 px-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF3D00] focus:ring-offset-2 transition-colors text-base font-medium shadow-md ${
                                 loading ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                         >

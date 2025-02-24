@@ -16,7 +16,7 @@ const NavigationMenu = () => {
                         className={({ isActive }) =>
                             `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
-                                    ? 'bg-blue-500 text-white'
+                                    ? 'bg-[#00aff0] text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
@@ -31,7 +31,7 @@ const NavigationMenu = () => {
                         className={({ isActive }) =>
                             `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
-                                    ? 'bg-blue-500 text-white'
+                                    ? 'bg-[#00aff0] text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
@@ -46,7 +46,7 @@ const NavigationMenu = () => {
                         className={({ isActive }) =>
                             `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
-                                    ? 'bg-blue-500 text-white'
+                                    ? 'bg-[#00aff0] text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
@@ -61,7 +61,7 @@ const NavigationMenu = () => {
                         className={({ isActive }) =>
                             `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
-                                    ? 'bg-blue-500 text-white'
+                                    ? 'bg-[#00aff0] text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
@@ -76,7 +76,7 @@ const NavigationMenu = () => {
                         className={({ isActive }) =>
                             `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
-                                    ? 'bg-blue-500 text-white'
+                                    ? 'bg-[#00aff0] text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
@@ -93,7 +93,7 @@ const NavigationMenu = () => {
                                 className={({ isActive }) =>
                                     `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
-                                    ? 'bg-blue-500 text-white'
+                                    ? 'bg-[#00aff0] text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                                 }
@@ -110,7 +110,7 @@ const NavigationMenu = () => {
                         className={({ isActive }) =>
                             `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
-                                    ? 'bg-blue-500 text-white'
+                                    ? 'bg-[#00aff0] text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
