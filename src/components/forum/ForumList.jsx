@@ -4,7 +4,7 @@ import { useAuth } from '../../components/core/context/AuthContext';
 import LikeButton from '../forum/LikeButton';
 import ForumFilters from './ForumFilters';
 
-const ForumList = ({ category }) => {
+const ForumList = ({ category, title }) => {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -36,7 +36,7 @@ const ForumList = ({ category }) => {
                         sortedData.sort((a, b) => (b.meta?.views_count || 0) - (a.meta?.views_count || 0));
                         break;
                     case 'comments':
-                        sortedData.sort((a, b) => (b._embedded?.replies?.[0]?.length || 0) - (a._embedded?.replies?.[0]?.length || 0));
+                        sortedData.sort((a, b) => (b.comment_count || 0) - (a.comment_count || 0));
                         break;
                     default: // 'date'
                         sortedData.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -66,6 +66,24 @@ const ForumList = ({ category }) => {
             'travel': 'მოგზაურობა'
         };
         return categories[categorySlug] || categorySlug;
+    };
+
+    const formatRelativeTime = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        const diffInDays = Math.floor(diffInHours / 24);
+        const diffInMonths = Math.floor(diffInDays / 30);
+        const diffInYears = Math.floor(diffInDays / 365);
+
+        if (diffInSeconds < 60) return 'წამის წინ';
+        if (diffInMinutes < 60) return `${diffInMinutes} წუთის წინ`;
+        if (diffInHours < 24) return `${diffInHours} საათის წინ`;
+        if (diffInDays < 30) return `${diffInDays} დღის წინ`;
+        if (diffInMonths < 12) return `${diffInMonths} თვის წინ`;
+        return `${diffInYears} წლის წინ`;
     };
 
     const renderPagination = () => {
@@ -139,7 +157,12 @@ const ForumList = ({ category }) => {
 
     return (
         <div>
-            <ForumFilters onSortChange={handleSortChange} sortBy={sortBy} />
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">{title}</h2>
+                    <ForumFilters onSortChange={handleSortChange} sortBy={sortBy} />
+                </div>
+            </div>
             
             <div className="grid gap-4">
                 {posts.length === 0 ? (
@@ -187,7 +210,7 @@ const ForumList = ({ category }) => {
                                                     {post._embedded?.author?.[0]?.name}
                                                 </div>
                                                 <div className="text-sm text-gray-500">
-                                                    {new Date(post.date).toLocaleDateString('ka-GE')}
+                                                    {formatRelativeTime(post.date)}
                                                 </div>
                                             </div>
                                         </div>
@@ -227,7 +250,7 @@ const ForumList = ({ category }) => {
                                                 <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                                 </svg>
-                                                {post._embedded?.replies?.[0]?.length || 0}
+                                                {post.comment_count || 0}
                                             </span>
                                             <span className="flex items-center text-gray-500 text-sm">
                                                 <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

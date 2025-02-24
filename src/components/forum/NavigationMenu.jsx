@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../components/core/context/AuthContext';
+import { AlignLeft, Clapperboard, Tickets, Volleyball, Backpack, MessageCircleQuestion, CircleHelp } from 'lucide-react';
 
 const NavigationMenu = () => {
     const { user } = useAuth();
@@ -13,70 +14,75 @@ const NavigationMenu = () => {
                         to="/forum"
                         end
                         className={({ isActive }) =>
-                            `block px-4 py-2 rounded-md ${
+                            `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
                                     ? 'bg-blue-500 text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
                     >
-                        წესები
+                        <AlignLeft />
+                        <span>წესები</span>
                     </NavLink>
                 </li>
                 <li>
                     <NavLink
                         to="/forum/cinema"
                         className={({ isActive }) =>
-                            `block px-4 py-2 rounded-md ${
+                            `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
                                     ? 'bg-blue-500 text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
                     >
-                        კინო-თეატრი
+                        <Clapperboard />
+                        <span>კინო-თეატრი</span>
                     </NavLink>
                 </li>
                 <li>
                     <NavLink
                         to="/forum/events"
                         className={({ isActive }) =>
-                            `block px-4 py-2 rounded-md ${
+                            `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
                                     ? 'bg-blue-500 text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
                     >
-                        ივენთები
+                        <Tickets />
+                        <span>ივენთები</span>
                     </NavLink>
                 </li>
                 <li>
                     <NavLink
                         to="/forum/sports"
                         className={({ isActive }) =>
-                            `block px-4 py-2 rounded-md ${
+                            `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
                                     ? 'bg-blue-500 text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
                     >
-                        სპორტი
+                        <Volleyball />
+                        <span>სპორტი</span>
                     </NavLink>
                 </li>
                 <li>
                     <NavLink
                         to="/forum/travel"
                         className={({ isActive }) =>
-                            `block px-4 py-2 rounded-md ${
+                            `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
                                     ? 'bg-blue-500 text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
                     >
-                        მოგზაურობა
+                        <Backpack />
+                        <span>მოგზაურობა</span>
                     </NavLink>
                 </li>
                 {user && (
@@ -85,42 +91,15 @@ const NavigationMenu = () => {
                             <NavLink
                                 to="/forum/my-questions"
                                 className={({ isActive }) =>
-                                    `block px-4 py-2 rounded-md ${
-                                        isActive
-                                            ? 'bg-blue-500 text-white'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                    }`
+                                    `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
+                                isActive
+                                    ? 'bg-blue-500 text-white'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                            }`
                                 }
                             >
-                                ჩემი კითხვები
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                                to="/forum/my-responses"
-                                className={({ isActive }) =>
-                                    `block px-4 py-2 rounded-md ${
-                                        isActive
-                                            ? 'bg-blue-500 text-white'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                    }`
-                                }
-                            >
-                                ჩემი პასუხები
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                                to="/forum/my-likes"
-                                className={({ isActive }) =>
-                                    `block px-4 py-2 rounded-md ${
-                                        isActive
-                                            ? 'bg-blue-500 text-white'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                    }`
-                                }
-                            >
-                                მოწონებული
+                                <MessageCircleQuestion />
+                                <span>ჩემი კითხვები</span>
                             </NavLink>
                         </li>
                     </>
@@ -129,14 +108,15 @@ const NavigationMenu = () => {
                     <NavLink
                         to="/forum/add-question"
                         className={({ isActive }) =>
-                            `block px-4 py-2 rounded-md ${
+                            `w-full flex gap-2 items-center block px-4 py-2 rounded-md ${
                                 isActive
                                     ? 'bg-blue-500 text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                             }`
                         }
                     >
-                        დასვი კითხვა
+                        <CircleHelp />
+                        <span>დასვი კითხვა</span>
                     </NavLink>
                 </li>
             </ul>

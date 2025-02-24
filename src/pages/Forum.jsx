@@ -8,13 +8,11 @@ import ForumSports from './Forum/ForumSports';
 import ForumTravel from './Forum/ForumTravel';
 import ForumRules from './Forum/ForumRules';
 import MyQuestions from './Forum/MyQuestions';
-import MyResponses from './Forum/MyResponses';
-import MyLikes from './Forum/MyLikes';
 import SingleForumPost from './Forum/SingleForumPost';
 
 const Forum = () => {
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="w-full px-4 md:px-8 lg:px-16 py-10">
             <div className="flex gap-8">
                 <aside className="w-64 flex-shrink-0">
                     <NavigationMenu />
@@ -29,8 +27,6 @@ const Forum = () => {
                         <Route path="sports" element={<ForumSports />} />
                         <Route path="travel" element={<ForumTravel />} />
                         <Route path="my-questions" element={<MyQuestions />} />
-                        <Route path="my-responses" element={<MyResponses />} />
-                        <Route path="my-likes" element={<MyLikes />} />
                         <Route path="post/:postId" element={<SingleForumPost />} />
                     </Routes>
                 </main>

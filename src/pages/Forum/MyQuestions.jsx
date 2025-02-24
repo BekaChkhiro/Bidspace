@@ -8,6 +8,24 @@ const MyQuestions = () => {
     const [error, setError] = useState(null);
     const { user } = useAuth();
 
+    const formatRelativeTime = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        const diffInDays = Math.floor(diffInHours / 24);
+        const diffInMonths = Math.floor(diffInDays / 30);
+        const diffInYears = Math.floor(diffInDays / 365);
+
+        if (diffInSeconds < 60) return 'წამის წინ';
+        if (diffInMinutes < 60) return `${diffInMinutes} წუთის წინ`;
+        if (diffInHours < 24) return `${diffInHours} საათის წინ`;
+        if (diffInDays < 30) return `${diffInDays} დღის წინ`;
+        if (diffInMonths < 12) return `${diffInMonths} თვის წინ`;
+        return `${diffInYears} წლის წინ`;
+    };
+
     useEffect(() => {
         const fetchPosts = async () => {
             if (!user) {
@@ -59,7 +77,14 @@ const MyQuestions = () => {
                                 </Link>
                             </h2>
                             <div className="text-sm text-gray-600 mb-4 flex items-center space-x-4">
-                                <span>{new Date(post.date).toLocaleDateString('ka-GE')}</span>
+                                <span>{formatRelativeTime(post.date)}</span>
+                                <span>•</span>
+                                <span className="flex items-center">
+                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                    {post.comment_count || 0}
+                                </span>
                                 <span>•</span>
                                 <span>{post.meta?.like_count || 0} მოწონება</span>
                                 <span>•</span>

@@ -79,12 +79,15 @@ class BidSpace_Forum {
                 'excerpt',
                 'comments',
                 'revisions',
+                'custom-fields'
             ],
             'taxonomies'         => ['forum_category'],
             'has_archive'        => true,
             'rewrite'            => ['slug' => 'forum'],
             'capability_type'    => 'post',
             'map_meta_cap'       => true,
+            'show_in_graphql'    => true,
+            'rest_namespace'     => 'wp/v2'
         ];
 
         register_post_type('forum', $args);
@@ -187,6 +190,16 @@ class BidSpace_Forum {
                 return is_array($liked_users) && in_array($user_id, $liked_users);
             }
         ]);
+
+        register_post_meta('forum', '_views_data', [
+            'show_in_rest' => false, // Hide from REST API for security
+            'single' => true,
+            'type' => 'array',
+            'auth_callback' => function() {
+                return current_user_can('edit_posts');
+            },
+            'default' => []
+        ]);
     }
 
     public function register_rest_fields() {
@@ -223,6 +236,18 @@ class BidSpace_Forum {
             'schema' => [
                 'type' => 'string',
                 'description' => 'URL of the featured image',
+                'context' => ['view', 'edit'],
+            ],
+        ]);
+
+        // Register comment count field
+        register_rest_field('forum', 'comment_count', [
+            'get_callback' => function($post) {
+                return (int) get_comments_number($post['id']);
+            },
+            'schema' => [
+                'type' => 'integer',
+                'description' => 'Number of comments on this post',
                 'context' => ['view', 'edit'],
             ],
         ]);
@@ -691,6 +716,7 @@ class BidSpace_Forum {
 
     public function increment_view_count($request) {
         $post_id = $request['id'];
+        $view_timeout = 3600; // 1 hour timeout between views
         
         if (!$post_id || get_post_type($post_id) !== 'forum') {
             return new WP_Error(
@@ -700,12 +726,44 @@ class BidSpace_Forum {
             );
         }
 
-        $views = (int) get_post_meta($post_id, 'views_count', true);
-        update_post_meta($post_id, 'views_count', $views + 1);
+        // Get viewer IP address
+        $viewer_ip = $_SERVER['REMOTE_ADDR'];
+        
+        // Get stored view data
+        $views_data = get_post_meta($post_id, '_views_data', true);
+        if (!is_array($views_data)) {
+            $views_data = array();
+        }
 
+        $current_time = time();
+        $should_count = true;
+
+        // Check if this IP has viewed recently
+        if (isset($views_data[$viewer_ip])) {
+            $last_view_time = $views_data[$viewer_ip];
+            if ($current_time - $last_view_time < $view_timeout) {
+                $should_count = false;
+            }
+        }
+
+        if ($should_count) {
+            $views = (int) get_post_meta($post_id, 'views_count', true);
+            update_post_meta($post_id, 'views_count', $views + 1);
+            
+            // Update the view timestamp for this IP
+            $views_data[$viewer_ip] = $current_time;
+            update_post_meta($post_id, '_views_data', $views_data);
+
+            return rest_ensure_response([
+                'success' => true,
+                'views_count' => $views + 1
+            ]);
+        }
+
+        // Return current view count without incrementing
         return rest_ensure_response([
             'success' => true,
-            'views_count' => $views + 1
+            'views_count' => (int) get_post_meta($post_id, 'views_count', true)
         ]);
     }
 
