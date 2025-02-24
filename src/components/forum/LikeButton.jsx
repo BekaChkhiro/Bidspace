@@ -9,7 +9,6 @@ const LikeButton = ({ postId, initialLikeCount = 0, initialLiked = false }) => {
 
     const handleLike = async () => {
         if (!user || isLoading) return;
-
         setIsLoading(true);
         try {
             const response = await fetch(`/wp-json/bidspace/v1/forum/${postId}/like`, {
@@ -19,9 +18,7 @@ const LikeButton = ({ postId, initialLikeCount = 0, initialLiked = false }) => {
                     'X-WP-Nonce': wpApiSettings.nonce
                 }
             });
-
             if (!response.ok) throw new Error('Failed to toggle like');
-
             const data = await response.json();
             setLikeCount(data.like_count);
             setIsLiked(data.user_has_liked);
@@ -36,20 +33,27 @@ const LikeButton = ({ postId, initialLikeCount = 0, initialLiked = false }) => {
         <button
             onClick={handleLike}
             disabled={!user || isLoading}
-            className={`flex items-center gap-2 px-3 py-1 rounded-md transition-colors ${
-                isLiked 
-                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            } ${!user ? 'cursor-not-allowed opacity-50' : ''}`}
+            className={`flex items-center gap-2 hover:opacity-80 transition-opacity ${
+                !user ? 'cursor-not-allowed opacity-50' : ''
+            }`}
         >
             <svg 
                 xmlns="http://www.w3.org/2000/svg" 
-                className={`h-5 w-5 ${isLiked ? 'fill-blue-600' : 'fill-gray-600'}`}
-                viewBox="0 0 20 20"
+                className={`h-6 w-6 ${isLiked ? 'text-red-500' : 'text-gray-400'}`}
+                viewBox="0 0 24 24"
+                fill={isLiked ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth="2"
             >
-                <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" 
+                />
             </svg>
-            <span>{likeCount}</span>
+            <span className={`text-sm ${isLiked ? 'text-red-500' : 'text-gray-500'}`}>
+                {likeCount}
+            </span>
         </button>
     );
 };

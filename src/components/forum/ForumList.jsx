@@ -141,7 +141,7 @@ const ForumList = ({ category }) => {
         <div>
             <ForumFilters onSortChange={handleSortChange} sortBy={sortBy} />
             
-            <div className="space-y-4">
+            <div className="grid gap-4">
                 {posts.length === 0 ? (
                     <div className="text-center bg-gray-50 rounded-lg py-12">
                         <p className="text-gray-500 text-lg">
@@ -157,76 +157,88 @@ const ForumList = ({ category }) => {
                 ) : (
                     <>
                         {posts.map(post => (
-                            <div key={post.id} className="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex-grow">
-                                        {post._embedded && post._embedded['wp:term'] && (
-                                            <div className="mb-2">
-                                                {post._embedded['wp:term'][0].map(term => (
-                                                    <span 
-                                                        key={term.id}
-                                                        className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-2"
-                                                    >
-                                                        {getCategoryLabel(term.slug)}
-                                                    </span>
-                                                ))}
+                            <div key={post.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+                                <Link to={`/forum/post/${post.id}`} className="block">
+                                    {post.featured_image_url && (
+                                        <div className="relative h-48 overflow-hidden">
+                                            <img 
+                                                src={post.featured_image_url}
+                                                alt={post.title.rendered}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </Link>
+                                <div className="p-6">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center space-x-3">
+                                            {post._embedded?.author?.[0]?.avatar_urls?.['48'] && (
+                                                <img 
+                                                    src={post._embedded.author[0].avatar_urls['48']}
+                                                    alt={post._embedded.author[0].name}
+                                                    className="w-10 h-10 rounded-full border-2 border-gray-100"
+                                                />
+                                            )}
+                                            <div>
+                                                <div className="font-medium text-gray-900">
+                                                    {post._embedded?.author?.[0]?.name}
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    {new Date(post.date).toLocaleDateString('ka-GE')}
+                                                </div>
                                             </div>
-                                        )}
-                                        <h2 className="text-xl font-semibold mb-2">
-                                            <Link 
-                                                to={`/forum/post/${post.id}`} 
-                                                className="text-gray-900 hover:text-blue-600"
-                                            >
-                                                {post.title.rendered}
-                                            </Link>
-                                        </h2>
-                                    </div>
-                                    <div className="ml-4">
+                                        </div>
                                         <LikeButton 
                                             postId={post.id}
                                             initialLikeCount={post.meta?.like_count || 0}
                                             initialLiked={post.meta?.user_has_liked || false}
                                         />
                                     </div>
+
+                                    <Link to={`/forum/post/${post.id}`} className="block group">
+                                        <h2 className="text-xl font-semibold mb-2 text-gray-900 group-hover:text-blue-600 transition-colors">
+                                            {post.title.rendered}
+                                        </h2>
+                                        <div 
+                                            className="prose prose-sm max-w-none text-gray-600 line-clamp-2 mb-4"
+                                            dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} 
+                                        />
+                                    </Link>
+
+                                    <div className="flex items-center justify-between">
+                                        {post._embedded && post._embedded['wp:term'] && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {post._embedded['wp:term'][0].map(term => (
+                                                    <span 
+                                                        key={term.id}
+                                                        className="inline-block bg-gray-100 text-gray-600 text-sm px-3 py-1 rounded-full"
+                                                    >
+                                                        {getCategoryLabel(term.slug)}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
+                                        <div className="flex items-center space-x-4">
+                                            <span className="flex items-center text-gray-500 text-sm">
+                                                <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                </svg>
+                                                {post._embedded?.replies?.[0]?.length || 0}
+                                            </span>
+                                            <span className="flex items-center text-gray-500 text-sm">
+                                                <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                {post.meta?.views_count || 0}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-
-                                <div className="text-sm text-gray-600 mb-3 flex items-center space-x-3">
-                                    <span className="flex items-center">
-                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
-                                        </svg>
-                                        {post._embedded?.author?.[0]?.name}
-                                    </span>
-                                    <span>•</span>
-                                    <span className="flex items-center">
-                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                                        </svg>
-                                        {post._embedded?.replies?.[0]?.length || 0} კომენტარი
-                                    </span>
-                                    <span>•</span>
-                                    <span className="flex items-center">
-                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                                        </svg>
-                                        {post.meta?.views_count || 0}
-                                    </span>
-                                    <span>•</span>
-                                    <span>{new Date(post.date).toLocaleDateString('ka-GE')}</span>
-                                </div>
-
-                                <div 
-                                    className="prose prose-sm max-w-none text-gray-600"
-                                    dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} 
-                                />
-
-                                <Link
-                                    to={`/forum/post/${post.id}`}
-                                    className="inline-block mt-3 text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                    სრულად ნახვა →
-                                </Link>
                             </div>
                         ))}
                         {renderPagination()}

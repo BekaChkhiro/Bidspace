@@ -88,6 +88,9 @@ class BidSpace_Forum {
         ];
 
         register_post_type('forum', $args);
+
+        // Add featured image support
+        add_theme_support('post-thumbnails');
     }
 
     public function register_taxonomy() {
@@ -205,6 +208,22 @@ class BidSpace_Forum {
                 'type' => 'boolean',
                 'description' => 'Whether the current user has liked this post',
                 'context' => ['view'],
+            ],
+        ]);
+
+        // Register featured image field
+        register_rest_field('forum', 'featured_image_url', [
+            'get_callback' => function($post) {
+                if ($thumb_id = get_post_thumbnail_id($post['id'])) {
+                    $thumb_url = wp_get_attachment_image_src($thumb_id, 'full');
+                    return $thumb_url[0];
+                }
+                return null;
+            },
+            'schema' => [
+                'type' => 'string',
+                'description' => 'URL of the featured image',
+                'context' => ['view', 'edit'],
             ],
         ]);
     }
@@ -469,6 +488,10 @@ class BidSpace_Forum {
                         'type' => 'string',
                     ],
                 ],
+                'featured_image' => [
+                    'type' => 'file',
+                    'description' => 'Featured image file for the forum post',
+                ],
             ],
         ]);
 
@@ -496,6 +519,17 @@ class BidSpace_Forum {
             'orderby' => 'date',
             'order' => 'DESC',
         ];
+
+        // Add category filter
+        if ($category = $request->get_param('forum_category')) {
+            $args['tax_query'] = [
+                [
+                    'taxonomy' => 'forum_category',
+                    'field'    => 'slug',
+                    'terms'    => $category
+                ]
+            ];
+        }
 
         // If liked_by parameter is present, filter by liked posts
         if ($request->get_param('liked_by')) {
@@ -598,6 +632,20 @@ class BidSpace_Forum {
             wp_set_object_terms($post_id, $request['forum_category'], 'forum_category');
         }
 
+        // Handle featured image if provided
+        if (!empty($request['featured_image'])) {
+            $image_data = $request['featured_image'];
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+            require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+            // Upload and set featured image
+            $attachment_id = media_handle_upload('featured_image', $post_id);
+            if (!is_wp_error($attachment_id)) {
+                set_post_thumbnail($post_id, $attachment_id);
+            }
+        }
+
         // Initialize meta values
         update_post_meta($post_id, '_like_count', 0);
         update_post_meta($post_id, '_liked_users', []);
@@ -615,6 +663,7 @@ class BidSpace_Forum {
             'type' => $post->post_type,
             'link' => get_permalink($post->ID),
             'categories' => wp_get_post_terms($post->ID, 'forum_category', ['fields' => 'names']),
+            'featured_image_url' => get_the_post_thumbnail_url($post->ID, 'full'),
             'meta' => [
                 'like_count' => (int)get_post_meta($post->ID, '_like_count', true),
                 'views_count' => (int)get_post_meta($post->ID, 'views_count', true),
