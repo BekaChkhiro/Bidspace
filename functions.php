@@ -13,6 +13,7 @@ require_once get_template_directory() . '/includes/features/comments.php';
 require_once get_template_directory() . '/includes/features/admin.php';
 require_once get_template_directory() . '/includes/features/users.php';
 require_once get_template_directory() . '/functions/wishlist.php';
+require_once get_template_directory() . '/includes/core/forum.php';
 
 // Include password reset functionality
 require_once get_template_directory() . '/includes/auth/password-reset.php';
@@ -314,6 +315,11 @@ function bidspace_api_auth_handler($result, $server, $request) {
 remove_filter('rest_pre_dispatch', 'bidspace_api_auth_handler');
 add_filter('rest_pre_dispatch', 'bidspace_api_auth_handler', 10, 3);
 
+// Temporary rewrite flush - remove after forum appears
+add_action('init', function() {
+    flush_rewrite_rules();
+}, 999);
+
 // Remove all existing auction query filters first
 remove_all_filters('rest_auction_query');
 
@@ -391,27 +397,6 @@ add_filter('rest_auction_query', function($args, $request) {
     return $args;
 }, 10, 2);
 
-// Create forum_questions table
-function create_forum_questions_table() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'forum_questions';
 
-    $charset_collate = $wpdb->get_charset_collate();
-
-    $sql = "CREATE TABLE $table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        category varchar(255) NOT NULL,
-        title varchar(255) NOT NULL,
-        question text NOT NULL,
-        photo_url varchar(255) DEFAULT '' NOT NULL,
-        created_at datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-        PRIMARY KEY  (id)
-    ) $charset_collate;";
-
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
-}
-
-add_action('after_switch_theme', 'create_forum_questions_table');
 
 

@@ -71,6 +71,102 @@ if (!function_exists('bidspace_register_auction_post_type')) {
 }
 add_action('init', 'bidspace_register_auction_post_type');
 
+// Register Forum Post Type
+if (!function_exists('bidspace_register_forum_post_type')) {
+    function bidspace_register_forum_post_type() {
+        $labels = [
+            'name'               => _x('Forum', 'Post type general name', 'bidspace'),
+            'singular_name'      => _x('Forum Post', 'Post type singular name', 'bidspace'),
+            'menu_name'          => _x('Forum', 'Admin Menu text', 'bidspace'),
+            'name_admin_bar'     => _x('Forum Post', 'Add New on Toolbar', 'bidspace'),
+            'add_new'           => __('Add New', 'bidspace'),
+            'add_new_item'      => __('Add New Forum Post', 'bidspace'),
+            'edit_item'         => __('Edit Forum Post', 'bidspace'),
+            'new_item'          => __('New Forum Post', 'bidspace'),
+            'view_item'         => __('View Forum Post', 'bidspace'),
+            'search_items'      => __('Search Forum Posts', 'bidspace'),
+            'not_found'         => __('No forum posts found', 'bidspace'),
+            'not_found_in_trash'=> __('No forum posts found in trash', 'bidspace'),
+            'all_items'         => __('All Forum Posts', 'bidspace'),
+            'archives'          => __('Forum Archives', 'bidspace'),
+            'attributes'        => __('Forum Attributes', 'bidspace'),
+        ];
+
+        $args = [
+            'labels'              => $labels,
+            'description'         => __('Forum posts for discussion', 'bidspace'),
+            'public'             => true,
+            'publicly_queryable' => true,
+            'show_ui'            => true,
+            'show_in_menu'       => true,
+            'show_in_nav_menus'  => true,
+            'show_in_admin_bar'  => true,
+            'show_in_rest'       => true,
+            'rest_base'          => 'forum',
+            'menu_position'      => 5,
+            'menu_icon'          => 'dashicons-format-chat',
+            'hierarchical'       => false,
+            'supports'           => [
+                'title',
+                'editor',
+                'author',
+                'thumbnail',
+                'excerpt',
+                'comments',
+                'revisions',
+            ],
+            'taxonomies'         => ['forum_category'],
+            'has_archive'        => true,
+            'rewrite'            => ['slug' => 'forum', 'with_front' => true],
+            'capability_type'    => 'post',
+            'map_meta_cap'       => true,
+        ];
+
+        register_post_type('forum', $args);
+
+        // Register forum category taxonomy
+        $taxonomy_labels = [
+            'name'              => __('Forum Categories', 'bidspace'),
+            'singular_name'     => __('Forum Category', 'bidspace'),
+            'search_items'      => __('Search Categories', 'bidspace'),
+            'all_items'         => __('All Categories', 'bidspace'),
+            'edit_item'         => __('Edit Category', 'bidspace'),
+            'update_item'       => __('Update Category', 'bidspace'),
+            'add_new_item'      => __('Add New Category', 'bidspace'),
+            'new_item_name'     => __('New Category Name', 'bidspace'),
+            'menu_name'         => __('Categories', 'bidspace'),
+        ];
+
+        $taxonomy_args = [
+            'labels'            => $taxonomy_labels,
+            'hierarchical'      => true,
+            'public'            => true,
+            'show_ui'          => true,
+            'show_admin_column' => true,
+            'show_in_rest'      => true,
+            'rest_base'         => 'forum-categories',
+            'query_var'         => true,
+        ];
+
+        register_taxonomy('forum_category', ['forum'], $taxonomy_args);
+
+        // Register default categories
+        $default_categories = [
+            'cinema-theatre' => 'კინო-თეატრი',
+            'events' => 'ივენთები',
+            'sports' => 'სპორტი',
+            'travel' => 'მოგზაურობა'
+        ];
+
+        foreach ($default_categories as $slug => $name) {
+            if (!term_exists($slug, 'forum_category')) {
+                wp_insert_term($name, 'forum_category', ['slug' => $slug]);
+            }
+        }
+    }
+}
+add_action('init', 'bidspace_register_forum_post_type', 0); // Priority 0 to ensure it runs early
+
 // Add auction capabilities to roles
 function bidspace_add_auction_caps() {
     // Get roles
@@ -1227,3 +1323,16 @@ add_filter('rest_auction_query', function($args, $request) {
     
     return $args;
 }, 10, 2);
+
+// Add rewrite rules flush on theme activation
+add_action('after_switch_theme', function() {
+    add_option('bidspace_needs_rewrite_flush', 'true');
+});
+
+// Flush rewrite rules if needed
+add_action('init', function() {
+    if (get_option('bidspace_needs_rewrite_flush') === 'true') {
+        flush_rewrite_rules();
+        delete_option('bidspace_needs_rewrite_flush');
+    }
+}, 20);

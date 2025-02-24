@@ -1,116 +1,142 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../components/core/context/AuthContext';
 
 const AddQuestion = () => {
-    const [category, setCategory] = useState('');
     const [title, setTitle] = useState('');
-    const [question, setQuestion] = useState('');
-    const [photo, setPhoto] = useState(null);
-    const [message, setMessage] = useState('');
+    const [content, setContent] = useState('');
+    const [category, setCategory] = useState('');
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const { user } = useAuth();
     const navigate = useNavigate();
+
+    // Fetch categories when component mounts
+    useEffect(() => {
+        fetch('/wp-json/wp/v2/forum-categories')
+            .then(response => response.json())
+            .then(data => {
+                setCategories(data);
+                if (data.length > 0) {
+                    setCategory(data[0].id.toString());
+                }
+            })
+            .catch(err => setError('Failed to load categories'));
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        const formData = new FormData();
-        formData.append('category', category);
-        formData.append('title', title);
-        formData.append('question', question);
-        if (photo) {
-            formData.append('photo', photo);
-        }
+        setLoading(true);
+        setError(null);
 
         try {
-            const response = await fetch('/wp-json/custom/v1/add-forum-question', {
+            const response = await fetch('/wp-json/wp/v2/forum', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': wpApiSettings.nonce
+                },
+                body: JSON.stringify({
+                    title,
+                    content,
+                    status: 'publish',
+                    forum_category: [parseInt(category)]
+                })
             });
 
-            const result = await response.json();
-            setMessage(result.message);
-            
-            if (response.ok) {
-                // თუ წარმატებით დაემატა, გადავამისამართოთ ჩემი კითხვების გვერდზე
-                navigate('/forum/my-questions');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to create forum post');
             }
-        } catch (error) {
-            setMessage('დაფიქსირდა შეცდომა, გთხოვთ სცადოთ თავიდან');
+
+            const data = await response.json();
+            navigate('/forum');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
+    if (!user) {
+        return (
+            <div className="p-4">
+                <p>გთხოვთ გაიაროთ ავტორიზაცია კითხვის დასამატებლად</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-            <h1 className="text-2xl font-bold mb-6">კითხვის დამატება</h1>
+        <div className="max-w-2xl mx-auto p-4">
+            <h2 className="text-2xl font-bold mb-4">დაამატე კითხვა</h2>
             
-            {message && (
-                <div className="mb-4 p-4 bg-blue-50 text-blue-700 rounded-lg">
-                    {message}
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    {error}
                 </div>
             )}
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
                         კატეგორია
                     </label>
                     <select
+                        id="category"
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full p-2 border rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         required
                     >
                         <option value="">აირჩიეთ კატეგორია</option>
-                        <option value="cinema">კინო-თეატრი</option>
-                        <option value="events">ივენთები</option>
-                        <option value="sports">სპორტი</option>
-                        <option value="travel">მოგზაურობა</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>
+                                {cat.name}
+                            </option>
+                        ))}
                     </select>
                 </div>
-                
+
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
                         სათაური
                     </label>
                     <input
                         type="text"
+                        id="title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="w-full p-2 border rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         required
                     />
                 </div>
-                
+
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        კითხვა
+                    <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
+                        კითხვის შინაარსი
                     </label>
                     <textarea
-                        value={question}
-                        onChange={(e) => setQuestion(e.target.value)}
-                        className="w-full p-2 border rounded-lg"
-                        rows="4"
+                        id="content"
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        rows="5"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         required
                     />
                 </div>
-                
+
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        სურათი (არასავალდებულო)
-                    </label>
-                    <input
-                        type="file"
-                        onChange={(e) => setPhoto(e.target.files[0])}
-                        accept="image/*"
-                        className="w-full p-2 border rounded-lg"
-                    />
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className={`w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                            loading ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                    >
+                        {loading ? 'იტვირთება...' : 'დამატება'}
+                    </button>
                 </div>
-                
-                <button
-                    type="submit"
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                    დამატება
-                </button>
             </form>
         </div>
     );
