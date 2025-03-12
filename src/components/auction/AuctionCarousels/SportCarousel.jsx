@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useWishlist } from '../../../components/core/context/WishlistContext';
 import useCustomToast from '../../../components/toast/CustomToast';
 import AuctionItem from '../../../pages/AuctionArchive/components/AuctionItem';
 import { Carousel, CarouselContent, CarouselItem } from '../../../components/ui/carousel';
@@ -9,7 +9,7 @@ const SportCarousel = () => {
   const [sportAuctions, setSportAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [wishlist, setWishlist] = useState([]);
+  const { wishlist, toggleWishlistItem } = useWishlist();
   const toast = useCustomToast();
 
   const texts = {
@@ -19,14 +19,11 @@ const SportCarousel = () => {
     ticketPrice: "ბილეთის ფასი",
     currentPrice: "მიმდინარე ფასი", 
     currency: "₾",
-    auctionWillStart: "აუქციონი დაიწყება",
-    auctionWillEnd: "აუქციონი დასრულდება",
-    auctionEnded: "აუქციონი დასრულდა",
+    timeLeft: "დარჩენილი დრო",
     days: "დღე",
     hours: "საათი",
     minutes: "წუთი",
     seconds: "წამი",
-    placeBid: "განათავსე ბიდი",
     buyNow: "ახლავე ყიდვა"
   };
 
@@ -44,55 +41,8 @@ const SportCarousel = () => {
 
   const handleWishlistToggle = async (e, auctionId) => {
     e.preventDefault();
-    try {
-      const response = await fetch(`/wp-json/custom/v1/wishlist/toggle/${auctionId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': window.wpApiSettings?.nonce,
-          'X-API-Key': window.wpApiSettings?.apiKey || ''
-        }
-      });
-
-      if (response.ok) {
-        setWishlist(prev => {
-          const isInWishlist = prev.includes(Number(auctionId));
-          if (isInWishlist) {
-            toast("აუქციონი წაიშალა სურვილების სიიდან");
-            return prev.filter(id => id !== Number(auctionId));
-          } else {
-            toast("აუქციონი დაემატა სურვილების სიაში");
-            return [...prev, Number(auctionId)];
-          }
-        });
-      } else {
-        throw new Error('Failed to toggle wishlist');
-      }
-    } catch (error) {
-      console.error('Error toggling wishlist:', error);
-      toast("შეცდომა სურვილების სიის განახლებისას");
-    }
+    await toggleWishlistItem(auctionId);
   };
-
-  useEffect(() => {
-    const fetchWishlist = async () => {
-      try {
-        const response = await fetch('/wp-json/custom/v1/wishlist', {
-          headers: {
-            'X-API-Key': window.wpApiSettings?.apiKey || ''
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setWishlist(data.map(Number));
-        }
-      } catch (error) {
-        console.error('Error fetching wishlist:', error);
-      }
-    };
-
-    fetchWishlist();
-  }, []);
 
   useEffect(() => {
     const fetchSportAuctions = async (retryCount = 0) => {
@@ -111,31 +61,18 @@ const SportCarousel = () => {
         }
 
         const data = await response.json();
-        
-        // ფილტრაცია ticket_category-ის და visibility-ის მიხედვით
         const sportAuctions = data.filter(auction => 
-          auction.meta.ticket_category === "სპორტი" && 
-          auction.meta.visibility === true
+          auction.meta?.auction_category === 'sport'
         );
-
-        if (sportAuctions.length === 0) {
-          setError('ამ კატეგორიაში აუქციონები ვერ მოიძებნა');
-          return;
-        }
-
         setSportAuctions(sportAuctions);
-        setError(null);
-
       } catch (error) {
-        console.error('Error fetching auctions:', error);
+        console.error('Error fetching sport auctions:', error);
+        setError('სპორტის აუქციონების ჩატვირთვისას მოხდა შეცდომა');
         
-        if (retryCount < 2) {
+        if (retryCount < 3) {
           setTimeout(() => {
             fetchSportAuctions(retryCount + 1);
-          }, 2000);
-        } else {
-          setError('აუქციონების ჩატვირთვა ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან.');
-          toast('აუქციონების ჩატვირთვა ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან.');
+          }, 2000 * Math.pow(2, retryCount)); // Exponential backoff
         }
       } finally {
         setLoading(false);
@@ -143,7 +80,7 @@ const SportCarousel = () => {
     };
 
     fetchSportAuctions();
-  }, [toast]);
+  }, []);
 
   if (loading) {
     return (
