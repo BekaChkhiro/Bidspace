@@ -32,6 +32,9 @@ import MyLikes from './pages/Forum/MyLikes';
 import { AuthProvider } from './components/core/context/AuthContext';
 import { AuctionProvider } from './components/core/context/AuctionContext';
 import { WishlistProvider } from './components/core/context/WishlistContext';
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { queryClient } from './lib/react-query'
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -99,48 +102,51 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <AuctionProvider>
-          <WishlistProvider>
-            <div className="flex flex-col min-h-screen">
-              <Toaster />
-              {!isDashboardRoute && <Header onLoginClick={() => setShowLoginModal(true)} />}
-              <TransitionGroup component={null}>
-                <CSSTransition
-                  key={location.key}
-                  timeout={300}
-                  classNames="page-transition"
-                  unmountOnExit
-                >
-                  <main className="flex-grow">
-                    <ScrollToTop />
-                    <Routes location={location}>
-                      <Route path="/" element={<HomePage />} />
-                      <Route path="/forum/*" element={<Forum />} />
-                      <Route path="/instruction" element={<InstructioPage />} />
-                      <Route path="/questions" element={<QuestionsPage />} />
-                      <Route path="/auction" element={<AuctionArchivePage />} />
-                      <Route path="/auction/:id" element={<SingleAuction />} />
-                      <Route path="/sport" element={<AuctionSportPage />} />
-                      <Route path="/travel" element={<AuctionTravelPage />} />
-                      <Route path="/events" element={<AuctionEventPage />} />
-                      <Route path="/theater_cinema" element={<AuctionTheaterCinemaPage />} />
-                      <Route path="/dashboard/*" element={<DashboardRoutes />} />
-                      <Route path="/admin/*" element={<AdminDashboardRoutes />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </main>
-                </CSSTransition>
-              </TransitionGroup>
-              {!isDashboardRoute && <Footer />}
-              <LoginModal 
-                isOpen={showLoginModal} 
-                onClose={() => setShowLoginModal(false)} 
-              />
-            </div>
-          </WishlistProvider>
-        </AuctionProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AuctionProvider>
+            <WishlistProvider>
+              <div className="flex flex-col min-h-screen">
+                <Toaster />
+                {!isDashboardRoute && <Header onLoginClick={() => setShowLoginModal(true)} />}
+                <TransitionGroup component={null}>
+                  <CSSTransition
+                    key={location.key}
+                    timeout={300}
+                    classNames="page-transition"
+                    unmountOnExit
+                  >
+                    <main className="flex-grow">
+                      <ScrollToTop />
+                      <Routes location={location}>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/forum/*" element={<Forum />} />
+                        <Route path="/instruction" element={<InstructioPage />} />
+                        <Route path="/questions" element={<QuestionsPage />} />
+                        <Route path="/auction" element={<AuctionArchivePage />} />
+                        <Route path="/auction/:id" element={<SingleAuction />} />
+                        <Route path="/sport" element={<AuctionSportPage />} />
+                        <Route path="/travel" element={<AuctionTravelPage />} />
+                        <Route path="/events" element={<AuctionEventPage />} />
+                        <Route path="/theater_cinema" element={<AuctionTheaterCinemaPage />} />
+                        <Route path="/dashboard/*" element={<DashboardRoutes />} />
+                        <Route path="/admin/*" element={<AdminDashboardRoutes />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </main>
+                  </CSSTransition>
+                </TransitionGroup>
+                {!isDashboardRoute && <Footer />}
+                <LoginModal 
+                  isOpen={showLoginModal} 
+                  onClose={() => setShowLoginModal(false)} 
+                />
+              </div>
+            </WishlistProvider>
+          </AuctionProvider>
+        </AuthProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
