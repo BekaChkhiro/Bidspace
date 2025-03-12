@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import NavigationMenu from './../components/forum/NavigationMenu';
-import AddQuestion from './Forum/AddQuestion';
-import ForumCinema from './Forum/ForumCinema';
-import ForumEvents from './Forum/ForumEvents';
-import ForumSports from './Forum/ForumSports';
-import ForumTravel from './Forum/ForumTravel';
-import ForumRules from './Forum/ForumRules';
-import MyQuestions from './Forum/MyQuestions';
-import SingleForumPost from './Forum/SingleForumPost';
+
+// Lazy load forum components
+const AddQuestion = lazy(() => import('./Forum/AddQuestion'));
+const ForumCinema = lazy(() => import('./Forum/ForumCinema'));
+const ForumEvents = lazy(() => import('./Forum/ForumEvents'));
+const ForumSports = lazy(() => import('./Forum/ForumSports'));
+const ForumTravel = lazy(() => import('./Forum/ForumTravel'));
+const ForumRules = lazy(() => import('./Forum/ForumRules'));
+const MyQuestions = lazy(() => import('./Forum/MyQuestions'));
+const SingleForumPost = lazy(() => import('./Forum/SingleForumPost'));
+
+// Loading component
+const ForumLoader = () => (
+  <div className="flex items-center justify-center h-[400px]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00adef]"></div>
+  </div>
+);
 
 const Forum = () => {
     return (
@@ -19,16 +28,18 @@ const Forum = () => {
                 </aside>
 
                 <main className="flex-grow">
-                    <Routes>
-                        <Route index element={<ForumRules />} />
-                        <Route path="add-question" element={<AddQuestion />} />
-                        <Route path="cinema" element={<ForumCinema />} />
-                        <Route path="events" element={<ForumEvents />} />
-                        <Route path="sports" element={<ForumSports />} />
-                        <Route path="travel" element={<ForumTravel />} />
-                        <Route path="my-questions" element={<MyQuestions />} />
-                        <Route path="post/:postId" element={<SingleForumPost />} />
-                    </Routes>
+                    <Suspense fallback={<ForumLoader />}>
+                        <Routes>
+                            <Route index element={<ForumRules />} />
+                            <Route path="add-question" element={<AddQuestion />} />
+                            <Route path="cinema" element={<ForumCinema />} />
+                            <Route path="events" element={<ForumEvents />} />
+                            <Route path="sports" element={<ForumSports />} />
+                            <Route path="travel" element={<ForumTravel />} />
+                            <Route path="my-questions" element={<MyQuestions />} />
+                            <Route path="post/:postId" element={<SingleForumPost />} />
+                        </Routes>
+                    </Suspense>
                 </main>
             </div>
         </div>

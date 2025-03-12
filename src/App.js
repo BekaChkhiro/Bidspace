@@ -1,40 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import LoadingSpinner from './components/ui-elements/LoadingSpinner';
 import Header from './components/layout/HeaderComponents/core/Header';
 import LoginModal from './components/layout/HeaderComponents/auth/LoginModal';
-import HomePage from './pages/HomePage';
-import InstructioPage from './pages/InstructionPage';
-import QuestionsPage from './pages/QuestionsPage';
 import Footer from './components/layout/Footer';
-import AuctionArchivePage from './pages/AuctionArchive/AuctionArchivePage';
-import SingleAuction from './pages/SingleAuction';
-import AuctionSportPage from './pages/AuctionArchive/AuctionCategoryPage/AuctionSportPage';
-import AuctionTravelPage from './pages/AuctionArchive/AuctionCategoryPage/AuctionTravelPage';
-import AuctionEventPage from './pages/AuctionArchive/AuctionCategoryPage/AuctionEventPage';
-import AuctionTheaterCinemaPage from './pages/AuctionArchive/AuctionCategoryPage/AuctionTheaterCinemaPage';
 import ScrollToTop from './components/ui-elements/ScrollToTop';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardRoutes from './pages/Dashboard/DashboardRoutes';
 import AdminDashboardRoutes from './pages/AdminDashboard/AdminDashboardRoutes';
 import { Toaster } from './components/ui/use-toast';
 import NotFound from './components/core/NotFound';
-import Forum from './pages/Forum';
-import ForumRules from './pages/Forum/ForumRules';
-import ForumCinema from './pages/Forum/ForumCinema';
-import ForumEvents from './pages/Forum/ForumEvents';
-import ForumSports from './pages/Forum/ForumSports';
-import ForumTravel from './pages/Forum/ForumTravel';
-import MyQuestions from './pages/Forum/MyQuestions';
-import MyResponses from './pages/Forum/MyResponses';
-import MyLikes from './pages/Forum/MyLikes';
 import { AuthProvider } from './components/core/context/AuthContext';
 import { AuctionProvider } from './components/core/context/AuctionContext';
 import { WishlistProvider } from './components/core/context/WishlistContext';
-import { QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { queryClient } from './lib/react-query'
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { queryClient } from './lib/react-query';
+
+// Lazy-loaded components
+const HomePage = React.lazy(() => import('./pages/HomePage'));
+const Forum = React.lazy(() => import('./pages/Forum'));
+const InstructioPage = React.lazy(() => import('./pages/InstructionPage'));
+const QuestionsPage = React.lazy(() => import('./pages/QuestionsPage'));
+const AuctionArchivePage = React.lazy(() => import('./pages/AuctionArchive/AuctionArchivePage'));
+const SingleAuction = React.lazy(() => import('./pages/SingleAuction'));
+const AuctionSportPage = React.lazy(() => import('./pages/AuctionArchive/AuctionCategoryPage/AuctionSportPage'));
+const AuctionTravelPage = React.lazy(() => import('./pages/AuctionArchive/AuctionCategoryPage/AuctionTravelPage'));
+const AuctionEventPage = React.lazy(() => import('./pages/AuctionArchive/AuctionCategoryPage/AuctionEventPage'));
+const AuctionTheaterCinemaPage = React.lazy(() => import('./pages/AuctionArchive/AuctionCategoryPage/AuctionTheaterCinemaPage'));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <LoadingSpinner />
+  </div>
+);
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -55,7 +56,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="text-center py-10 bg-red-50 mx-4 my-4 rounded-lg">
-          <h2 className="text-xl font-bold text-red-600 mb-2">დაფიქსირდა შეცდომა</h2>
+          <h2 className="text-xl font-bold text-red-600 mb-2">დაფიქסირდა შეცდომა</h2>
           <p className="text-gray-600">გთხოვთ, განაახლებთ გვერდი</p>
           <button 
             onClick={() => window.location.reload()}
@@ -118,21 +119,23 @@ function App() {
                   >
                     <main className="flex-grow">
                       <ScrollToTop />
-                      <Routes location={location}>
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/forum/*" element={<Forum />} />
-                        <Route path="/instruction" element={<InstructioPage />} />
-                        <Route path="/questions" element={<QuestionsPage />} />
-                        <Route path="/auction" element={<AuctionArchivePage />} />
-                        <Route path="/auction/:id" element={<SingleAuction />} />
-                        <Route path="/sport" element={<AuctionSportPage />} />
-                        <Route path="/travel" element={<AuctionTravelPage />} />
-                        <Route path="/events" element={<AuctionEventPage />} />
-                        <Route path="/theater_cinema" element={<AuctionTheaterCinemaPage />} />
-                        <Route path="/dashboard/*" element={<DashboardRoutes />} />
-                        <Route path="/admin/*" element={<AdminDashboardRoutes />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
+                      <Suspense fallback={<PageLoader />}>
+                        <Routes location={location}>
+                          <Route path="/" element={<HomePage />} />
+                          <Route path="/forum/*" element={<Forum />} />
+                          <Route path="/instruction" element={<InstructioPage />} />
+                          <Route path="/questions" element={<QuestionsPage />} />
+                          <Route path="/auction" element={<AuctionArchivePage />} />
+                          <Route path="/auction/:id" element={<SingleAuction />} />
+                          <Route path="/sport" element={<AuctionSportPage />} />
+                          <Route path="/travel" element={<AuctionTravelPage />} />
+                          <Route path="/events" element={<AuctionEventPage />} />
+                          <Route path="/theater_cinema" element={<AuctionTheaterCinemaPage />} />
+                          <Route path="/dashboard/*" element={<DashboardRoutes />} />
+                          <Route path="/admin/*" element={<AdminDashboardRoutes />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </Suspense>
                     </main>
                   </CSSTransition>
                 </TransitionGroup>
