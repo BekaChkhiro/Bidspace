@@ -64,7 +64,7 @@ const AuctionTimer = ({ endDate, texts }) => {
 const ActiveAuctionCarousel = () => {
   const [activeAuctions, setActiveAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const texts = {
     auctionsTitle: "აქტიური აუქციონები",
     loading: "იტვირთება...",
@@ -185,12 +185,17 @@ const ActiveAuctionCarousel = () => {
         const active = data.filter(auction => {
           const startTime = new Date(auction.meta.start_time).getTime();
           const endTime = new Date(auction.meta.due_time).getTime();
-          return startTime <= now && endTime > now;
+          return startTime <= now && endTime > now && auction.meta.visibility === true;
         }).sort((a, b) => {
           // დალაგება დასრულების დროის მიხედვით
           return new Date(a.meta.due_time) - new Date(b.meta.due_time);
         });
         
+        if (active.length === 0) {
+          setLoading(false);
+          return;
+        }
+
         setActiveAuctions(active);
       } catch (error) {
         console.error('Error fetching auctions:', error);
@@ -202,12 +207,8 @@ const ActiveAuctionCarousel = () => {
     fetchActiveAuctions();
   }, []);
 
-  if (loading) {
-    return <div>იტვირთება...</div>;
-  }
-
-  if (activeAuctions.length === 0) {
-    return <div className="text-center">ამჟამად აქტიური აუქციონები არ არის</div>;
+  if (loading || activeAuctions.length === 0) {
+    return null;
   }
 
   return (

@@ -21,7 +21,7 @@ const SportCarousel = () => {
     currency: "₾",
     auctionWillStart: "აუქციონი დაიწყება",
     auctionWillEnd: "აუქციონი დასრულდება",
-    auctionEnded: "აუქციონი დასრულდა",
+    auctionEnded: "აევცონ ტანილის ხერვტადინი",
     days: "დღე",
     hours: "საათი",
     minutes: "წუთი",
@@ -119,7 +119,7 @@ const SportCarousel = () => {
         );
 
         if (sportAuctions.length === 0) {
-          setError('ამ კატეგორიაში აუქციონები ვერ მოიძებნა');
+          setLoading(false);
           return;
         }
 
@@ -145,24 +145,7 @@ const SportCarousel = () => {
     fetchSportAuctions();
   }, [toast]);
 
-  if (loading) {
-    return (
-      <div className="sport-auctions-carousel">
-        <h3 className="text-2xl font-bold text-center text-black mb-12">{texts.auctionsTitle}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[...Array(3)].map((_, index) => (
-            <SkeletonLoader key={index} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return null;
-  }
-
-  if (sportAuctions.length === 0) {
+  if (loading || error || sportAuctions.length === 0) {
     return null;
   }
 
