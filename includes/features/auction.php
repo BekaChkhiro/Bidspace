@@ -259,20 +259,41 @@ add_filter('rest_auction_query', 'filter_auctions_by_meta', 10, 2);
 function handle_create_auction($request) {
     $params = $request->get_params();
     
-    // Validate required fields
-    $required_fields = array(
+    // Common required fields for all categories
+    $common_required_fields = array(
         'title', 'category', 'ticket_category', 'start_date', 'city',
-        'ticket_price', 'ticket_quantity', 'start_time', 'due_time',
-        'auction_price', 'min_bid_price'
+        'ticket_price', 'ticket_quantity'
     );
 
-    foreach ($required_fields as $field) {
+    // Additional required fields based on ticket category
+    $category_required_fields = array(
+        'თეატრი-კინო' => array('hall', 'row', 'place'),
+        'სპორტი' => array('sector', 'row', 'place'),
+    );
+
+    // Check common required fields
+    foreach ($common_required_fields as $field) {
         if (empty($params[$field])) {
             return new WP_Error(
                 'missing_field',
-                sprintf('Field %s is required', $field),
+                sprintf('%s არის სავალდებულო ველი', $field),
                 array('status' => 400)
             );
+        }
+    }
+
+    // Check category-specific required fields
+    if (isset($params['ticket_category']) && 
+        isset($category_required_fields[$params['ticket_category']])) {
+        foreach ($category_required_fields[$params['ticket_category']] as $field) {
+            if (empty($params[$field])) {
+                return new WP_Error(
+                    'missing_field',
+                    sprintf('%s არის სავალდებულო ველი %s კატეგორიისთვის', 
+                        $field, $params['ticket_category']),
+                    array('status' => 400)
+                );
+            }
         }
     }
 
@@ -289,7 +310,7 @@ function handle_create_auction($request) {
     if (is_wp_error($post_id)) {
         return new WP_Error(
             'failed_to_create',
-            'Failed to create auction',
+            'აუქციონის შექმნა ვერ მოხერხდა',
             array('status' => 500)
         );
     }
@@ -299,8 +320,7 @@ function handle_create_auction($request) {
         'category', 'ticket_category', 'start_date', 'city',
         'ticket_price', 'ticket_quantity', 'hall', 'row', 'place',
         'sector', 'start_time', 'due_time', 'auction_price',
-        'buy_now', 'min_bid_price', 'ticket_information',
-        'skhva_qalaqebi', 'sazgvargaret'
+        'buy_now', 'min_bid_price', 'ticket_information'
     );
 
     foreach ($meta_fields as $field) {
@@ -325,7 +345,7 @@ function handle_create_auction($request) {
     return array(
         'success' => true,
         'auction_id' => $post_id,
-        'message' => 'Auction created successfully'
+        'message' => 'აუქციონი წარმატებით შეიქმნა'
     );
 }
 

@@ -227,445 +227,130 @@ add_action('add_meta_boxes', 'add_auction_meta_boxes');
 // Render Meta Box
 function render_auction_details_meta_box($post) {
     // Get current values
-    $auction_price = get_post_meta($post->ID, 'auction_price', true);
-    $start_time = get_post_meta($post->ID, 'start_time', true);
-    $due_time = get_post_meta($post->ID, 'due_time', true);
-    $buy_now = get_post_meta($post->ID, 'buy_now', true);
-    $min_bid_price = get_post_meta($post->ID, 'min_bid_price', true);
-    $price_limit = get_post_meta($post->ID, 'price_limit', true);
-    $ticket_status = get_post_meta($post->ID, 'ticket_status', true);
-    $bids_list = get_post_meta($post->ID, 'bids_list', true);
-    $last_bid_price = get_post_meta($post->ID, 'last_bid_price', true);
-    $last_bid_author = get_post_meta($post->ID, 'last_bid_author', true);
-    $last_bid_time = get_post_meta($post->ID, 'last_bid_time', true);
-    $last_bid_author_id = get_post_meta($post->ID, 'last_bid_author_id', true);
+    $ticket_category = get_post_meta($post->ID, 'ticket_category', true);
     $city = get_post_meta($post->ID, 'city', true);
-    $skhva_qalaqebi = get_post_meta($post->ID, 'skhva_qalaqebi', true);
-    $sazgvargaret = get_post_meta($post->ID, 'sazgvargaret', true);
+    $start_date = get_post_meta($post->ID, 'start_date', true);
     $ticket_price = get_post_meta($post->ID, 'ticket_price', true);
     $ticket_quantity = get_post_meta($post->ID, 'ticket_quantity', true);
-    $start_date = get_post_meta($post->ID, 'start_date', true);
     $hall = get_post_meta($post->ID, 'hall', true);
     $row = get_post_meta($post->ID, 'row', true);
     $place = get_post_meta($post->ID, 'place', true);
     $sector = get_post_meta($post->ID, 'sector', true);
-    $ticket_information = get_post_meta($post->ID, 'ticket_information', true);
-    $comments_list = get_post_meta($post->ID, 'comments_list', true);
-    $ticket_category = get_post_meta($post->ID, 'ticket_category', true);
-    $phone_number = get_post_meta($post->ID, 'phone_number', true);
-    $piradi_nomeri = get_post_meta($post->ID, 'piradi_nomeri', true);
-    
-    if (empty($ticket_status)) {
-        $ticket_status = 'დაგეგმილი';
-    }
-    
-    if (empty($bids_list)) {
-        $bids_list = array();
-    }
-    
-    if (empty($comments_list)) {
-        $comments_list = array();
-    }
     
     wp_nonce_field('save_auction_details', 'auction_details_nonce');
     ?>
     <div class="auction-meta-box">
-        <div class="auction-tabs">
-            <button type="button" class="tab-button active" onclick="openTab(event, 'auction-info')">Auction Info</button>
-            <button type="button" class="tab-button" onclick="openTab(event, 'bids-list')">Bids List</button>
-            <button type="button" class="tab-button" onclick="openTab(event, 'last-bid-info')">Last Bid Info</button>
-            <button type="button" class="tab-button" onclick="openTab(event, 'ticket-info')">Ticket Info</button>
-            <button type="button" class="tab-button" onclick="openTab(event, 'comments-tab')">Comments</button>
-            <button type="button" class="tab-button" onclick="openTab(event, 'ticket-category-tab')">Ticket Category</button>
-            <button type="button" class="tab-button" onclick="openTab(event, 'user-info')">User Info</button>
-            <button type="button" class="tab-button" onclick="openTab(event, 'visibility-settings')">Visibility Settings</button>
+        <style>
+            .category-specific-fields { display: none; }
+            .category-specific-fields.active { display: block; }
+            .form-table th { width: 200px; }
+        </style>
+
+        <table class="form-table">
+            <tr>
+                <th><label for="ticket_category">კატეგორია</label></th>
+                <td>
+                    <select name="ticket_category" id="ticket_category" class="widefat">
+                        <option value="თეატრი-კინო" <?php selected($ticket_category, 'თეატრი-კინო'); ?>>თეატრი-კინო</option>
+                        <option value="ივენთები" <?php selected($ticket_category, 'ივენთები'); ?>>ივენთები</option>
+                        <option value="სპორტი" <?php selected($ticket_category, 'სპორტი'); ?>>სპორტი</option>
+                        <option value="მოგზაურობა" <?php selected($ticket_category, 'მოგზაურობა'); ?>>მოგზაურობა</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="city">ქალაქი</label></th>
+                <td>
+                    <select name="city" id="city" class="widefat">
+                        <option value="tbilisi" <?php selected($city, 'tbilisi'); ?>>თბილისი</option>
+                        <option value="batumi" <?php selected($city, 'batumi'); ?>>ბათუმი</option>
+                        <option value="kutaisi" <?php selected($city, 'kutaisi'); ?>>ქუთაისი</option>
+                        <option value="skhva_qalaqebi" <?php selected($city, 'skhva_qalaqebi'); ?>>სხვა ქალაქები</option>
+                        <option value="sazgvargaret" <?php selected($city, 'sazgvargaret'); ?>>საზღვარგარეთ</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="start_date">დაწყების თარიღი</label></th>
+                <td>
+                    <input type="datetime-local" id="start_date" name="start_date" value="<?php echo esc_attr($start_date); ?>" class="widefat">
+                </td>
+            </tr>
+            <tr>
+                <th><label for="ticket_price">ბილეთის ფასი</label></th>
+                <td>
+                    <input type="number" id="ticket_price" name="ticket_price" value="<?php echo esc_attr($ticket_price); ?>" class="widefat">
+                </td>
+            </tr>
+            <tr>
+                <th><label for="ticket_quantity">ბილეთების რაოდენობა</label></th>
+                <td>
+                    <input type="number" id="ticket_quantity" name="ticket_quantity" value="<?php echo esc_attr($ticket_quantity); ?>" class="widefat">
+                </td>
+            </tr>
+        </table>
+
+        <!-- Theater and Cinema specific fields -->
+        <div id="theater-cinema-fields" class="category-specific-fields <?php echo $ticket_category === 'თეატრი-კინო' ? 'active' : ''; ?>">
+            <table class="form-table">
+                <tr>
+                    <th><label for="hall">დარბაზი</label></th>
+                    <td>
+                        <input type="text" id="hall" name="hall" value="<?php echo esc_attr($hall); ?>" class="widefat">
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="row">რიგი</label></th>
+                    <td>
+                        <input type="text" id="row" name="row" value="<?php echo esc_attr($row); ?>" class="widefat">
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="place">ადგილი</label></th>
+                    <td>
+                        <input type="text" id="place" name="place" value="<?php echo esc_attr($place); ?>" class="widefat">
+                    </td>
+                </tr>
+            </table>
         </div>
 
-        <div id="auction-info" class="tab-content" style="display: block;">
-            <h3>Auction Info</h3>
-            <p>
-                <label for="auction_price">Auction Price:</label>
-                <input type="number" id="auction_price" name="auction_price" 
-                       value="<?php echo esc_attr($auction_price); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="start_time">Start Time:</label>
-                <input type="datetime-local" id="start_time" name="start_time" 
-                       value="<?php echo esc_attr($start_time); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="due_time">Due Time:</label>
-                <input type="datetime-local" id="due_time" name="due_time" 
-                       value="<?php echo esc_attr($due_time); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="buy_now">Buy Now Price:</label>
-                <input type="number" id="buy_now" name="buy_now" 
-                       value="<?php echo esc_attr($buy_now); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="min_bid_price">Min Bid Price:</label>
-                <input type="number" id="min_bid_price" name="min_bid_price" 
-                       value="<?php echo esc_attr($min_bid_price); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="price_limit">Price Limit:</label>
-                <input type="number" id="price_limit" name="price_limit" 
-                       value="<?php echo esc_attr($price_limit); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="ticket_status">Status:</label>
-                <select name="ticket_status" id="ticket_status" class="widefat">
-                    <option value="დაგეგმილი" <?php selected($ticket_status, 'დაგეგმილი'); ?>>დაგეგმილი</option>
-                    <option value="აქტიური" <?php selected($ticket_status, 'აქტიური'); ?>>აქტიური</option>
-                    <option value="დასრულებული" <?php selected($ticket_status, 'დასრულებული'); ?>>დასრულებული</option>
-                </select>
-            </p>
-        </div>
-
-        <div id="bids-list" class="tab-content">
-            <h3>Bids List</h3>
-            <div class="bids-list-container">
-                <table class="widefat">
-                    <thead>
-                        <tr>
-                            <th>Bid Price</th>
-                            <th>Author</th>
-                            <th>Time</th>
-                            <th>Price Increase</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bids-list-body">
-                        <?php
-                        if (!empty($bids_list)) {
-                            foreach ($bids_list as $index => $bid) {
-                                ?>
-                                <tr>
-                                    <td>
-                                        <input type="number" 
-                                               name="bids_list[<?php echo $index; ?>][bid_price]" 
-                                               value="<?php echo esc_attr($bid['bid_price']); ?>" 
-                                               class="widefat">
-                                    </td>
-                                    <td>
-                                        <input type="text" 
-                                               name="bids_list[<?php echo $index; ?>][bid_author]" 
-                                               value="<?php echo esc_attr($bid['bid_author']); ?>" 
-                                               class="widefat">
-                                    </td>
-                                    <td>
-                                        <input type="datetime-local" 
-                                               name="bids_list[<?php echo $index; ?>][bid_time]" 
-                                               value="<?php echo esc_attr($bid['bid_time']); ?>" 
-                                               class="widefat">
-                                    </td>
-                                    <td>
-                                        <input type="number" 
-                                               name="bids_list[<?php echo $index; ?>][price_increase]" 
-                                               value="<?php echo esc_attr($bid['price_increase']); ?>" 
-                                               class="widefat">
-                                    </td>
-                                    <td>
-                                        <button type="button" class="button" onclick="removeBid(this)">Remove</button>
-                                    </td>
-                                </tr>
-                                <?php
-                            }
-                        }
-                        ?>
-                    </tbody>
-                </table>
-                <p>
-                    <button type="button" class="button" onclick="addNewBid()">Add New Bid</button>
-                </p>
-            </div>
-        </div>
-
-        <div id="last-bid-info" class="tab-content">
-            <h3>Last Bid Information</h3>
-            <p>
-                <label for="last_bid_price">Last Bid Price:</label>
-                <input type="text" id="last_bid_price" name="last_bid_price" 
-                       value="<?php echo esc_attr($last_bid_price); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="last_bid_author">Last Bid Author:</label>
-                <input type="text" id="last_bid_author" name="last_bid_author" 
-                       value="<?php echo esc_attr($last_bid_author); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="last_bid_time">Last Bid Time:</label>
-                <input type="text" id="last_bid_time" name="last_bid_time" 
-                       value="<?php echo esc_attr($last_bid_time); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="last_bid_author_id">Last Bid Author ID:</label>
-                <input type="text" id="last_bid_author_id" name="last_bid_author_id" 
-                       value="<?php echo esc_attr($last_bid_author_id); ?>" class="widefat">
-            </p>
-        </div>
-
-        <div id="ticket-info" class="tab-content">
-            <h3>Ticket Information</h3>
-            <p>
-                <label for="city">City:</label>
-                <select name="city" id="city" class="widefat">
-                    <option value="tbilisi" <?php selected($city, 'tbilisi'); ?>>თბილისი</option>
-                    <option value="batumi" <?php selected($city, 'batumi'); ?>>ბათუმი</option>
-                    <option value="kutaisi" <?php selected($city, 'kutaisi'); ?>>ქუთაისი</option>
-                    <option value="skhva_qalaqebi" <?php selected($city, 'skhva_qalaqebi'); ?>>სხვა ქალაქები</option>
-                    <option value="sazgvargaret" <?php selected($city, 'sazgvargaret'); ?>>საზღვარგარეთ</option>
-                </select>
-            </p>
-            <p>
-                <label for="skhva_qalaqebi">სხვა ქალაქები:</label>
-                <input type="text" id="skhva_qalaqebi" name="skhva_qalaqebi" 
-                       value="<?php echo esc_attr($skhva_qalaqebi); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="sazgvargaret">საზღვარგარეთ:</label>
-                <input type="text" id="sazgvargaret" name="sazgvargaret" 
-                       value="<?php echo esc_attr($sazgvargaret); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="ticket_price">Ticket Price:</label>
-                <input type="text" id="ticket_price" name="ticket_price" 
-                       value="<?php echo esc_attr($ticket_price); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="ticket_quantity">Ticket Quantity:</label>
-                <input type="text" id="ticket_quantity" name="ticket_quantity" 
-                       value="<?php echo esc_attr($ticket_quantity); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="start_date">Start Date:</label>
-                <input type="datetime-local" id="start_date" name="start_date" 
-                       value="<?php echo esc_attr($start_date); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="hall">Hall:</label>
-                <input type="text" id="hall" name="hall" 
-                       value="<?php echo esc_attr($hall); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="row">Row:</label>
-                <input type="text" id="row" name="row" 
-                       value="<?php echo esc_attr($row); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="place">Place:</label>
-                <input type="text" id="place" name="place" 
-                       value="<?php echo esc_attr($place); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="sector">Sector:</label>
-                <input type="text" id="sector" name="sector" 
-                       value="<?php echo esc_attr($sector); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="ticket_information">Ticket Information:</label>
-                <textarea id="ticket_information" name="ticket_information" class="widefat" rows="5"><?php echo esc_textarea($ticket_information); ?></textarea>
-            </p>
-        </div>
-
-        <div id="ticket-category-tab" class="tab-content">
-            <h3>Ticket Category</h3>
-            <p>
-                <label for="ticket_category">Category:</label>
-                <select name="ticket_category" id="ticket_category" class="widefat">
-                    <option value="თეატრი-კინო" <?php selected($ticket_category, 'თეატრი-კინო'); ?>>თეატრი-კინო</option>
-                    <option value="ივენთები" <?php selected($ticket_category, 'ივენთები'); ?>>ივენთები</option>
-                    <option value="სპორტი" <?php selected($ticket_category, 'სპორტი'); ?>>სპორტი</option>
-                    <option value="მოგზაურობა" <?php selected($ticket_category, 'მოგზაურობა'); ?>>მოგზაურობა</option>
-                </select>
-            </p>
-        </div>
-
-        <div id="comments-tab" class="tab-content">
-            <h3>Comments</h3>
-            <div class="comments-container">
-                <table class="widefat">
-                    <thead>
-                        <tr>
-                            <th>Author</th>
-                            <th>Author Name</th>
-                            <th>Date</th>
-                            <th>Comment</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="comments-list-body">
-                        <?php
-                        if (!empty($comments_list)) {
-                            foreach ($comments_list as $index => $comment) {
-                                ?>
-                                <tr>
-                                    <td>
-                                        <input type="text" 
-                                               name="comments_list[<?php echo $index; ?>][comment_author]" 
-                                               value="<?php echo esc_attr($comment['comment_author']); ?>" 
-                                               class="widefat">
-                                    </td>
-                                    <td>
-                                        <input type="text" 
-                                               name="comments_list[<?php echo $index; ?>][comment_author_name]" 
-                                               value="<?php echo esc_attr($comment['comment_author_name']); ?>" 
-                                               class="widefat">
-                                    </td>
-                                    <td>
-                                        <input type="text" 
-                                               name="comments_list[<?php echo $index; ?>][comment_date]" 
-                                               value="<?php echo esc_attr($comment['comment_date']); ?>" 
-                                               class="widefat">
-                                    </td>
-                                    <td>
-                                        <textarea name="comments_list[<?php echo $index; ?>][comment_area]" 
-                                                  class="widefat" rows="3"><?php echo esc_textarea($comment['comment_area']); ?></textarea>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="button" onclick="removeComment(this)">Remove</button>
-                                    </td>
-                                </tr>
-                                <?php
-                            }
-                        }
-                        ?>
-                    </tbody>
-                </table>
-                <p>
-                    <button type="button" class="button" onclick="addNewComment()">Add New Comment</button>
-                </p>
-            </div>
-        </div>
-
-        <div id="user-info" class="tab-content">
-            <h3>User Information</h3>
-            <p>
-                <label for="phone_number">Phone Number:</label>
-                <input type="text" id="phone_number" name="phone_number" 
-                       value="<?php echo esc_attr($phone_number); ?>" class="widefat">
-            </p>
-            <p>
-                <label for="piradi_nomeri">Personal ID Number:</label>
-                <input type="text" id="piradi_nomeri" name="piradi_nomeri" 
-                       value="<?php echo esc_attr($piradi_nomeri); ?>" class="widefat">
-            </p>
-        </div>
-
-        <div id="visibility-settings" class="tab-content">
-            <h3>Visibility Settings</h3>
-            <p>
-                <label for="visibility">Visibility:</label>
-                <select name="visibility" id="visibility" class="widefat">
-                    <option value="0" <?php selected(get_post_meta($post->ID, 'visibility', true), '0'); ?>>Hidden</option>
-                    <option value="1" <?php selected(get_post_meta($post->ID, 'visibility', true), '1'); ?>>Visible</option>
-                </select>
-            </p>
+        <!-- Sports specific fields -->
+        <div id="sports-fields" class="category-specific-fields <?php echo $ticket_category === 'სპორტი' ? 'active' : ''; ?>">
+            <table class="form-table">
+                <tr>
+                    <th><label for="sector">სექტორი</label></th>
+                    <td>
+                        <input type="text" id="sector" name="sector" value="<?php echo esc_attr($sector); ?>" class="widefat">
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="row">რიგი</label></th>
+                    <td>
+                        <input type="text" id="row" name="row" value="<?php echo esc_attr($row); ?>" class="widefat">
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="place">ადგილი</label></th>
+                    <td>
+                        <input type="text" id="place" name="place" value="<?php echo esc_attr($place); ?>" class="widefat">
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 
-    <style>
-    .auction-tabs {
-        margin-bottom: 20px;
-    }
-    .tab-button {
-        background-color: #f1f1f1;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-    }
-    .tab-button.active {
-        background-color: #ffffff;
-        border: 1px solid #ccc;
-        border-bottom: none;
-    }
-    .tab-content {
-        display: none;
-        padding: 20px;
-        border: 1px solid #ccc;
-    }
-    </style>
-
     <script>
-    function openTab(evt, tabName) {
-        var i, tabcontent, tabbuttons;
-        
-        tabcontent = document.getElementsByClassName("tab-content");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-        }
-        
-        tabbuttons = document.getElementsByClassName("tab-button");
-        for (i = 0; i < tabbuttons.length; i++) {
-            tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
-        }
-        
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
-    }
-
-    function addNewBid() {
-        var tbody = document.getElementById('bids-list-body');
-        var rowCount = tbody.getElementsByTagName('tr').length;
-        var newRow = document.createElement('tr');
-        
-        newRow.innerHTML = `
-            <td>
-                <input type="number" name="bids_list[${rowCount}][bid_price]" class="widefat">
-            </td>
-            <td>
-                <input type="text" name="bids_list[${rowCount}][bid_author]" class="widefat">
-            </td>
-            <td>
-                <input type="datetime-local" name="bids_list[${rowCount}][bid_time]" class="widefat">
-            </td>
-            <td>
-                <input type="number" name="bids_list[${rowCount}][price_increase]" class="widefat">
-            </td>
-            <td>
-                <button type="button" class="button" onclick="removeBid(this)">Remove</button>
-            </td>
-        `;
-        
-        tbody.appendChild(newRow);
-    }
-
-    function removeBid(button) {
-        var row = button.parentNode.parentNode;
-        row.parentNode.removeChild(row);
-    }
-
-    function addNewComment() {
-        var tbody = document.getElementById('comments-list-body');
-        var rowCount = tbody.getElementsByTagName('tr').length;
-        var newRow = document.createElement('tr');
-        
-        newRow.innerHTML = `
-            <td>
-                <input type="text" name="comments_list[${rowCount}][comment_author]" class="widefat">
-            </td>
-            <td>
-                <input type="text" name="comments_list[${rowCount}][comment_author_name]" class="widefat">
-            </td>
-            <td>
-                <input type="text" name="comments_list[${rowCount}][comment_date]" class="widefat">
-            </td>
-            <td>
-                <textarea name="comments_list[${rowCount}][comment_area]" class="widefat" rows="3"></textarea>
-            </td>
-            <td>
-                <button type="button" class="button" onclick="removeComment(this)">Remove</button>
-            </td>
-        `;
-        
-        tbody.appendChild(newRow);
-    }
-
-    function removeComment(button) {
-        var row = button.parentNode.parentNode;
-        row.parentNode.removeChild(row);
-    }
+    jQuery(document).ready(function($) {
+        $('#ticket_category').on('change', function() {
+            $('.category-specific-fields').removeClass('active');
+            
+            if (this.value === 'თეატრი-კინო') {
+                $('#theater-cinema-fields').addClass('active');
+            } else if (this.value === 'სპორტი') {
+                $('#sports-fields').addClass('active');
+            }
+        });
+    });
     </script>
     <?php
 }
