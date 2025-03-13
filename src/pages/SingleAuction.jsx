@@ -6,6 +6,7 @@ import AuctionPriceContainer from '../components/auction/single-auction/AuctionP
 import AuctionTimerStatus from '../components/auction/single-auction/AuctionTimerStatus';
 import AuctionBidsList from '../components/auction/single-auction/AuctionBidsList';
 import AuctionComments from '../components/auction/single-auction/AuctionComments';
+import AuctionDescription from '../components/auction/single-auction/AuctionDescription';
 import { useAuction } from '../components/core/context/AuctionContext';
 import { useAuctionPolling } from '../hooks/useAuctionPolling';
 import RelatedAuctions from '../components/auction/single-auction/RelatedAuctions';
@@ -15,7 +16,8 @@ function SingleAuction() {
   const { auctions, bidsList, updateAuction } = useAuction();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [activeTab, setActiveTab] = useState('description'); // Changed default tab to description
+  
   const [currentUserId, setCurrentUserId] = useState(() => {
     const userId = window.bidspaceSettings?.userId;
     return userId ? Number(userId) : null;
@@ -31,7 +33,7 @@ function SingleAuction() {
   const auction = auctions[id];
   const currentBids = bidsList[id] || [];
 
-  // დებაგინგისთვის გავაფართოვოთ logging
+  // debagging-lfs gavafartuot logging
   useEffect(() => {
     console.log('Current user ID:', currentUserId);
     console.log('Current user name:', currentUserName);
@@ -57,7 +59,7 @@ function SingleAuction() {
       });
   }, [currentUserId, currentUserName, auction, id]);
 
-  // აუქციონის მონაცემების შემოწმება
+  // auctions-ის მონაცემების შემოწმება
   useEffect(() => {
     if (auction) {
       setIsLoading(false);
@@ -78,11 +80,11 @@ function SingleAuction() {
     return () => clearInterval(interval);
   }, []);
 
-  // გვერდის სათაურის დაყენება და visibility-ის შემოწმება
+  // გვერდის სათაური და თუ visibillity aris false
   useEffect(() => {
     if (!auction) return;
 
-    // პირდაპირ დავაბრუნოთ თუ visibility არის false
+    // directamente davabrunot tu visibility aris false
     if (auction.meta?.visibility === false) {
       setError('auction_not_visible');
       return;
@@ -250,10 +252,29 @@ function SingleAuction() {
       <div className='w-full bg-white p-3 sm:p-4 lg:p-5 rounded-2xl flex flex-col lg:flex-row gap-4 lg:gap-5'>
         <div className='w-full lg:w-1/2 flex flex-col gap-4'>
           <AuctionImage mediaId={auction.featured_media} />
-          {/* Bids history is now visible only on desktop */}
+          {/* Tabs container - visible only on desktop */}
           <div className="hidden lg:block bg-white rounded-lg p-3 sm:p-4 shadow">
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">ბიდების ისტორია</h3>
-            <AuctionBidsList bids={currentBids} />
+            <div className="flex border-b mb-4">
+              <button
+                className={`py-2 px-4 ${activeTab === 'description' ? 'border-b-2 border-[#00aeef] text-[#00AEEF]' : 'text-gray-500'}`}
+                onClick={() => setActiveTab('description')}
+              >
+                აღწერა
+              </button>
+              <button
+                className={`py-2 px-4 ${activeTab === 'bids' ? 'border-b-2 border-[#00aeef] text-[#00AEEF]' : 'text-gray-500'}`}
+                onClick={() => setActiveTab('bids')}
+              >
+                ბიდების ისტორია
+              </button>
+            </div>
+            {activeTab === 'description' ? (
+              <div className="h-[250px] sm:max-h-60 overflow-y-auto">
+                <AuctionDescription auction={auction} />
+              </div>
+            ) : (
+              <AuctionBidsList bids={currentBids} />
+            )}
           </div>
         </div>
         <div className='w-full lg:w-1/2 flex flex-col gap-3 sm:gap-4'>
@@ -283,10 +304,27 @@ function SingleAuction() {
         </div>
       </div>
 
-      {/* Bids history for mobile devices */}
-      <div className="lg:hidden w-full bg-white rounded-2xl p-3 sm:p-4 shadow">
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">ბიდების ისტორია</h3>
-        <AuctionBidsList bids={currentBids} />
+      {/* Tabs container for mobile devices */}
+      <div className="lg:hidden w-full bg-white rounded-2xl p-3 sm:p-4">
+        <div className="flex border-b mb-4">
+          <button
+            className={`py-2 px-4 ${activeTab === 'description' ? 'border-b-2 border-[#00AEEF] text-[#00AEEF]' : 'text-gray-500'}`}
+            onClick={() => setActiveTab('description')}
+          >
+            აღწერა
+          </button>
+          <button
+            className={`py-2 px-4 ${activeTab === 'bids' ? 'border-b-2 border-[#00AEEF] text-[#00AEEF]' : 'text-gray-500'}`}
+            onClick={() => setActiveTab('bids')}
+          >
+            ბიდების ისტორია
+          </button>
+        </div>
+        {activeTab === 'description' ? (
+          <AuctionDescription auction={auction} />
+        ) : (
+          <AuctionBidsList bids={currentBids} />
+        )}
       </div>
 
       <AuctionComments
