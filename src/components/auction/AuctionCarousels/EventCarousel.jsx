@@ -187,7 +187,7 @@ const EventCarousel = () => {
   useEffect(() => {
     const fetchEventAuctions = async (retryCount = 0) => {
       try {
-        const response = await fetch('/wp-json/wp/v2/auction?per_page=100&_embed', {
+        const response = await fetch('/wp-json/wp/v2/auction?per_page=12&_embed', {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
@@ -247,18 +247,18 @@ const EventCarousel = () => {
   }
 
   if (error) {
-    return <div className="text-red-500">{error}</div>;
+    return null;
   }
 
   if (eventAuctions.length === 0) {
-    return <div className="text-center">ამჟამად აქტიური აუქციონები არ არის</div>;
+    return null;
   }
 
   return (
     <div className="event-auctions-carousel">
       <h3 className="text-2xl font-bold text-center text-black mb-12">{texts.auctionsTitle}</h3>
       <Carousel 
-        className="w-full" 
+        className="w-full"
         opts={{
           dragFree: true,
           containScroll: "trimSnaps",

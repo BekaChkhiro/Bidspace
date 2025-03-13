@@ -159,11 +159,11 @@ const TravelCarousel = () => {
   }
 
   if (error) {
-    return <div className="text-red-500">{error}</div>;
+    return null;
   }
 
   if (travelAuctions.length === 0) {
-    return <div className="text-center">ამჟამად აქტიური აუქციონები არ არის</div>;
+    return null;
   }
 
   return (
