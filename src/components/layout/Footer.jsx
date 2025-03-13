@@ -20,9 +20,6 @@ const Footer = () => {
           <div className="flex flex-col gap-4">
             <span className="font-bold text-xl lg:text-2xl text-black">მენიუ</span>
             <nav className="flex flex-col gap-2">
-              <Link to="/about" className="hover:font-bold hover:text-black">
-                ჩვენ შესახებ
-              </Link>
               <Link to="/forum" className="hover:font-bold hover:text-black">
                 ფორუმი
               </Link>
@@ -40,10 +37,7 @@ const Footer = () => {
           <div className="flex flex-col gap-4">
             <span className="font-bold text-xl lg:text-2xl text-black">კონტაქტი</span>
             <nav className="flex flex-col gap-2">
-              <Link to="#" className="hover:font-bold hover:text-black">
-                +995 555 555 555
-              </Link>
-              <Link to="#" className="hover:font-bold hover:text-black">
+              <Link to="mailto:info@bidspace.ge" target="_blank" rel="noopener noreferrer" className="hover:font-bold hover:text-black">
                 info@bidspace.ge
               </Link>
             </nav>
@@ -51,11 +45,11 @@ const Footer = () => {
           <div className="flex flex-col gap-4">
             <span className="font-bold text-xl lg:text-2xl text-black">გამოგვყევი</span>
             <nav className="flex flex-col gap-2">
-              <Link to="#" className="flex gap-4 items-center hover:font-bold hover:text-black">
+              <Link to="https://www.facebook.com/profile.php?id=61573983632630" target="_blank" rel="noopener noreferrer" className="flex gap-4 items-center hover:font-bold hover:text-black">
                 <img src={facebookIcon} alt="Facebook Icon" width={24} height={24} />
                 <span>Facebook</span>
               </Link>
-              <Link to="#" className="flex gap-4 items-center hover:font-bold hover:text-black">
+              <Link to="https://www.instagram.com/bidspace.ge/" target="_blank" rel="noopener noreferrer" className="flex gap-4 items-center hover:font-bold hover:text-black">
                 <img src={instagramIcon} alt="Instagram Icon" width={24} height={24} />
                 <span>Instagram</span>
               </Link>
@@ -64,11 +58,8 @@ const Footer = () => {
           <div className="flex flex-col gap-4">
             <span className="font-bold text-xl lg:text-2xl text-black">წესები და პირობები</span>
             <nav className="flex flex-col gap-2">
-              <Link to="#" className="hover:font-bold hover:text-black">
+              <Link to="/instruction" className="hover:font-bold hover:text-black">
                 წესები და პირობები
-              </Link>
-              <Link to="#" className="hover:font-bold hover:text-black">
-                კონფიდენციალურობა
               </Link>
             </nav>
           </div>
