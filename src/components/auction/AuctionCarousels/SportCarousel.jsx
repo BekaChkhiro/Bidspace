@@ -145,7 +145,7 @@ const SportCarousel = () => {
     fetchSportAuctions();
   }, [toast]);
 
-  if (loading || error || sportAuctions.length === 0) {
+  if (error || (!loading && sportAuctions.length === 0)) {
     return null;
   }
 
@@ -167,18 +167,28 @@ const SportCarousel = () => {
         }}
       >
         <CarouselContent>
-          {sportAuctions.map(auction => (
-            <CarouselItem key={auction.id} className="basis-[85%] md:basis-[45%] lg:basis-[30%]">
-              <AuctionItem
-                auction={auction}
-                texts={texts}
-                wishlist={wishlist}
-                onWishlistToggle={handleWishlistToggle}
-                getFeaturedImageUrl={getFeaturedImageUrl}
-                handleImageError={handleImageError}
-              />
-            </CarouselItem>
-          ))}
+          {loading ? (
+            <>
+              {[1, 2, 3].map((index) => (
+                <CarouselItem key={index} className="basis-[85%] md:basis-[45%] lg:basis-[30%]">
+                  <SkeletonLoader />
+                </CarouselItem>
+              ))}
+            </>
+          ) : (
+            sportAuctions.map(auction => (
+              <CarouselItem key={auction.id} className="basis-[85%] md:basis-[45%] lg:basis-[30%]">
+                <AuctionItem
+                  auction={auction}
+                  texts={texts}
+                  wishlist={wishlist}
+                  onWishlistToggle={handleWishlistToggle}
+                  getFeaturedImageUrl={getFeaturedImageUrl}
+                  handleImageError={handleImageError}
+                />
+              </CarouselItem>
+            ))
+          )}
         </CarouselContent>
       </Carousel>
     </div>
