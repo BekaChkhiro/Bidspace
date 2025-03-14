@@ -20,6 +20,25 @@ let analytics;
 let auth;
 let messaging;
 
+const cleanupRecaptcha = async () => {
+  try {
+    // Clean up any existing reCAPTCHA widgets
+    const existingWidgets = document.querySelectorAll('[id^="recaptcha-container-"]');
+    existingWidgets.forEach(widget => {
+      if (widget && widget.parentNode) {
+        widget.parentNode.removeChild(widget);
+      }
+    });
+
+    if (window.recaptchaVerifier) {
+      await window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
+    }
+  } catch (error) {
+    console.warn('Error cleaning up reCAPTCHA:', error);
+  }
+};
+
 const initializeFirebase = () => {
   try {
     if (!app) {
@@ -48,59 +67,51 @@ const initializeFirebase = () => {
   }
 };
 
-// Initialize reCAPTCHA function with improved cleanup
 export const initializeRecaptcha = async (buttonId) => {
   try {
     if (!auth) {
       initializeFirebase();
     }
 
-    // Remove any existing reCAPTCHA widgets first
-    const existingWidgets = document.querySelectorAll('.grecaptcha-badge');
-    existingWidgets.forEach(widget => widget.parentElement.remove());
-    
-    // Reset the internal reCAPTCHA state
-    if (window.recaptchaVerifier) {
-      try {
-        await window.recaptchaVerifier.clear();
-      } catch (error) {
-        console.warn('Error clearing existing reCAPTCHA:', error);
-      }
-      window.recaptchaVerifier = null;
-    }
+    await cleanupRecaptcha();
 
-    // Get the button element
-    const buttonElement = document.getElementById(buttonId);
-    if (!buttonElement) {
-      throw new Error(`Button element with id ${buttonId} not found`);
-    }
-
-    // Create new reCAPTCHA verifier with unique container
+    // Create a unique container for this instance
     const containerId = `recaptcha-container-${Date.now()}`;
     const container = document.createElement('div');
     container.id = containerId;
-    buttonElement.parentNode.insertBefore(container, buttonElement.nextSibling);
+    container.style.display = 'none';
+    document.body.appendChild(container);
 
+    // Create new reCAPTCHA verifier
     window.recaptchaVerifier = new RecaptchaVerifier(auth, container, {
       size: 'invisible',
-      callback: () => {
+      callback: (response) => {
         console.log('reCAPTCHA verified successfully');
       },
       'expired-callback': () => {
         console.log('reCAPTCHA expired');
-        initializeRecaptcha(buttonId).catch(console.error);
+        cleanupRecaptcha();
       },
       'error-callback': (error) => {
         console.error('reCAPTCHA error:', error);
+        cleanupRecaptcha();
       }
     });
 
+    // Force render the reCAPTCHA
+    await window.recaptchaVerifier.render();
     return window.recaptchaVerifier;
   } catch (error) {
     console.error('Error initializing reCAPTCHA:', error);
+    await cleanupRecaptcha();
     throw error;
   }
 };
+
+// Cleanup on page unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('unload', cleanupRecaptcha);
+}
 
 // Initialize Firebase on module load
 initializeFirebase();

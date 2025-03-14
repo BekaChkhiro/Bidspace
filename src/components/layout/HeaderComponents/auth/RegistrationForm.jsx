@@ -84,7 +84,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
     setToastType(type);
   };
 
-  const handleSendVerificationCode = async () => {
+  const handleSendVerificationCode = async (retryCount = 0) => {
     try {
       if (!formData.regPhone) {
         showToast('გთხოვთ შეიყვანოთ ტელეფონის ნომერი');
@@ -104,6 +104,10 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
       try {
         const recaptchaVerifier = await initializeRecaptcha('send-code-button');
+        if (!recaptchaVerifier) {
+          throw new Error('reCAPTCHA ინიციალიზაცია ვერ მოხერხდა');
+        }
+
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
         
         setVerificationId(confirmationResult.verificationId);
@@ -111,8 +115,21 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         setVerificationError('');
         setResendTimer(60);
         showToast('ვერიფიკაციის კოდი გამოგზავნილია', 'success');
+
       } catch (error) {
         console.error('Error sending verification code:', error);
+        
+        // Check if we should retry
+        if (retryCount < MAX_RETRIES && 
+           (error.code === 'auth/network-request-failed' || 
+            error.message?.includes('503') || 
+            error.code === 'auth/error-code:-39')) {
+          
+          console.log(`Retrying SMS send... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
+          setLoading(false);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          return handleSendVerificationCode(retryCount + 1);
+        }
         
         let errorMessage;
         switch (error.code) {
@@ -128,12 +145,14 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
           case 'auth/network-request-failed':
             errorMessage = 'ქსელის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი';
             break;
+          case 'auth/error-code:-39':
+            errorMessage = 'Recaptcha-ს შეცდომა. გთხოვთ განაახლოთ გვერდი და სცადოთ თავიდან';
+            break;
           default:
             errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
         }
         
         showToast(errorMessage);
-        return;
       }
     } catch (error) {
       console.error('Verification process failed:', error);
