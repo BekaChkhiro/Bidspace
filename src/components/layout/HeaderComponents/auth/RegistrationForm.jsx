@@ -100,16 +100,44 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       setLoading(true);
       setVerificationError('');
 
+      // Format phone number with proper international format
       const phoneNumber = '+995' + formData.regPhone;
+      console.log('Attempting to verify phone number:', phoneNumber);
 
       try {
-        const recaptchaVerifier = await initializeRecaptcha('send-code-button');
+        // Clean up any existing reCAPTCHA instances first
+        if (window.recaptchaVerifier) {
+          await window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        }
+
+        // Create a visible reCAPTCHA container for debugging
+        const recaptchaContainer = document.createElement('div');
+        recaptchaContainer.id = 'recaptcha-container';
+        recaptchaContainer.style.position = 'fixed';
+        recaptchaContainer.style.bottom = '10px';
+        recaptchaContainer.style.right = '10px';
+        document.body.appendChild(recaptchaContainer);
+
+        console.log('Initializing reCAPTCHA...');
+        const recaptchaVerifier = await initializeRecaptcha('recaptcha-container');
         if (!recaptchaVerifier) {
           throw new Error('reCAPTCHA ინიციალიზაცია ვერ მოხერხდა');
         }
+        console.log('reCAPTCHA initialized successfully');
 
+        // Wait for reCAPTCHA to be fully ready
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        console.log('Sending verification code...');
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
         
+        if (!confirmationResult || !confirmationResult.verificationId) {
+          console.error('Invalid confirmation result:', confirmationResult);
+          throw new Error('Invalid confirmation result');
+        }
+        
+        console.log('Verification code sent successfully');
         setVerificationId(confirmationResult.verificationId);
         setPhoneVerificationStep('sent');
         setVerificationError('');
@@ -118,16 +146,31 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
       } catch (error) {
         console.error('Error sending verification code:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          stack: error.stack
+        });
         
         // Check if we should retry
         if (retryCount < MAX_RETRIES && 
            (error.code === 'auth/network-request-failed' || 
             error.message?.includes('503') || 
-            error.code === 'auth/error-code:-39')) {
+            error.code === 'auth/error-code:-39' ||
+            error.code === 'auth/invalid-verification-code' ||
+            !error.code)) { // Also retry if no error code (might be network issue)
           
-          console.log(`Retrying SMS send... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
+          const nextRetryDelay = RETRY_DELAY * Math.pow(2, retryCount);
+          console.log(`Retrying SMS send in ${nextRetryDelay}ms... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
+          
+          // Clean up reCAPTCHA before retry
+          if (window.recaptchaVerifier) {
+            await window.recaptchaVerifier.clear().catch(console.warn);
+            window.recaptchaVerifier = null;
+          }
+          
           setLoading(false);
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          await new Promise(resolve => setTimeout(resolve, nextRetryDelay));
           return handleSendVerificationCode(retryCount + 1);
         }
         
@@ -153,6 +196,12 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         }
         
         showToast(errorMessage);
+      } finally {
+        // Clean up the reCAPTCHA container
+        const recaptchaContainer = document.getElementById('recaptcha-container');
+        if (recaptchaContainer) {
+          recaptchaContainer.remove();
+        }
       }
     } catch (error) {
       console.error('Verification process failed:', error);

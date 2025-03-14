@@ -52,6 +52,20 @@ const initializeFirebase = () => {
       auth.languageCode = 'ka';
       auth.settings.appVerificationDisabledForTesting = false;
       
+      // Enable debug mode for development
+      if (process.env.NODE_ENV !== 'production') {
+        auth._config.emulator = false; // Ensure we're using production Firebase
+        console.log('Firebase Auth initialized with config:', auth._config);
+      }
+      
+      // Configure auth persistence
+      auth.settings.persistence = true;
+      
+      // Enable debug mode for development
+      if (process.env.NODE_ENV !== 'production') {
+        auth.settings.debug = true;
+      }
+      
       if (typeof window !== 'undefined') {
         try {
           messaging = getMessaging(app);
@@ -75,47 +89,36 @@ export const initializeRecaptcha = async (buttonId) => {
 
     await cleanupRecaptcha();
 
-    // Create a unique container for this instance
-    const containerId = `recaptcha-container-${Date.now()}`;
-    const container = document.createElement('div');
-    container.id = containerId;
-    container.style.display = 'none';
-    document.body.appendChild(container);
-
-    // Add error handling for potential network issues
-    const maxRetries = 3;
-    let retryCount = 0;
-
-    while (retryCount < maxRetries) {
-      try {
-        // Create new reCAPTCHA verifier with improved error handling
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, container, {
-          size: 'invisible',
-          callback: (response) => {
-            console.log('reCAPTCHA verified successfully');
-          },
-          'expired-callback': () => {
-            console.log('reCAPTCHA expired');
-            cleanupRecaptcha();
-          },
-          'error-callback': (error) => {
-            console.error('reCAPTCHA error:', error);
-            cleanupRecaptcha();
-          }
-        });
-
-        // Force render the reCAPTCHA
-        await window.recaptchaVerifier.render();
-        return window.recaptchaVerifier;
-      } catch (error) {
-        retryCount++;
-        if (retryCount === maxRetries) {
-          throw error;
-        }
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
-      }
+    console.log('Setting up reCAPTCHA with container:', buttonId);
+    const container = document.getElementById(buttonId);
+    if (!container) {
+      console.error('Container element not found:', buttonId);
+      throw new Error('Container element not found');
     }
+
+    // Create new reCAPTCHA verifier with improved settings
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, buttonId, {
+      size: 'normal', // Changed to normal for debugging
+      callback: (response) => {
+        console.log('reCAPTCHA verified successfully:', response);
+      },
+      'expired-callback': () => {
+        console.log('reCAPTCHA expired, cleaning up...');
+        cleanupRecaptcha();
+      },
+      'error-callback': (error) => {
+        console.error('reCAPTCHA error:', error);
+        cleanupRecaptcha();
+      },
+      isolated: true, // Use isolated mode
+      hl: 'ka' // Set language to Georgian
+    });
+
+    console.log('Rendering reCAPTCHA...');
+    await window.recaptchaVerifier.render();
+    console.log('reCAPTCHA rendered successfully');
+
+    return window.recaptchaVerifier;
   } catch (error) {
     console.error('Error initializing reCAPTCHA:', error);
     await cleanupRecaptcha();
