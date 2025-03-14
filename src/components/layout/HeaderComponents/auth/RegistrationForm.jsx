@@ -100,44 +100,45 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       setLoading(true);
       setVerificationError('');
 
-      // Format phone number with proper international format
       const phoneNumber = '+995' + formData.regPhone;
-      console.log('Attempting to verify phone number:', phoneNumber);
+      console.log('Attempting phone verification:', phoneNumber);
 
       try {
-        // Clean up any existing reCAPTCHA instances first
-        if (window.recaptchaVerifier) {
-          await window.recaptchaVerifier.clear();
-          window.recaptchaVerifier = null;
+        // Ensure reCAPTCHA is properly loaded
+        if (!window.grecaptcha?.render) {
+          await new Promise((resolve) => {
+            const checkRecaptcha = setInterval(() => {
+              if (window.grecaptcha?.render) {
+                clearInterval(checkRecaptcha);
+                resolve();
+              }
+            }, 100);
+            // Timeout after 5 seconds
+            setTimeout(() => {
+              clearInterval(checkRecaptcha);
+              resolve();
+            }, 5000);
+          });
         }
 
-        // Create a visible reCAPTCHA container for debugging
-        const recaptchaContainer = document.createElement('div');
-        recaptchaContainer.id = 'recaptcha-container';
-        recaptchaContainer.style.position = 'fixed';
-        recaptchaContainer.style.bottom = '10px';
-        recaptchaContainer.style.right = '10px';
-        document.body.appendChild(recaptchaContainer);
-
-        console.log('Initializing reCAPTCHA...');
-        const recaptchaVerifier = await initializeRecaptcha('recaptcha-container');
+        // Initialize new reCAPTCHA instance
+        const recaptchaVerifier = await initializeRecaptcha();
         if (!recaptchaVerifier) {
           throw new Error('reCAPTCHA ინიციალიზაცია ვერ მოხერხდა');
         }
-        console.log('reCAPTCHA initialized successfully');
 
-        // Wait for reCAPTCHA to be fully ready
+        // Wait for reCAPTCHA to be ready
         await new Promise(resolve => setTimeout(resolve, 1000));
 
+        // Attempt to send verification code
         console.log('Sending verification code...');
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
         
-        if (!confirmationResult || !confirmationResult.verificationId) {
-          console.error('Invalid confirmation result:', confirmationResult);
+        if (!confirmationResult?.verificationId) {
           throw new Error('Invalid confirmation result');
         }
         
-        console.log('Verification code sent successfully');
+        console.log('SMS verification code sent successfully');
         setVerificationId(confirmationResult.verificationId);
         setPhoneVerificationStep('sent');
         setVerificationError('');
@@ -145,32 +146,18 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         showToast('ვერიფიკაციის კოდი გამოგზავნილია', 'success');
 
       } catch (error) {
-        console.error('Error sending verification code:', error);
-        console.error('Error details:', {
-          code: error.code,
-          message: error.message,
-          stack: error.stack
-        });
+        console.error('SMS verification error:', error);
         
-        // Check if we should retry
         if (retryCount < MAX_RETRIES && 
            (error.code === 'auth/network-request-failed' || 
             error.message?.includes('503') || 
-            error.code === 'auth/error-code:-39' ||
-            error.code === 'auth/invalid-verification-code' ||
-            !error.code)) { // Also retry if no error code (might be network issue)
+            error.code === 'auth/error-code:-39')) {
           
-          const nextRetryDelay = RETRY_DELAY * Math.pow(2, retryCount);
-          console.log(`Retrying SMS send in ${nextRetryDelay}ms... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
-          
-          // Clean up reCAPTCHA before retry
-          if (window.recaptchaVerifier) {
-            await window.recaptchaVerifier.clear().catch(console.warn);
-            window.recaptchaVerifier = null;
-          }
+          console.log(`Retrying verification... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
+          await cleanupRecaptcha();
           
           setLoading(false);
-          await new Promise(resolve => setTimeout(resolve, nextRetryDelay));
+          await new Promise(resolve => setTimeout(resolve, 2000));
           return handleSendVerificationCode(retryCount + 1);
         }
         
@@ -189,19 +176,14 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             errorMessage = 'ქსელის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი';
             break;
           case 'auth/error-code:-39':
-            errorMessage = 'Recaptcha-ს შეცდომა. გთხოვთ განაახლოთ გვერდი და სცადოთ თავიდან';
+            errorMessage = 'reCAPTCHA-ს შეცდომა. გთხოვთ განაახლოთ გვერდი და სცადოთ თავიდან';
             break;
           default:
             errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
         }
         
         showToast(errorMessage);
-      } finally {
-        // Clean up the reCAPTCHA container
-        const recaptchaContainer = document.getElementById('recaptcha-container');
-        if (recaptchaContainer) {
-          recaptchaContainer.remove();
-        }
+        await cleanupRecaptcha();
       }
     } catch (error) {
       console.error('Verification process failed:', error);

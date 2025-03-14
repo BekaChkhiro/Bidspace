@@ -22,17 +22,24 @@ let messaging;
 
 const cleanupRecaptcha = async () => {
   try {
-    // Clean up any existing reCAPTCHA widgets
-    const existingWidgets = document.querySelectorAll('[id^="recaptcha-container-"]');
-    existingWidgets.forEach(widget => {
-      if (widget && widget.parentNode) {
-        widget.parentNode.removeChild(widget);
-      }
-    });
+    // Remove all reCAPTCHA-related elements
+    const elements = document.querySelectorAll(
+      '.grecaptcha-badge, ' +
+      '[id^="recaptcha"], ' +
+      '[id*="grecaptcha"], ' +
+      'iframe[src*="recaptcha"]'
+    );
+    
+    elements.forEach(el => el.remove());
 
     if (window.recaptchaVerifier) {
       await window.recaptchaVerifier.clear();
       window.recaptchaVerifier = null;
+    }
+
+    // Reset any global reCAPTCHA state
+    if (window.grecaptcha) {
+      window.grecaptcha.reset();
     }
   } catch (error) {
     console.warn('Error cleaning up reCAPTCHA:', error);
@@ -50,38 +57,28 @@ const initializeFirebase = () => {
       
       auth = getAuth(app);
       auth.languageCode = 'ka';
+      
+      // Configure auth settings
       auth.settings.appVerificationDisabledForTesting = false;
-      
-      // Enable debug mode for development
-      if (process.env.NODE_ENV !== 'production') {
-        auth._config.emulator = false; // Ensure we're using production Firebase
-        console.log('Firebase Auth initialized with config:', auth._config);
-      }
-      
-      // Configure auth persistence
       auth.settings.persistence = true;
       
-      // Enable debug mode for development
+      // Log auth configuration in development
       if (process.env.NODE_ENV !== 'production') {
-        auth.settings.debug = true;
-      }
-      
-      if (typeof window !== 'undefined') {
-        try {
-          messaging = getMessaging(app);
-        } catch (error) {
-          console.warn('Firebase messaging initialization failed:', error);
-        }
+        console.log('Firebase Auth Configuration:', {
+          currentUser: auth.currentUser,
+          languageCode: auth.languageCode,
+          settings: auth.settings
+        });
       }
     }
-    return auth;
+    return app;
   } catch (error) {
-    console.error('Error initializing Firebase:', error);
+    console.error('Firebase initialization error:', error);
     throw error;
   }
 };
 
-export const initializeRecaptcha = async (buttonId) => {
+export const initializeRecaptcha = async () => {
   try {
     if (!auth) {
       initializeFirebase();
@@ -89,49 +86,58 @@ export const initializeRecaptcha = async (buttonId) => {
 
     await cleanupRecaptcha();
 
-    console.log('Setting up reCAPTCHA with container:', buttonId);
-    const container = document.getElementById(buttonId);
-    if (!container) {
-      console.error('Container element not found:', buttonId);
-      throw new Error('Container element not found');
-    }
+    // Create a dedicated container for reCAPTCHA
+    const container = document.createElement('div');
+    container.id = 'recaptcha-container';
+    container.style.cssText = `
+      position: fixed;
+      bottom: -100px;
+      left: 0;
+      opacity: 0.01;
+      pointer-events: none;
+      z-index: -1;
+    `;
+    document.body.appendChild(container);
 
-    // Create new reCAPTCHA verifier with improved settings
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, buttonId, {
-      size: 'normal', // Changed to normal for debugging
+    // Initialize reCAPTCHA with specific parameters
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      size: 'invisible',
+      badge: 'inline',
+      isolated: true,
       callback: (response) => {
-        console.log('reCAPTCHA verified successfully:', response);
+        console.log('reCAPTCHA verified:', response?.length > 0);
       },
       'expired-callback': () => {
-        console.log('reCAPTCHA expired, cleaning up...');
         cleanupRecaptcha();
-      },
-      'error-callback': (error) => {
-        console.error('reCAPTCHA error:', error);
-        cleanupRecaptcha();
-      },
-      isolated: true, // Use isolated mode
-      hl: 'ka' // Set language to Georgian
+      }
     });
 
-    console.log('Rendering reCAPTCHA...');
+    // Pre-render reCAPTCHA
     await window.recaptchaVerifier.render();
-    console.log('reCAPTCHA rendered successfully');
-
+    
     return window.recaptchaVerifier;
   } catch (error) {
-    console.error('Error initializing reCAPTCHA:', error);
+    console.error('reCAPTCHA initialization failed:', error);
     await cleanupRecaptcha();
     throw error;
   }
 };
 
-// Cleanup on page unload
+// Initialize Firebase on load
 if (typeof window !== 'undefined') {
+  initializeFirebase();
+  
+  // Cleanup on page unload
   window.addEventListener('unload', cleanupRecaptcha);
+  
+  // Add reCAPTCHA script if not already present
+  if (!document.querySelector('script[src*="recaptcha"]')) {
+    const script = document.createElement('script');
+    script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
 }
 
-// Initialize Firebase on module load
-initializeFirebase();
-
-export { app, analytics, auth, messaging };
+export { auth, app };
