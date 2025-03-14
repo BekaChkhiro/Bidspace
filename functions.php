@@ -397,6 +397,113 @@ add_filter('rest_auction_query', function($args, $request) {
     return $args;
 }, 10, 2);
 
+// Add FCM token endpoints
+add_action('rest_api_init', function () {
+    register_rest_route('custom/v1', '/save-fcm-token', array(
+        'methods' => 'POST',
+        'callback' => 'save_fcm_token',
+        'permission_callback' => function() {
+            return is_user_logged_in();
+        }
+    ));
+
+    register_rest_route('custom/v1', '/remove-fcm-token', array(
+        'methods' => 'POST',
+        'callback' => 'remove_fcm_token',
+        'permission_callback' => function() {
+            return is_user_logged_in();
+        }
+    ));
+});
+
+function save_fcm_token($request) {
+    $user_id = get_current_user_id();
+    $token = $request->get_param('token');
+    
+    if (!$token) {
+        return new WP_Error('missing_token', 'FCM token is required', array('status' => 400));
+    }
+
+    // Save token to user meta
+    update_user_meta($user_id, 'fcm_token', sanitize_text_field($token));
+    
+    return array(
+        'success' => true,
+        'message' => 'FCM token saved successfully'
+    );
+}
+
+function remove_fcm_token() {
+    $user_id = get_current_user_id();
+    delete_user_meta($user_id, 'fcm_token');
+    
+    return array(
+        'success' => true,
+        'message' => 'FCM token removed successfully'
+    );
+}
+
+// Function to send FCM notification
+function send_fcm_notification($user_id, $title, $body, $data = array()) {
+    $fcm_token = get_user_meta($user_id, 'fcm_token', true);
+    if (!$fcm_token) {
+        return false;
+    }
+
+    $server_key = 'AAAAOPfm7ow:APA91bG0XNb4Jx5Scj8y4QyhYfwCbULPhwE6hQkHZ2Y1pB8a7FTDVKUmnr0qzK2lC1aWGq4h9gAZbhhN_gEKLLiZXVSVJXrtQG8oVuv-YWIFwmVNwoJYI0jgzTxLnRa_GQUr55wlF3ud';
+    
+    $fields = array(
+        'to' => $fcm_token,
+        'notification' => array(
+            'title' => $title,
+            'body' => $body,
+            'icon' => get_template_directory_uri() . '/src/assets/images/notification-icon.png',
+            'click_action' => site_url()
+        ),
+        'data' => $data
+    );
+
+    $headers = array(
+        'Authorization: key=' . $server_key,
+        'Content-Type: application/json'
+    );
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+    
+    $result = curl_exec($ch);
+    curl_close($ch);
+    
+    return json_decode($result, true);
+}
+
+// Example usage for sending notification when new auction is created
+add_action('save_post_auction', function($post_id, $post, $update) {
+    if ($update || wp_is_post_revision($post_id)) {
+        return;
+    }
+
+    // Get all users
+    $users = get_users(array('fields' => 'ID'));
+    
+    foreach ($users as $user_id) {
+        send_fcm_notification(
+            $user_id,
+            'ახალი აუქციონი',
+            'დამატებულია ახალი აუქციონი: ' . get_the_title($post_id),
+            array(
+                'post_id' => $post_id,
+                'action' => 'new_auction'
+            )
+        );
+    }
+}, 10, 3);
+
 
 
 

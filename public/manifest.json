@@ -1,0 +1,21 @@
+{
+  "name": "BidSpace",
+  "short_name": "BidSpace",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/wp-content/themes/Bidspace-Main-Theme/src/assets/images/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/wp-content/themes/Bidspace-Main-Theme/src/assets/images/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "gcm_sender_id": "996429142012"
+}

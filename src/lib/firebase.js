@@ -1,69 +1,30 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, RecaptchaVerifier } from 'firebase/auth';
+import { getMessaging } from 'firebase/messaging';
+import { getAuth } from 'firebase/auth';
+import { getAnalytics } from 'firebase/analytics';
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCOp6Z8ws4e6XSk1CTyVPqdDkAoe7Slldc",
-  authDomain: "bidspace-86337.firebaseapp.com",
-  projectId: "bidspace-86337",
-  storageBucket: "bidspace-86337.firebasestorage.app",
-  messagingSenderId: "242580753474",
-  appId: "1:242580753474:web:d158b2b472c5cd74b931db",
-  measurementId: "G-G2TT39HFNP"
+  // Replace this with your new project's config from Firebase Console
+  apiKey: "AIzaSyDBuGY5gOZwv5ffjXLLZLjVt9QM2Ry_fFw",
+  authDomain: "bidspace-7ef9d.firebaseapp.com",
+  projectId: "bidspace-7ef9d",
+  storageBucket: "bidspace-7ef9d.firebasestorage.app",
+  messagingSenderId: "996429142012",
+  appId: "1:996429142012:web:de1d02c1d6cb51f1154479",
+  measurementId: "G-5DPQ72NG0W"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Initialize services
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
+const messaging = getMessaging(app);
 
-// Initialize reCAPTCHA verifier
-const initializeRecaptcha = (buttonId) => {
-  return new Promise((resolve) => {
-    try {
-      // Clear existing recaptcha if it exists
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
+// Configure auth settings
+auth.languageCode = 'ka';
+auth.settings.appVerificationDisabledForTesting = process.env.NODE_ENV === 'development';
 
-      // Remove any existing recaptcha elements
-      const existingRecaptcha = document.querySelector('.grecaptcha-badge');
-      if (existingRecaptcha) {
-        existingRecaptcha.remove();
-      }
-      
-      // Create new recaptcha verifier
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, buttonId, {
-        size: 'invisible',
-        callback: () => {
-          console.log('reCAPTCHA verified');
-          resolve(window.recaptchaVerifier);
-        },
-        'expired-callback': () => {
-          console.log('reCAPTCHA expired');
-          if (window.recaptchaVerifier) {
-            window.recaptchaVerifier.clear();
-            window.recaptchaVerifier = null;
-          }
-          resolve(null);
-        }
-      });
-
-      // Render the recaptcha
-      window.recaptchaVerifier.render().then(() => {
-        resolve(window.recaptchaVerifier);
-      }).catch((error) => {
-        console.error('Error rendering reCAPTCHA:', error);
-        resolve(null);
-      });
-    } catch (error) {
-      console.error('Error initializing reCAPTCHA:', error);
-      resolve(null);
-    }
-  });
-};
-
-// Disable app verification in development
-if (process.env.NODE_ENV === 'development') {
-  auth.settings.appVerificationDisabledForTesting = true;
-}
-
-export { auth, initializeRecaptcha };
+export { app, analytics, auth, messaging };

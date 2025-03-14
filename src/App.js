@@ -31,6 +31,7 @@ import ForumTravel from './pages/Forum/ForumTravel';
 import MyQuestions from './pages/Forum/MyQuestions';
 import MyResponses from './pages/Forum/MyResponses';
 import MyLikes from './pages/Forum/MyLikes';
+import { initializeMessaging, setupMessageListener } from './lib/messagingUtils';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -91,6 +92,30 @@ function App() {
       document.getElementById('wpadminbar')?.style.setProperty('display', '');
     }
   }, [isDashboardRoute]);
+
+  React.useEffect(() => {
+    // Initialize Firebase Cloud Messaging
+    const initializeFCM = async () => {
+      if ('serviceWorker' in navigator) {
+        try {
+          // Register service worker
+          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+          console.log('Service Worker registered:', registration);
+
+          // Initialize messaging
+          const messagingInitialized = await initializeMessaging();
+          if (messagingInitialized) {
+            // Setup message listener for foreground messages
+            setupMessageListener();
+          }
+        } catch (error) {
+          console.error('Error initializing messaging:', error);
+        }
+      }
+    };
+
+    initializeFCM();
+  }, []);
 
   if (isLoading) {
     return <LoadingSpinner />;

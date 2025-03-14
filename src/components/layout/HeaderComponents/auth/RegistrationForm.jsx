@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth, initializeRecaptcha } from '../../../../lib/firebase';
 import { PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
 
@@ -8,10 +8,20 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
   const [verificationId, setVerificationId] = useState('');
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [verificationError, setVerificationError] = useState('');
-  const [phoneVerificationStep, setPhoneVerificationStep] = useState('initial'); // initial, sent, verified
+  const [phoneVerificationStep, setPhoneVerificationStep] = useState('initial');
   const [loading, setLoading] = useState(false);
-  
-  // Step validation functions
+  const [resendTimer, setResendTimer] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
   const validateStep1 = () => {
     if (!formData.regEmail) {
       alert('გთხოვთ შეიყვანოთ ელ-ფოსტა');
@@ -50,9 +60,9 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       }
 
       const phoneNumber = '+995' + formData.regPhone;
-      console.log('Sending code to:', phoneNumber);
-
       setLoading(true);
+      
+      // Initialize recaptcha
       const recaptchaVerifier = await initializeRecaptcha('send-code-button');
       
       if (!recaptchaVerifier) {
@@ -60,11 +70,10 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       }
 
       const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-      console.log('Code sent successfully');
-      
       setVerificationId(confirmationResult.verificationId);
       setPhoneVerificationStep('sent');
       setVerificationError('');
+      setResendTimer(60); // Start 60 second timer
       alert('ვერიფიკაციის კოდი გამოგზავნილია');
     } catch (error) {
       console.error('Error sending verification code:', error);
@@ -81,6 +90,12 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
   };
 
   const handleVerifyCode = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      setVerificationError('გთხოვთ შეიყვანოთ 6-ნიშნა კოდი');
+      return;
+    }
+
+    setLoading(true);
     try {
       const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
       await auth.signInWithCredential(credential);
@@ -89,7 +104,10 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       setVerificationError('');
       handleNextStep();
     } catch (error) {
+      console.error('Verification error:', error);
       setVerificationError('არასწორი კოდი');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -266,9 +284,9 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
                       id="send-code-button"
                       onClick={handleSendVerificationCode}
                       className="px-4 py-2 bg-black text-white text-sm rounded-2xl disabled:bg-gray-400"
-                      disabled={loading || !formData.regPhone}
+                      disabled={loading || !formData.regPhone || resendTimer > 0}
                     >
-                      {loading ? 'იგზავნება...' : 'კოდის გაგზავნა'}
+                      {loading ? 'იგზავნება...' : resendTimer > 0 ? `${resendTimer}წმ` : 'კოდის გაგზავნა'}
                     </button>
                   )}
                 </div>
@@ -281,7 +299,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
                     <input
                       type="text"
                       value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value)}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       className="flex-1 px-3 py-2 text-sm sm:text-base border border-gray-600 rounded-2xl"
                       placeholder="XXXXXX"
                       maxLength={6}
@@ -302,10 +320,10 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
                   <button
                     type="button"
                     onClick={handleSendVerificationCode}
-                    className="text-sm text-gray-600 underline mt-2"
-                    disabled={loading}
+                    className="text-sm text-gray-600 underline mt-2 disabled:text-gray-400"
+                    disabled={loading || resendTimer > 0}
                   >
-                    კოდის ხელახლა გაგზავნა
+                    {resendTimer > 0 ? `კოდის ხელახლა გაგზავნა შესაძლებელია ${resendTimer} წამში` : 'კოდის ხელახლა გაგზავნა'}
                   </button>
                 </div>
               )}
