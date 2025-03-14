@@ -55,13 +55,11 @@ export const initializeRecaptcha = async (buttonId) => {
       initializeFirebase();
     }
 
-    // Clear any existing reCAPTCHA instances from the DOM
-    const existingRecaptchaElements = document.querySelectorAll('.grecaptcha-badge');
-    existingRecaptchaElements.forEach(element => {
-      element.remove();
-    });
-
-    // Clear existing verifier
+    // Remove any existing reCAPTCHA widgets first
+    const existingWidgets = document.querySelectorAll('.grecaptcha-badge');
+    existingWidgets.forEach(widget => widget.parentElement.remove());
+    
+    // Reset the internal reCAPTCHA state
     if (window.recaptchaVerifier) {
       try {
         await window.recaptchaVerifier.clear();
@@ -77,34 +75,29 @@ export const initializeRecaptcha = async (buttonId) => {
       throw new Error(`Button element with id ${buttonId} not found`);
     }
 
-    // Create new reCAPTCHA verifier
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, buttonElement, {
+    // Create new reCAPTCHA verifier with unique container
+    const containerId = `recaptcha-container-${Date.now()}`;
+    const container = document.createElement('div');
+    container.id = containerId;
+    buttonElement.parentNode.insertBefore(container, buttonElement.nextSibling);
+
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, container, {
       size: 'invisible',
       callback: () => {
         console.log('reCAPTCHA verified successfully');
       },
       'expired-callback': () => {
         console.log('reCAPTCHA expired');
-        if (window.recaptchaVerifier) {
-          window.recaptchaVerifier.clear().catch(error => {
-            console.warn('Error clearing expired reCAPTCHA:', error);
-          });
-          window.recaptchaVerifier = null;
-        }
+        initializeRecaptcha(buttonId).catch(console.error);
+      },
+      'error-callback': (error) => {
+        console.error('reCAPTCHA error:', error);
       }
     });
 
     return window.recaptchaVerifier;
   } catch (error) {
     console.error('Error initializing reCAPTCHA:', error);
-    if (window.recaptchaVerifier) {
-      try {
-        await window.recaptchaVerifier.clear();
-      } catch (clearError) {
-        console.warn('Error clearing reCAPTCHA after initialization error:', clearError);
-      }
-      window.recaptchaVerifier = null;
-    }
     throw error;
   }
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, initializeRecaptcha } from '../../../../lib/firebase';
 import { PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
+import Toast from './Toast';
 
 const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMessage, setIsRegistration }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -12,6 +13,8 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('error');
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000; // 2 seconds
 
@@ -76,16 +79,21 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
     return true;
   };
 
+  const showToast = (message, type = 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+  };
+
   const handleSendVerificationCode = async () => {
     try {
       if (!formData.regPhone) {
-        setVerificationError('გთხოვთ შეიყვანოთ ტელეფონის ნომერი');
+        showToast('გთხოვთ შეიყვანოთ ტელეფონის ნომერი');
         return;
       }
 
       const phoneRegex = /^5\d{8}$/;
       if (!phoneRegex.test(formData.regPhone)) {
-        setVerificationError('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი (5XXXXXXXX)');
+        showToast('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი (5XXXXXXXX)');
         return;
       }
 
@@ -94,21 +102,15 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
       const phoneNumber = '+995' + formData.regPhone;
 
-      // Initialize reCAPTCHA
-      const buttonElement = document.getElementById('send-code-button');
-      if (!buttonElement) {
-        throw new Error('Verification button not found');
-      }
-
-      const recaptchaVerifier = await initializeRecaptcha('send-code-button');
-      
       try {
+        const recaptchaVerifier = await initializeRecaptcha('send-code-button');
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+        
         setVerificationId(confirmationResult.verificationId);
         setPhoneVerificationStep('sent');
         setVerificationError('');
         setResendTimer(60);
-        alert('ვერიფიკაციის კოდი გამოგზავნილია');
+        showToast('ვერიფიკაციის კოდი გამოგზავნილია', 'success');
       } catch (error) {
         console.error('Error sending verification code:', error);
         
@@ -130,25 +132,12 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
         }
         
-        setVerificationError(errorMessage);
-        throw error;
+        showToast(errorMessage);
+        return;
       }
     } catch (error) {
-      console.error('Verification failed:', error);
-      
-      // Clear reCAPTCHA only if it's not a temporary error that we want to retry
-      if (!error.code?.includes('network-request-failed') && 
-          !error.message?.includes('503') && 
-          !error.code?.includes('auth/error-code:-39')) {
-        if (window.recaptchaVerifier) {
-          try {
-            await window.recaptchaVerifier.clear();
-          } catch (clearError) {
-            console.warn('Error clearing reCAPTCHA:', clearError);
-          }
-          window.recaptchaVerifier = null;
-        }
-      }
+      console.error('Verification process failed:', error);
+      showToast('დაფიქსირდა შეცდომა. გთხოვთ, სცადოთ თავიდან');
     } finally {
       setLoading(false);
     }
@@ -156,7 +145,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
   const handleVerifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
-      setVerificationError('გთხოვთ შეიყვანოთ 6-ნიშნა კოდი');
+      showToast('გთხოვთ შეიყვანოთ 6-ნიშნა კოდი');
       return;
     }
 
@@ -169,6 +158,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       setIsPhoneVerified(true);
       setPhoneVerificationStep('verified');
       setVerificationError('');
+      showToast('ნომერი წარმატებით დადასტურდა', 'success');
       handleNextStep();
     } catch (error) {
       console.error('Verification error:', error);
@@ -186,7 +176,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
           errorMessage = 'დადასტურების შეცდომა. გთხოვთ სცადოთ თავიდან';
       }
       
-      setVerificationError(errorMessage);
+      showToast(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -289,6 +279,11 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
   return (
     <div className="px-4 sm:px-9 pb-9 pt-12 flex flex-col gap-4">
+      <Toast 
+        message={toastMessage}
+        type={toastType}
+        onClose={() => setToastMessage('')}
+      />
       <button 
         onClick={() => setIsRegistration(false)} 
         className="absolute top-3 left-3 sm:left-6 text-gray-500 hover:text-gray-700"
