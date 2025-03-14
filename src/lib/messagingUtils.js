@@ -2,12 +2,30 @@ import { messaging } from './firebase';
 import { getToken, onMessage } from 'firebase/messaging';
 
 // Your VAPID key from Firebase Console
-const VAPID_KEY = 'BCkcASvppvwL4uJTEvzXOwrfEn9l1LXzH_skR1jRnK2BC8FC2157ldVkn3DfMktJpRIH7eeo0IeSxBYjDaABlMQ';
+const VAPID_KEY = 'BCkJV-jidfC3qri-Jd6BnuruEsTT1wFJuG4ZMmUx5k_fQBzERJwWMGSccipRippdhc_SOniCDpRMdKqN4NRuUqM';
 
 export const initializeMessaging = async () => {
+  // Return early if messaging wasn't initialized
+  if (!messaging) {
+    console.log('Firebase messaging not available');
+    return false;
+  }
+
   try {
     if (!('Notification' in window)) {
       console.error('This browser does not support notifications');
+      return false;
+    }
+
+    if (!('serviceWorker' in navigator)) {
+      console.error('Service Worker not supported');
+      return false;
+    }
+
+    // First check if we have an active service worker
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration) {
+      console.error('No active service worker found');
       return false;
     }
 
@@ -18,9 +36,13 @@ export const initializeMessaging = async () => {
     }
 
     // Get FCM token
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    const token = await getToken(messaging, { 
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration
+    });
+    
     if (token) {
-      console.log('FCM Token:', token);
+      console.log('FCM Token obtained successfully');
       await saveTokenToServer(token);
       return true;
     }
@@ -54,6 +76,11 @@ const saveTokenToServer = async (token) => {
 };
 
 export const setupMessageListener = () => {
+  if (!messaging) {
+    console.log('Firebase messaging not available');
+    return;
+  }
+
   onMessage(messaging, (payload) => {
     console.log('Received foreground message:', payload);
     
@@ -75,6 +102,11 @@ export const setupMessageListener = () => {
 };
 
 export const unregisterMessaging = async () => {
+  if (!messaging) {
+    console.log('Firebase messaging not available');
+    return false;
+  }
+
   try {
     const registration = await navigator.serviceWorker.ready;
     await registration.pushManager.getSubscription();

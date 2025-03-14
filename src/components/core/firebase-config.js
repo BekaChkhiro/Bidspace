@@ -2,28 +2,36 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
+import { getMessaging } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCOp6Z8ws4e6XSk1CTyVPqdDkAoe7Slldc",
-  authDomain: "bidspace-86337.firebaseapp.com",
-  projectId: "bidspace-86337",
-  storageBucket: "bidspace-86337.firebasestorage.app",
-  messagingSenderId: "242580753474",
-  appId: "1:242580753474:web:d158b2b472c5cd74b931db",
-  measurementId: "G-G2TT39HFNP"
+  apiKey: "AIzaSyDBuGY5gOZwv5ffjXLLZLjVt9QM2Ry_fFw",
+  authDomain: "bidspace-7ef9d.firebaseapp.com",
+  projectId: "bidspace-7ef9d",
+  storageBucket: "bidspace-7ef9d.firebasestorage.app",
+  messagingSenderId: "996429142012",
+  appId: "1:996429142012:web:de1d02c1d6cb51f1154479",
+  measurementId: "G-5DPQ72NG0W"
 };
 
-// Initialize Firebase with config
+// Initialize Firebase only once
 const app = initializeApp(firebaseConfig);
-
-// Initialize Analytics and Auth with app instance
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 
-// Configure auth settings
-auth.languageCode = 'ka'; // Set language to Georgian
-auth.settings.appVerificationDisabledForTesting = false; // Enable production mode
+// Initialize messaging only in browser environment
+let messaging = null;
+if (typeof window !== 'undefined') {
+  try {
+    messaging = getMessaging(app);
+  } catch (error) {
+    console.warn('Firebase messaging initialization failed:', error);
+  }
+}
 
-// Export auth instance
-export { auth };
+// Configure auth settings
+auth.languageCode = 'ka';
+auth.settings.appVerificationDisabledForTesting = false;
+
+export { app, analytics, auth, messaging };

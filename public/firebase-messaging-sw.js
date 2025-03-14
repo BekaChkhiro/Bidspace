@@ -1,16 +1,26 @@
 // Scripts for firebase and firebase messaging
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
 
-// Initialize the Firebase app in the service worker
-firebase.initializeApp({
+// Initialize the Firebase app in the service worker by registering with specific scope
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    self.registration.navigationPreload?.enable()
+  );
+});
+
+const firebaseConfig = {
   apiKey: "AIzaSyDBuGY5gOZwv5ffjXLLZLjVt9QM2Ry_fFw",
   authDomain: "bidspace-7ef9d.firebaseapp.com",
   projectId: "bidspace-7ef9d",
   storageBucket: "bidspace-7ef9d.firebasestorage.app",
   messagingSenderId: "996429142012",
-  appId: "1:996429142012:web:de1d02c1d6cb51f1154479"
-});
+  appId: "1:996429142012:web:de1d02c1d6cb51f1154479",
+  measurementId: "G-5DPQ72NG0W"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
 
 // Retrieve firebase messaging
 const messaging = firebase.messaging();

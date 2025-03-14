@@ -94,23 +94,32 @@ function App() {
   }, [isDashboardRoute]);
 
   React.useEffect(() => {
-    // Initialize Firebase Cloud Messaging
     const initializeFCM = async () => {
-      if ('serviceWorker' in navigator) {
-        try {
-          // Register service worker
-          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-          console.log('Service Worker registered:', registration);
+      if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+        console.log('Push notifications not supported');
+        return;
+      }
 
-          // Initialize messaging
+      try {
+        // Wait for service worker registration
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          scope: '/firebase-cloud-messaging-push-scope'
+        });
+        
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+
+        // Only proceed if messaging was initialized successfully
+        if (messaging) {
           const messagingInitialized = await initializeMessaging();
           if (messagingInitialized) {
-            // Setup message listener for foreground messages
             setupMessageListener();
           }
-        } catch (error) {
-          console.error('Error initializing messaging:', error);
+        } else {
+          console.log('Firebase messaging not available');
         }
+      } catch (error) {
+        console.error('Error initializing messaging:', error);
       }
     };
 

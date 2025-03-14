@@ -11,6 +11,11 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
   const [phoneVerificationStep, setPhoneVerificationStep] = useState('initial');
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 2000; // 2 seconds
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   useEffect(() => {
     let interval;
@@ -19,8 +24,27 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         setResendTimer((prev) => prev - 1);
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+      // Cleanup reCAPTCHA on unmount
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    };
   }, [resendTimer]);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup reCAPTCHA on component unmount
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear().catch(console.warn);
+        window.recaptchaVerifier = null;
+      }
+    };
+  }, []);
 
   const validateStep1 = () => {
     if (!formData.regEmail) {
@@ -59,30 +83,71 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         return;
       }
 
-      const phoneNumber = '+995' + formData.regPhone;
-      setLoading(true);
-      
-      // Initialize recaptcha
-      const recaptchaVerifier = await initializeRecaptcha('send-code-button');
-      
-      if (!recaptchaVerifier) {
-        throw new Error('reCAPTCHA ინიციალიზაცია ვერ მოხერხდა');
+      const phoneRegex = /^5\d{8}$/;
+      if (!phoneRegex.test(formData.regPhone)) {
+        setVerificationError('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი (5XXXXXXXX)');
+        return;
       }
 
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-      setVerificationId(confirmationResult.verificationId);
-      setPhoneVerificationStep('sent');
+      setLoading(true);
       setVerificationError('');
-      setResendTimer(60); // Start 60 second timer
-      alert('ვერიფიკაციის კოდი გამოგზავნილია');
-    } catch (error) {
-      console.error('Error sending verification code:', error);
-      setVerificationError('ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან');
+
+      const phoneNumber = '+995' + formData.regPhone;
+
+      // Initialize reCAPTCHA
+      const buttonElement = document.getElementById('send-code-button');
+      if (!buttonElement) {
+        throw new Error('Verification button not found');
+      }
+
+      const recaptchaVerifier = await initializeRecaptcha('send-code-button');
       
-      // Reset reCAPTCHA on error
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
+      try {
+        const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+        setVerificationId(confirmationResult.verificationId);
+        setPhoneVerificationStep('sent');
+        setVerificationError('');
+        setResendTimer(60);
+        alert('ვერიფიკაციის კოდი გამოგზავნილია');
+      } catch (error) {
+        console.error('Error sending verification code:', error);
+        
+        let errorMessage;
+        switch (error.code) {
+          case 'auth/invalid-phone-number':
+            errorMessage = 'არასწორი ტელეფონის ნომერი';
+            break;
+          case 'auth/quota-exceeded':
+            errorMessage = 'მოთხოვნების ლიმიტი ამოწურულია, სცადეთ მოგვიანებით';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'ძალიან ბევრი მოთხოვნა. გთხოვთ მოიცადოთ და სცადოთ მოგვიანებით';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = 'ქსელის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი';
+            break;
+          default:
+            errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
+        }
+        
+        setVerificationError(errorMessage);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Verification failed:', error);
+      
+      // Clear reCAPTCHA only if it's not a temporary error that we want to retry
+      if (!error.code?.includes('network-request-failed') && 
+          !error.message?.includes('503') && 
+          !error.code?.includes('auth/error-code:-39')) {
+        if (window.recaptchaVerifier) {
+          try {
+            await window.recaptchaVerifier.clear();
+          } catch (clearError) {
+            console.warn('Error clearing reCAPTCHA:', clearError);
+          }
+          window.recaptchaVerifier = null;
+        }
       }
     } finally {
       setLoading(false);
@@ -96,6 +161,8 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
     }
 
     setLoading(true);
+    setVerificationError('');
+
     try {
       const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
       await auth.signInWithCredential(credential);
@@ -105,7 +172,21 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       handleNextStep();
     } catch (error) {
       console.error('Verification error:', error);
-      setVerificationError('არასწორი კოდი');
+      let errorMessage;
+      
+      switch (error.code) {
+        case 'auth/invalid-verification-code':
+          errorMessage = 'არასწორი კოდი';
+          break;
+        case 'auth/code-expired':
+          errorMessage = 'კოდის ვადა გავიდა. გთხოვთ მოითხოვოთ ახალი კოდი';
+          setPhoneVerificationStep('initial');
+          break;
+        default:
+          errorMessage = 'დადასტურების შეცდომა. გთხოვთ სცადოთ თავიდან';
+      }
+      
+      setVerificationError(errorMessage);
     } finally {
       setLoading(false);
     }

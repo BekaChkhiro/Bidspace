@@ -76,7 +76,13 @@ function add_cors_headers_for_rest() {
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE');
         header('Access-Control-Allow-Credentials: true');
-        header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, X-API-Key');
+        header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, X-API-Key, X-WP-Nonce');
+        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.google.com https://*.googleapis.com https://*.firebaseapp.com; frame-src 'self' https://www.google.com https://*.firebaseapp.com; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseio.com https://*.cloudfunctions.net");
+        
+        if ('OPTIONS' == $_SERVER['REQUEST_METHOD']) {
+            status_header(200);
+            exit();
+        }
         return $value;
     });
 }
