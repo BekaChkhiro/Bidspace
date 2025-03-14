@@ -82,25 +82,40 @@ export const initializeRecaptcha = async (buttonId) => {
     container.style.display = 'none';
     document.body.appendChild(container);
 
-    // Create new reCAPTCHA verifier
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, container, {
-      size: 'invisible',
-      callback: (response) => {
-        console.log('reCAPTCHA verified successfully');
-      },
-      'expired-callback': () => {
-        console.log('reCAPTCHA expired');
-        cleanupRecaptcha();
-      },
-      'error-callback': (error) => {
-        console.error('reCAPTCHA error:', error);
-        cleanupRecaptcha();
-      }
-    });
+    // Add error handling for potential network issues
+    const maxRetries = 3;
+    let retryCount = 0;
 
-    // Force render the reCAPTCHA
-    await window.recaptchaVerifier.render();
-    return window.recaptchaVerifier;
+    while (retryCount < maxRetries) {
+      try {
+        // Create new reCAPTCHA verifier with improved error handling
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, container, {
+          size: 'invisible',
+          callback: (response) => {
+            console.log('reCAPTCHA verified successfully');
+          },
+          'expired-callback': () => {
+            console.log('reCAPTCHA expired');
+            cleanupRecaptcha();
+          },
+          'error-callback': (error) => {
+            console.error('reCAPTCHA error:', error);
+            cleanupRecaptcha();
+          }
+        });
+
+        // Force render the reCAPTCHA
+        await window.recaptchaVerifier.render();
+        return window.recaptchaVerifier;
+      } catch (error) {
+        retryCount++;
+        if (retryCount === maxRetries) {
+          throw error;
+        }
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+      }
+    }
   } catch (error) {
     console.error('Error initializing reCAPTCHA:', error);
     await cleanupRecaptcha();
