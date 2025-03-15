@@ -20,27 +20,63 @@ let analytics;
 let auth;
 let messaging;
 
+const RECAPTCHA_SCRIPT_URL = 'https://www.google.com/recaptcha/api.js';
+const SCRIPT_TIMEOUT = 10000; // 10 seconds timeout
+
+const loadRecaptchaScript = () => {
+  return new Promise((resolve, reject) => {
+    // Check if script is already loaded
+    if (document.querySelector(`script[src^="${RECAPTCHA_SCRIPT_URL}"]`)) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = RECAPTCHA_SCRIPT_URL;
+    script.async = true;
+    
+    const timeout = setTimeout(() => {
+      reject(new Error('reCAPTCHA script load timeout'));
+    }, SCRIPT_TIMEOUT);
+
+    script.onload = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
+
+    script.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error('Failed to load reCAPTCHA script'));
+    };
+
+    document.head.appendChild(script);
+  });
+};
+
 const cleanupRecaptcha = async () => {
   try {
-    // Remove all reCAPTCHA-related elements
-    const elements = document.querySelectorAll(
-      '.grecaptcha-badge, ' +
-      '[id^="recaptcha"], ' +
-      '[id*="grecaptcha"], ' +
-      'iframe[src*="recaptcha"]'
-    );
-    
-    elements.forEach(el => el.remove());
+    // Clean up any existing reCAPTCHA widgets
+    const existingWidgets = document.querySelectorAll('[id^="recaptcha-container-"]');
+    existingWidgets.forEach(widget => {
+      if (widget && widget.parentNode) {
+        widget.parentNode.removeChild(widget);
+      }
+    });
 
+    // Clear any existing verifier
     if (window.recaptchaVerifier) {
-      await window.recaptchaVerifier.clear();
+      try {
+        await window.recaptchaVerifier.clear();
+      } catch (error) {
+        console.warn('Error clearing existing reCAPTCHA:', error);
+      }
       window.recaptchaVerifier = null;
     }
 
-    // Reset any global reCAPTCHA state
-    if (window.grecaptcha) {
-      window.grecaptcha.reset();
-    }
+    // Remove any leftover reCAPTCHA iframes
+    const iframes = document.querySelectorAll('iframe[src*="recaptcha"]');
+    iframes.forEach(iframe => iframe.parentNode?.removeChild(iframe));
+
   } catch (error) {
     console.warn('Error cleaning up reCAPTCHA:', error);
   }
@@ -57,87 +93,95 @@ const initializeFirebase = () => {
       
       auth = getAuth(app);
       auth.languageCode = 'ka';
+
+      // Enable test mode for development
+      const isLocalhost = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.includes('.local');
+                         
+      if (isLocalhost) {
+        auth.settings.appVerificationDisabledForTesting = true;
+        console.log('Firebase Auth Test Mode enabled for development');
+      }
       
-      // Configure auth settings
-      auth.settings.appVerificationDisabledForTesting = false;
-      auth.settings.persistence = true;
-      
-      // Log auth configuration in development
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('Firebase Auth Configuration:', {
-          currentUser: auth.currentUser,
-          languageCode: auth.languageCode,
-          settings: auth.settings
-        });
+      if (typeof window !== 'undefined') {
+        try {
+          messaging = getMessaging(app);
+        } catch (error) {
+          console.warn('Firebase messaging initialization failed:', error);
+        }
       }
     }
-    return app;
+    return auth;
   } catch (error) {
-    console.error('Firebase initialization error:', error);
+    console.error('Error initializing Firebase:', error);
     throw error;
   }
 };
 
-export const initializeRecaptcha = async () => {
+export const initializeRecaptcha = async (buttonId) => {
   try {
     if (!auth) {
       initializeFirebase();
     }
 
+    // Clean up existing reCAPTCHA instances
     await cleanupRecaptcha();
 
-    // Create a dedicated container for reCAPTCHA
+    // Ensure reCAPTCHA script is loaded
+    await loadRecaptchaScript();
+
+    // Create a unique container for this instance
+    const containerId = `recaptcha-container-${Date.now()}`;
     const container = document.createElement('div');
-    container.id = 'recaptcha-container';
-    container.style.cssText = `
-      position: fixed;
-      bottom: -100px;
-      left: 0;
-      opacity: 0.01;
-      pointer-events: none;
-      z-index: -1;
-    `;
+    container.id = containerId;
+    container.style.display = 'none';
     document.body.appendChild(container);
 
-    // Initialize reCAPTCHA with specific parameters
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      size: 'invisible',
-      badge: 'inline',
-      isolated: true,
-      callback: (response) => {
-        console.log('reCAPTCHA verified:', response?.length > 0);
-      },
-      'expired-callback': () => {
-        cleanupRecaptcha();
-      }
-    });
+    // Create new reCAPTCHA verifier with retry logic
+    const createVerifier = async (retryCount = 0) => {
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, container, {
+          size: 'invisible',
+          callback: (response) => {
+            console.log('reCAPTCHA verified successfully');
+          },
+          'expired-callback': () => {
+            console.log('reCAPTCHA expired');
+            cleanupRecaptcha();
+          },
+          'error-callback': (error) => {
+            console.error('reCAPTCHA error:', error);
+            cleanupRecaptcha();
+          }
+        });
 
-    // Pre-render reCAPTCHA
-    await window.recaptchaVerifier.render();
-    
-    return window.recaptchaVerifier;
+        await window.recaptchaVerifier.render();
+        return window.recaptchaVerifier;
+      } catch (error) {
+        if (retryCount < 2) {
+          console.log(`Retrying reCAPTCHA initialization (attempt ${retryCount + 1})`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return createVerifier(retryCount + 1);
+        }
+        throw error;
+      }
+    };
+
+    return await createVerifier();
   } catch (error) {
-    console.error('reCAPTCHA initialization failed:', error);
+    console.error('Error initializing reCAPTCHA:', error);
     await cleanupRecaptcha();
     throw error;
   }
 };
 
-// Initialize Firebase on load
+// Cleanup on page unload
 if (typeof window !== 'undefined') {
-  initializeFirebase();
-  
-  // Cleanup on page unload
   window.addEventListener('unload', cleanupRecaptcha);
-  
-  // Add reCAPTCHA script if not already present
-  if (!document.querySelector('script[src*="recaptcha"]')) {
-    const script = document.createElement('script');
-    script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-  }
 }
 
-export { auth, app };
+// Initialize Firebase on module load
+initializeFirebase();
+
+export { app, analytics, auth, messaging };

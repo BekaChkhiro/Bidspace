@@ -101,44 +101,21 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       setVerificationError('');
 
       const phoneNumber = '+995' + formData.regPhone;
-      console.log('Attempting phone verification:', phoneNumber);
 
       try {
-        // Ensure reCAPTCHA is properly loaded
-        if (!window.grecaptcha?.render) {
-          await new Promise((resolve) => {
-            const checkRecaptcha = setInterval(() => {
-              if (window.grecaptcha?.render) {
-                clearInterval(checkRecaptcha);
-                resolve();
-              }
-            }, 100);
-            // Timeout after 5 seconds
-            setTimeout(() => {
-              clearInterval(checkRecaptcha);
-              resolve();
-            }, 5000);
-          });
+        let recaptchaVerifier;
+        try {
+          recaptchaVerifier = await initializeRecaptcha('send-code-button');
+        } catch (recaptchaError) {
+          if (recaptchaError.message.includes('timeout')) {
+            showToast('Recaptcha-ს ჩატვირთვა ვერ მოხერხდა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი და სცადოთ თავიდან');
+            return;
+          }
+          throw recaptchaError;
         }
 
-        // Initialize new reCAPTCHA instance
-        const recaptchaVerifier = await initializeRecaptcha();
-        if (!recaptchaVerifier) {
-          throw new Error('reCAPTCHA ინიციალიზაცია ვერ მოხერხდა');
-        }
-
-        // Wait for reCAPTCHA to be ready
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Attempt to send verification code
-        console.log('Sending verification code...');
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
         
-        if (!confirmationResult?.verificationId) {
-          throw new Error('Invalid confirmation result');
-        }
-        
-        console.log('SMS verification code sent successfully');
         setVerificationId(confirmationResult.verificationId);
         setPhoneVerificationStep('sent');
         setVerificationError('');
@@ -146,22 +123,12 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         showToast('ვერიფიკაციის კოდი გამოგზავნილია', 'success');
 
       } catch (error) {
-        console.error('SMS verification error:', error);
+        console.error('Error sending verification code:', error);
         
-        if (retryCount < MAX_RETRIES && 
-           (error.code === 'auth/network-request-failed' || 
-            error.message?.includes('503') || 
-            error.code === 'auth/error-code:-39')) {
-          
-          console.log(`Retrying verification... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
-          await cleanupRecaptcha();
-          
-          setLoading(false);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          return handleSendVerificationCode(retryCount + 1);
-        }
-        
+        // Handle specific error cases
         let errorMessage;
+        let shouldRetry = false;
+
         switch (error.code) {
           case 'auth/invalid-phone-number':
             errorMessage = 'არასწორი ტელეფონის ნომერი';
@@ -174,16 +141,25 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             break;
           case 'auth/network-request-failed':
             errorMessage = 'ქსელის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი';
+            shouldRetry = true;
             break;
           case 'auth/error-code:-39':
-            errorMessage = 'reCAPTCHA-ს შეცდომა. გთხოვთ განაახლოთ გვერდი და სცადოთ თავიდან';
+            errorMessage = 'დროებითი შეფერხება. ცოტა ხანში სცადეთ თავიდან';
+            shouldRetry = true;
             break;
           default:
             errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
+            shouldRetry = error.message?.includes('503');
         }
-        
+
+        // Implement retry logic for network-related errors
+        if (shouldRetry && retryCount < 2) {
+          console.log(`Retrying SMS send... Attempt ${retryCount + 1}`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return handleSendVerificationCode(retryCount + 1);
+        }
+
         showToast(errorMessage);
-        await cleanupRecaptcha();
       }
     } catch (error) {
       console.error('Verification process failed:', error);
@@ -204,7 +180,18 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
     try {
       const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
-      await auth.signInWithCredential(credential);
+      // Instead of signing in, just verify the credential
+      await auth.currentUser?.linkWithCredential(credential)
+        .catch(async (error) => {
+          if (error.code === 'auth/credential-already-in-use') {
+            // If phone is already linked to another account, just verify it's valid
+            await auth.signInWithCredential(credential);
+            await auth.signOut(); // Sign out immediately since we don't want to actually sign in
+          } else {
+            throw error;
+          }
+        });
+      
       setIsPhoneVerified(true);
       setPhoneVerificationStep('verified');
       setVerificationError('');
