@@ -19,42 +19,71 @@ const auth = getAuth(app);
 // Configure auth settings
 auth.languageCode = 'ka';
 
-export const initializeRecaptcha = async (containerId) => {
-  try {
-    // Clean up any existing reCAPTCHA instances
-    if (window.recaptchaVerifier) {
-      try {
-        await window.recaptchaVerifier.clear();
-      } catch (error) {
-        console.warn('Error clearing existing reCAPTCHA:', error);
-      }
-      delete window.recaptchaVerifier;
-    }
+// Keep track of the current reCAPTCHA instance
+let currentRecaptchaVerifier = null;
+let recaptchaContainer = null;
 
-    // Remove any existing reCAPTCHA containers and iframes
-    document.querySelectorAll('[id^="recaptcha-container-"]').forEach(el => el.remove());
-    document.querySelectorAll('iframe[src*="recaptcha"]').forEach(el => el.remove());
+const clearExistingRecaptcha = async () => {
+  if (currentRecaptchaVerifier) {
+    try {
+      await currentRecaptchaVerifier.clear();
+      currentRecaptchaVerifier = null;
+    } catch (error) {
+      console.warn('Error clearing existing reCAPTCHA:', error);
+    }
+  }
+
+  // Remove any existing containers and iframes
+  if (recaptchaContainer) {
+    recaptchaContainer.remove();
+    recaptchaContainer = null;
+  }
+  document.querySelectorAll('iframe[src*="recaptcha"]').forEach(el => el.remove());
+};
+
+export const initializeRecaptcha = async (containerId, retryCount = 0) => {
+  try {
+    await clearExistingRecaptcha();
 
     // Create new container
-    const container = document.createElement('div');
-    container.id = containerId;
-    container.style.cssText = 'position: fixed; bottom: 0; right: 0; z-index: 2147483647;';
-    document.body.appendChild(container);
+    recaptchaContainer = document.createElement('div');
+    recaptchaContainer.id = containerId;
+    recaptchaContainer.style.cssText = 'position: fixed; bottom: 0; right: 0; z-index: 2147483647; opacity: 0.01;';
+    document.body.appendChild(recaptchaContainer);
 
     // Initialize new reCAPTCHA verifier with error handling
-    const verifier = new RecaptchaVerifier(auth, containerId, {
+    currentRecaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
       size: 'invisible',
       callback: () => {},
-      'expired-callback': () => {}
+      'expired-callback': async () => {
+        console.log('reCAPTCHA expired, reinitializing...');
+        await clearExistingRecaptcha();
+      },
+      'error-callback': async () => {
+        console.log('reCAPTCHA error, reinitializing...');
+        await clearExistingRecaptcha();
+      }
     });
 
-    await verifier.render();
-    window.recaptchaVerifier = verifier;
-    return verifier;
+    await currentRecaptchaVerifier.render();
+    return currentRecaptchaVerifier;
   } catch (error) {
     console.error('Error initializing reCAPTCHA:', error);
+    
+    // Retry logic for network errors
+    if (retryCount < 2 && (error.code === 'auth/network-request-failed' || error.message?.includes('network'))) {
+      console.log(`Retrying reCAPTCHA initialization (attempt ${retryCount + 1})...`);
+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+      return initializeRecaptcha(containerId, retryCount + 1);
+    }
+    
     throw error;
   }
+};
+
+// Cleanup function to be called when component unmounts
+export const cleanupRecaptcha = async () => {
+  await clearExistingRecaptcha();
 };
 
 export { auth, signInWithCredential };

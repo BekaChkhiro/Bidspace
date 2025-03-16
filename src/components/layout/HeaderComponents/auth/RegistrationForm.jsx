@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { auth, initializeRecaptcha, signInWithCredential } from '../../../../lib/firebase-config';
+import { auth, initializeRecaptcha, signInWithCredential, cleanupRecaptcha } from '../../../../lib/firebase-config';
 import { PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
 import Toast from './Toast';
 
-const COOLDOWN_DURATION = 300; // 5 minutes in seconds
+const NORMAL_RESEND_DELAY = 60; // 1 minute
+const RATE_LIMIT_DELAY = 300; // 5 minutes
 const STORAGE_KEY = 'phone_verification_cooldown';
 
 const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMessage, setIsRegistration }) => {
@@ -26,7 +27,6 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
   });
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('error');
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
 
   useEffect(() => {
     let interval;
@@ -46,15 +46,9 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         clearInterval(interval);
       }
       // Cleanup recaptcha on unmount
-      if (recaptchaVerifier) {
-        try {
-          recaptchaVerifier.clear();
-        } catch (error) {
-          console.warn('Error clearing recaptcha:', error);
-        }
-      }
+      cleanupRecaptcha().catch(console.error);
     };
-  }, [resendTimer, recaptchaVerifier]);
+  }, [resendTimer]);
 
   const showToast = (message, type = 'error') => {
     setToastMessage(message);
@@ -119,13 +113,17 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
       try {
         const verifier = await initializeRecaptcha(containerId);
-        setRecaptchaVerifier(verifier);
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, verifier);
         
         setVerificationId(confirmationResult.verificationId);
         setPhoneVerificationStep('sent');
         setVerificationError('');
-        setResendTimer(60); // Normal resend timer
+        
+        // Set normal resend delay
+        const expiryTime = Math.floor(Date.now() / 1000) + NORMAL_RESEND_DELAY;
+        localStorage.setItem(STORAGE_KEY, expiryTime.toString());
+        setResendTimer(NORMAL_RESEND_DELAY);
+        
         showToast('ვერიფიკაციის კოდი გამოგზავნილია', 'success');
       } catch (error) {
         console.error('Error sending verification code:', error);
@@ -140,7 +138,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
           case 'auth/quota-exceeded':
           case 'auth/too-many-requests':
             errorMessage = 'ძალიან ბევრი მოთხოვნა. გთხოვთ მოიცადოთ 5 წუთი სანამ ხელახლა სცდით';
-            cooldownDuration = COOLDOWN_DURATION;
+            cooldownDuration = RATE_LIMIT_DELAY;
             break;
           case 'auth/network-request-failed':
             errorMessage = 'ქსელის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი';
@@ -151,6 +149,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             break;
           default:
             errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
+            cooldownDuration = 30; // Default to 30 seconds cooldown for unknown errors
         }
 
         if (cooldownDuration > 0) {
@@ -250,7 +249,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
     // Check required fields
     for (const [field, label] of Object.entries(requiredFields)) {
       if (!formData[field]) {
-        alert(`გთხოვთ შეავსოთ ${label}`);
+        alert(`გთხოვთ შეიყვანოთ ${label}`);
         return;
       }
     }
