@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, initializeRecaptcha } from '../../../../lib/firebase';
+import { auth, initializeRecaptcha } from '../../../../lib/firebase-config';
 import { PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
 import Toast from './Toast';
 
@@ -29,6 +29,11 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
     };
   }, [resendTimer]);
 
+  const showToast = (message, type = 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+  };
+
   const validateStep1 = () => {
     if (!formData.regEmail) {
       showToast('გთხოვთ შეიყვანოთ ელ-ფოსტა');
@@ -57,11 +62,6 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       return false;
     }
     return true;
-  };
-
-  const showToast = (message, type = 'error') => {
-    setToastMessage(message);
-    setToastType(type);
   };
 
   const handleSendVerificationCode = async () => {
@@ -109,6 +109,9 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
           case 'auth/network-request-failed':
             errorMessage = 'ქსელის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი';
             break;
+          case 'auth/error-code:-39':
+            errorMessage = 'დროებითი შეფერხება. გთხოვთ, სცადოთ რამდენიმე წამში';
+            break;
           default:
             errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
         }
@@ -133,10 +136,15 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
     try {
       const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
+      
+      // Just verify the code without signing in
       await auth.signInWithCredential(credential);
+      await auth.signOut(); // Sign out immediately since we don't need the auth session
+      
       setIsPhoneVerified(true);
       setPhoneVerificationStep('verified');
       showToast('ტელეფონის ნომერი დადასტურებულია', 'success');
+      handleNextStep();
     } catch (error) {
       console.error('Error verifying code:', error);
       let errorMessage;

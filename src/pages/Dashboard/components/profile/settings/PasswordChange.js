@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import Alert from '../../../../../components/ui-elements/Alert';
 import RecaptchaContainer from '../../../../../components/forms/RecaptchaContainer';
-import { auth } from '../../../../../components/core/firebase-config';
+import { auth } from '../../../../../lib/firebase-config';
 import { signInWithPhoneNumber } from 'firebase/auth';
 
 const PasswordChange = () => {

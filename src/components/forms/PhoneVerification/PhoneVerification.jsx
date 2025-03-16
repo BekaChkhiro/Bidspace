@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { auth } from '../../firebase-config';
+import React, { useState, useEffect } from 'react';
+import { auth } from '../../../lib/firebase-config';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import './PhoneVerification.css';
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { auth } from '../../../../lib/firebase';
+import { auth } from '../../../../lib/firebase-config';
 import { RecaptchaVerifier, signInWithPhoneNumber, sendPasswordResetEmail } from 'firebase/auth';
 
 const PasswordResetForm = ({ setIsPasswordReset }) => {

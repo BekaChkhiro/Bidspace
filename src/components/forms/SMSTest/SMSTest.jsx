@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../../core/firebase-config';
+import { auth } from '../../../lib/firebase-config';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 
 const SMSTest = () => {
