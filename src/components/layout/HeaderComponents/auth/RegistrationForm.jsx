@@ -45,7 +45,6 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       if (interval) {
         clearInterval(interval);
       }
-      // Cleanup recaptcha on unmount
       cleanupRecaptcha().catch(console.error);
     };
   }, [resendTimer]);
@@ -87,13 +86,6 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
   const handleSendVerificationCode = async () => {
     try {
-      if (resendTimer > 0) {
-        const minutes = Math.floor(resendTimer / 60);
-        const seconds = resendTimer % 60;
-        showToast(`გთხოვთ მოიცადოთ ${minutes}:${seconds.toString().padStart(2, '0')} წუთი სანამ ხელახლა სცდით`, 'error');
-        return;
-      }
-
       if (!formData.regPhone) {
         showToast('გთხოვთ შეიყვანოთ ტელეფონის ნომერი');
         return;
@@ -102,6 +94,15 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       const phoneRegex = /^5\d{8}$/;
       if (!phoneRegex.test(formData.regPhone)) {
         showToast('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი (5XXXXXXXX)');
+        return;
+      }
+
+      // Only check cooldown for non-test numbers
+      const isTestNumber = process.env.REACT_APP_TEST_PHONE_NUMBERS?.split(',').includes(formData.regPhone);
+      if (!isTestNumber && resendTimer > 0) {
+        const minutes = Math.floor(resendTimer / 60);
+        const seconds = resendTimer % 60;
+        showToast(`გთხოვთ მოიცადოთ ${minutes}:${seconds.toString().padStart(2, '0')} წუთი სანამ ხელახლა სცდით`, 'error');
         return;
       }
 
@@ -119,10 +120,12 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         setPhoneVerificationStep('sent');
         setVerificationError('');
         
-        // Set normal resend delay
-        const expiryTime = Math.floor(Date.now() / 1000) + NORMAL_RESEND_DELAY;
-        localStorage.setItem(STORAGE_KEY, expiryTime.toString());
-        setResendTimer(NORMAL_RESEND_DELAY);
+        // Only set cooldown for non-test numbers
+        if (!isTestNumber) {
+          const expiryTime = Math.floor(Date.now() / 1000) + NORMAL_RESEND_DELAY;
+          localStorage.setItem(STORAGE_KEY, expiryTime.toString());
+          setResendTimer(NORMAL_RESEND_DELAY);
+        }
         
         showToast('ვერიფიკაციის კოდი გამოგზავნილია', 'success');
       } catch (error) {
@@ -145,14 +148,15 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             break;
           case 'auth/error-code:-39':
             errorMessage = 'დროებითი შეფერხება. გთხოვთ, სცადოთ რამდენიმე წამში';
-            cooldownDuration = 30; // 30 seconds cooldown for temporary errors
+            cooldownDuration = 30;
             break;
           default:
             errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
-            cooldownDuration = 30; // Default to 30 seconds cooldown for unknown errors
+            cooldownDuration = 30;
         }
 
-        if (cooldownDuration > 0) {
+        // Only set cooldown for non-test numbers
+        if (!isTestNumber && cooldownDuration > 0) {
           const expiryTime = Math.floor(Date.now() / 1000) + cooldownDuration;
           localStorage.setItem(STORAGE_KEY, expiryTime.toString());
           setResendTimer(cooldownDuration);
