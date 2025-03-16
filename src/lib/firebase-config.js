@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth, RecaptchaVerifier } from "firebase/auth";
+import { getAuth, RecaptchaVerifier, signInWithCredential } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -28,11 +28,12 @@ export const initializeRecaptcha = async (containerId) => {
       } catch (error) {
         console.warn('Error clearing existing reCAPTCHA:', error);
       }
-      window.recaptchaVerifier = null;
+      delete window.recaptchaVerifier;
     }
 
-    // Remove any existing reCAPTCHA containers
+    // Remove any existing reCAPTCHA containers and iframes
     document.querySelectorAll('[id^="recaptcha-container-"]').forEach(el => el.remove());
+    document.querySelectorAll('iframe[src*="recaptcha"]').forEach(el => el.remove());
 
     // Create new container
     const container = document.createElement('div');
@@ -40,17 +41,20 @@ export const initializeRecaptcha = async (containerId) => {
     container.style.cssText = 'position: fixed; bottom: 0; right: 0; z-index: 2147483647;';
     document.body.appendChild(container);
 
-    // Initialize new reCAPTCHA verifier
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-      size: 'invisible'
+    // Initialize new reCAPTCHA verifier with error handling
+    const verifier = new RecaptchaVerifier(auth, containerId, {
+      size: 'invisible',
+      callback: () => {},
+      'expired-callback': () => {}
     });
 
-    await window.recaptchaVerifier.render();
-    return window.recaptchaVerifier;
+    await verifier.render();
+    window.recaptchaVerifier = verifier;
+    return verifier;
   } catch (error) {
     console.error('Error initializing reCAPTCHA:', error);
     throw error;
   }
 };
 
-export { auth };
+export { auth, signInWithCredential };

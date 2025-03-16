@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, initializeRecaptcha } from '../../../../lib/firebase-config';
+import { auth, initializeRecaptcha, signInWithCredential } from '../../../../lib/firebase-config';
 import { PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
 import Toast from './Toast';
 
@@ -14,6 +14,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
   const [resendTimer, setResendTimer] = useState(0);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('error');
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
 
   useEffect(() => {
     let interval;
@@ -26,8 +27,16 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       if (interval) {
         clearInterval(interval);
       }
+      // Cleanup recaptcha on unmount
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear();
+        } catch (error) {
+          console.warn('Error clearing recaptcha:', error);
+        }
+      }
     };
-  }, [resendTimer]);
+  }, [resendTimer, recaptchaVerifier]);
 
   const showToast = (message, type = 'error') => {
     setToastMessage(message);
@@ -84,8 +93,9 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       const containerId = `recaptcha-container-${Date.now()}`;
 
       try {
-        const recaptchaVerifier = await initializeRecaptcha(containerId);
-        const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+        const verifier = await initializeRecaptcha(containerId);
+        setRecaptchaVerifier(verifier);
+        const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, verifier);
         
         setVerificationId(confirmationResult.verificationId);
         setPhoneVerificationStep('sent');
@@ -137,9 +147,11 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
     try {
       const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
       
-      // Just verify the code without signing in
-      await auth.signInWithCredential(credential);
-      await auth.signOut(); // Sign out immediately since we don't need the auth session
+      // Sign in with the credential
+      await signInWithCredential(auth, credential);
+      
+      // Sign out immediately since we don't need the auth session
+      await auth.signOut();
       
       setIsPhoneVerified(true);
       setPhoneVerificationStep('verified');
