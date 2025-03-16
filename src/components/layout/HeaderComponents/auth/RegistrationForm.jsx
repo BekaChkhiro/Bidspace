@@ -6,6 +6,7 @@ import Toast from './Toast';
 const NORMAL_RESEND_DELAY = 60; // 1 minute
 const RATE_LIMIT_DELAY = 300; // 5 minutes
 const STORAGE_KEY = 'phone_verification_cooldown';
+const TEST_PHONE_NUMBERS = ['555474609']; // Add your test number here
 
 const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMessage, setIsRegistration }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -98,7 +99,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       }
 
       // Only check cooldown for non-test numbers
-      const isTestNumber = process.env.REACT_APP_TEST_PHONE_NUMBERS?.split(',').includes(formData.regPhone);
+      const isTestNumber = TEST_PHONE_NUMBERS.includes(formData.regPhone);
       if (!isTestNumber && resendTimer > 0) {
         const minutes = Math.floor(resendTimer / 60);
         const seconds = resendTimer % 60;
