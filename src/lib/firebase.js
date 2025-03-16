@@ -21,29 +21,58 @@ let auth;
 let messaging;
 
 const RECAPTCHA_SCRIPT_URL = 'https://www.google.com/recaptcha/api.js';
-const SCRIPT_TIMEOUT = 10000; // 10 seconds timeout
+const SCRIPT_TIMEOUT = 30000; // Increased to 30 seconds
+const RENDER_TIMEOUT = 10000; // 10 seconds for render timeout
 
-const loadRecaptchaScript = () => {
-  return new Promise((resolve, reject) => {
-    // Check if script is already loaded
-    if (document.querySelector(`script[src^="${RECAPTCHA_SCRIPT_URL}"]`)) {
+const ensureScriptLoaded = () => {
+  return new Promise((resolve) => {
+    if (window.grecaptcha && window.grecaptcha.render) {
       resolve();
       return;
     }
 
+    const checkGrecaptcha = () => {
+      if (window.grecaptcha && window.grecaptcha.render) {
+        resolve();
+      } else {
+        setTimeout(checkGrecaptcha, 100);
+      }
+    };
+
+    checkGrecaptcha();
+  });
+};
+
+const loadRecaptchaScript = () => {
+  return new Promise((resolve, reject) => {
+    // Check if script is already loaded and initialized
+    if (window.grecaptcha && window.grecaptcha.render) {
+      resolve();
+      return;
+    }
+
+    // Remove any existing reCAPTCHA scripts
+    const existingScripts = document.querySelectorAll(`script[src^="${RECAPTCHA_SCRIPT_URL}"]`);
+    existingScripts.forEach(script => script.remove());
+
     const script = document.createElement('script');
     script.src = RECAPTCHA_SCRIPT_URL;
     script.async = true;
-    script.defer = true; // Add defer attribute
+    script.defer = true;
     
     const timeout = setTimeout(() => {
       reject(new Error('reCAPTCHA script load timeout'));
     }, SCRIPT_TIMEOUT);
 
-    script.onload = () => {
+    script.onload = async () => {
       clearTimeout(timeout);
-      // Give a small delay after script load to ensure proper initialization
-      setTimeout(resolve, 1000);
+      try {
+        await ensureScriptLoaded();
+        // Additional delay after script is fully loaded
+        setTimeout(resolve, 1500);
+      } catch (error) {
+        reject(error);
+      }
     };
 
     script.onerror = () => {
@@ -75,19 +104,101 @@ const cleanupRecaptcha = async () => {
       window.recaptchaVerifier = null;
     }
 
-    // Remove any leftover reCAPTCHA iframes and grecaptcha elements
-    const iframes = document.querySelectorAll('iframe[src*="recaptcha"]');
-    iframes.forEach(iframe => iframe.parentNode?.removeChild(iframe));
-    
     // Remove grecaptcha-related elements
-    const grecaptchaElements = document.querySelectorAll('.grecaptcha-badge, #grecaptcha-container');
+    const grecaptchaElements = document.querySelectorAll('.grecaptcha-badge, #grecaptcha-container, .grecaptcha-iframe');
     grecaptchaElements.forEach(element => element.parentNode?.removeChild(element));
+
+    // Reset grecaptcha if it exists
+    if (window.grecaptcha) {
+      try {
+        window.grecaptcha.reset();
+      } catch (error) {
+        console.warn('Error resetting grecaptcha:', error);
+      }
+    }
 
   } catch (error) {
     console.warn('Error cleaning up reCAPTCHA:', error);
   }
 };
 
+export const initializeRecaptcha = async (buttonId) => {
+  try {
+    if (!auth) {
+      initializeFirebase();
+    }
+
+    // Clean up existing reCAPTCHA instances
+    await cleanupRecaptcha();
+
+    // Ensure reCAPTCHA script is loaded with retries
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        await loadRecaptchaScript();
+        break;
+      } catch (error) {
+        retryCount++;
+        if (retryCount === maxRetries) {
+          throw error;
+        }
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    // Create a unique container for this instance
+    const containerId = `recaptcha-container-${Date.now()}`;
+    const container = document.createElement('div');
+    container.id = containerId;
+    container.style.cssText = 'position: fixed; bottom: 0; right: 0; z-index: 2147483647; opacity: 0.1;';
+    document.body.appendChild(container);
+
+    // Create new reCAPTCHA verifier with render timeout
+    const renderPromise = new Promise(async (resolve, reject) => {
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+          size: 'invisible',
+          callback: (response) => {
+            console.log('reCAPTCHA verified successfully');
+            container.style.opacity = '0.1';
+          },
+          'expired-callback': () => {
+            console.log('reCAPTCHA expired');
+            cleanupRecaptcha();
+          },
+          'error-callback': (error) => {
+            console.error('reCAPTCHA error:', error);
+            cleanupRecaptcha();
+          }
+        });
+
+        // Make container visible during verification
+        container.style.opacity = '1';
+        
+        await window.recaptchaVerifier.render();
+        resolve(window.recaptchaVerifier);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    // Add render timeout
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('reCAPTCHA render timeout')), RENDER_TIMEOUT);
+    });
+
+    return await Promise.race([renderPromise, timeoutPromise]);
+  } catch (error) {
+    console.error('Error initializing reCAPTCHA:', error);
+    await cleanupRecaptcha();
+    throw error;
+  }
+};
+
+// Initialize Firebase on module load
 const initializeFirebase = () => {
   try {
     if (!app) {
@@ -121,63 +232,6 @@ const initializeFirebase = () => {
     return auth;
   } catch (error) {
     console.error('Error initializing Firebase:', error);
-    throw error;
-  }
-};
-
-export const initializeRecaptcha = async (buttonId) => {
-  try {
-    if (!auth) {
-      initializeFirebase();
-    }
-
-    // Clean up existing reCAPTCHA instances
-    await cleanupRecaptcha();
-
-    // Ensure reCAPTCHA script is loaded
-    await loadRecaptchaScript();
-
-    // Create a unique container for this instance
-    const containerId = `recaptcha-container-${Date.now()}`;
-    const container = document.createElement('div');
-    container.id = containerId;
-    container.style.cssText = 'position: fixed; bottom: 0; right: 0; z-index: 2147483647;';
-    document.body.appendChild(container);
-
-    // Create new reCAPTCHA verifier with retry logic
-    const createVerifier = async (retryCount = 0) => {
-      try {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-          size: 'invisible',
-          callback: (response) => {
-            console.log('reCAPTCHA verified successfully');
-          },
-          'expired-callback': () => {
-            console.log('reCAPTCHA expired');
-            cleanupRecaptcha();
-          },
-          'error-callback': (error) => {
-            console.error('reCAPTCHA error:', error);
-            cleanupRecaptcha();
-          }
-        });
-
-        await window.recaptchaVerifier.render();
-        return window.recaptchaVerifier;
-      } catch (error) {
-        if (retryCount < 2) {
-          console.log(`Retrying reCAPTCHA initialization (attempt ${retryCount + 1})`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          return createVerifier(retryCount + 1);
-        }
-        throw error;
-      }
-    };
-
-    return await createVerifier();
-  } catch (error) {
-    console.error('Error initializing reCAPTCHA:', error);
-    await cleanupRecaptcha();
     throw error;
   }
 };
