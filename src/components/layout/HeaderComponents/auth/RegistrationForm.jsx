@@ -3,10 +3,10 @@ import { auth, initializeRecaptcha, signInWithCredential, cleanupRecaptcha } fro
 import { PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
 import Toast from './Toast';
 
-const NORMAL_RESEND_DELAY = 60; // 1 minute
-const RATE_LIMIT_DELAY = 300; // 5 minutes
+const NORMAL_RESEND_DELAY = 120; // 2 minutes for regular numbers
+const RATE_LIMIT_DELAY = 300; // 5 minutes for rate limit
 const STORAGE_KEY = 'phone_verification_cooldown';
-const TEST_PHONE_NUMBERS = ['555474609']; // Add your test number here
+const TEST_PHONE_NUMBERS = ['555474609']; // Test number
 
 const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMessage, setIsRegistration }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -98,12 +98,18 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         return;
       }
 
-      // Only check cooldown for non-test numbers
+      // Check if it's a test number
       const isTestNumber = TEST_PHONE_NUMBERS.includes(formData.regPhone);
+
+      // Handle cooldown for non-test numbers
       if (!isTestNumber && resendTimer > 0) {
         const minutes = Math.floor(resendTimer / 60);
         const seconds = resendTimer % 60;
-        showToast(`გთხოვთ მოიცადოთ ${minutes}:${seconds.toString().padStart(2, '0')} წუთი სანამ ხელახლა სცდით`, 'error');
+        showToast(
+          `გთხოვთ მოიცადოთ ${minutes}:${seconds.toString().padStart(2, '0')} წუთი სანამ ხელახლა სცდით. ` +
+          `თავიდან რომ აირიდოთ ხშირი მოთხოვნების შეზღუდვა, გთხოვთ დაელოდოთ SMS-ს მიღებას.`,
+          'error'
+        );
         return;
       }
 
@@ -121,14 +127,18 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         setPhoneVerificationStep('sent');
         setVerificationError('');
         
-        // Only set cooldown for non-test numbers
         if (!isTestNumber) {
           const expiryTime = Math.floor(Date.now() / 1000) + NORMAL_RESEND_DELAY;
           localStorage.setItem(STORAGE_KEY, expiryTime.toString());
           setResendTimer(NORMAL_RESEND_DELAY);
+          showToast(
+            'ვერიფიკაციის კოდი გამოგზავნილია. გთხოვთ დაელოდოთ SMS-ს. ' +
+            'თუ ვერ მიიღეთ SMS, შეგიძლიათ ხელახლა სცადოთ 2 წუთში.',
+            'success'
+          );
+        } else {
+          showToast('ვერიფიკაციის კოდი გამოგზავნილია (სატესტო ნომერი)', 'success');
         }
-        
-        showToast('ვერიფიკაციის კოდი გამოგზავნილია', 'success');
       } catch (error) {
         console.error('Error sending verification code:', error);
         
@@ -141,7 +151,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             break;
           case 'auth/quota-exceeded':
           case 'auth/too-many-requests':
-            errorMessage = 'ძალიან ბევრი მოთხოვნა. გთხოვთ მოიცადოთ 5 წუთი სანამ ხელახლა სცდით';
+            errorMessage = 'ძალიან ბევრი მოთხოვნა. Firebase-ის უსაფრთხოების მიზნით, გთხოვთ მოიცადოთ 5 წუთი სანამ ხელახლა სცდით.';
             cooldownDuration = RATE_LIMIT_DELAY;
             break;
           case 'auth/network-request-failed':
@@ -156,7 +166,6 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             cooldownDuration = 30;
         }
 
-        // Only set cooldown for non-test numbers
         if (!isTestNumber && cooldownDuration > 0) {
           const expiryTime = Math.floor(Date.now() / 1000) + cooldownDuration;
           localStorage.setItem(STORAGE_KEY, expiryTime.toString());
