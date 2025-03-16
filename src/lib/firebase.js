@@ -34,6 +34,7 @@ const loadRecaptchaScript = () => {
     const script = document.createElement('script');
     script.src = RECAPTCHA_SCRIPT_URL;
     script.async = true;
+    script.defer = true; // Add defer attribute
     
     const timeout = setTimeout(() => {
       reject(new Error('reCAPTCHA script load timeout'));
@@ -41,7 +42,8 @@ const loadRecaptchaScript = () => {
 
     script.onload = () => {
       clearTimeout(timeout);
-      resolve();
+      // Give a small delay after script load to ensure proper initialization
+      setTimeout(resolve, 1000);
     };
 
     script.onerror = () => {
@@ -73,9 +75,13 @@ const cleanupRecaptcha = async () => {
       window.recaptchaVerifier = null;
     }
 
-    // Remove any leftover reCAPTCHA iframes
+    // Remove any leftover reCAPTCHA iframes and grecaptcha elements
     const iframes = document.querySelectorAll('iframe[src*="recaptcha"]');
     iframes.forEach(iframe => iframe.parentNode?.removeChild(iframe));
+    
+    // Remove grecaptcha-related elements
+    const grecaptchaElements = document.querySelectorAll('.grecaptcha-badge, #grecaptcha-container');
+    grecaptchaElements.forEach(element => element.parentNode?.removeChild(element));
 
   } catch (error) {
     console.warn('Error cleaning up reCAPTCHA:', error);
@@ -135,13 +141,13 @@ export const initializeRecaptcha = async (buttonId) => {
     const containerId = `recaptcha-container-${Date.now()}`;
     const container = document.createElement('div');
     container.id = containerId;
-    container.style.display = 'none';
+    container.style.cssText = 'position: fixed; bottom: 0; right: 0; z-index: 2147483647;';
     document.body.appendChild(container);
 
     // Create new reCAPTCHA verifier with retry logic
     const createVerifier = async (retryCount = 0) => {
       try {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, container, {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
           size: 'invisible',
           callback: (response) => {
             console.log('reCAPTCHA verified successfully');

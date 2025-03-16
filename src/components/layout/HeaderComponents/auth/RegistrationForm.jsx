@@ -33,9 +33,11 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       }
       // Cleanup reCAPTCHA on unmount
       if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier.clear().catch(console.warn);
         window.recaptchaVerifier = null;
       }
+      // Remove any reCAPTCHA containers
+      document.querySelectorAll('[id^="recaptcha-container-"]').forEach(el => el.remove());
     };
   }, [resendTimer]);
 
@@ -46,6 +48,8 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         window.recaptchaVerifier.clear().catch(console.warn);
         window.recaptchaVerifier = null;
       }
+      // Remove any reCAPTCHA containers
+      document.querySelectorAll('[id^="recaptcha-container-"]').forEach(el => el.remove());
     };
   }, []);
 
@@ -102,11 +106,24 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
       const phoneNumber = '+995' + formData.regPhone;
 
+      // Add delay between retries
+      if (retryCount > 0) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * retryCount));
+      }
+
       try {
+        // Clean up any existing reCAPTCHA containers first
+        document.querySelectorAll('[id^="recaptcha-container-"]').forEach(el => el.remove());
+        
         let recaptchaVerifier;
         try {
           recaptchaVerifier = await initializeRecaptcha('send-code-button');
+          
+          // Wait a short moment to ensure reCAPTCHA is fully initialized
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
         } catch (recaptchaError) {
+          console.error('reCAPTCHA error:', recaptchaError);
           if (recaptchaError.message.includes('timeout')) {
             showToast('Recaptcha-ს ჩატვირთვა ვერ მოხერხდა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი და სცადოთ თავიდან');
             return;
@@ -144,7 +161,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             shouldRetry = true;
             break;
           case 'auth/error-code:-39':
-            errorMessage = 'დროებითი შეფერხება. ცოტა ხანში სცადეთ თავიდან';
+            errorMessage = 'დროებითი შეფერხება Firebase-თან. ცოტა ხანში სცადეთ თავიდან';
             shouldRetry = true;
             break;
           default:
@@ -153,9 +170,8 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         }
 
         // Implement retry logic for network-related errors
-        if (shouldRetry && retryCount < 2) {
+        if (shouldRetry && retryCount < MAX_RETRIES) {
           console.log(`Retrying SMS send... Attempt ${retryCount + 1}`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
           return handleSendVerificationCode(retryCount + 1);
         }
 
