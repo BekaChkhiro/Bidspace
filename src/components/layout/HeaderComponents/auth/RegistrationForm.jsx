@@ -3,6 +3,9 @@ import { auth, initializeRecaptcha, signInWithCredential } from '../../../../lib
 import { PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
 import Toast from './Toast';
 
+const COOLDOWN_DURATION = 300; // 5 minutes in seconds
+const STORAGE_KEY = 'phone_verification_cooldown';
+
 const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMessage, setIsRegistration }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [verificationCode, setVerificationCode] = useState('');
@@ -11,7 +14,16 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
   const [verificationError, setVerificationError] = useState('');
   const [phoneVerificationStep, setPhoneVerificationStep] = useState('initial');
   const [loading, setLoading] = useState(false);
-  const [resendTimer, setResendTimer] = useState(0);
+  const [resendTimer, setResendTimer] = useState(() => {
+    const storedCooldown = localStorage.getItem(STORAGE_KEY);
+    if (storedCooldown) {
+      const expiryTime = parseInt(storedCooldown, 10);
+      const now = Math.floor(Date.now() / 1000);
+      const remainingTime = expiryTime - now;
+      return remainingTime > 0 ? remainingTime : 0;
+    }
+    return 0;
+  });
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('error');
   const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
@@ -20,7 +32,13 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
     let interval;
     if (resendTimer > 0) {
       interval = setInterval(() => {
-        setResendTimer((prev) => prev - 1);
+        setResendTimer((prev) => {
+          const newValue = prev - 1;
+          if (newValue <= 0) {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+          return newValue;
+        });
       }, 1000);
     }
     return () => {
@@ -75,6 +93,13 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
   const handleSendVerificationCode = async () => {
     try {
+      if (resendTimer > 0) {
+        const minutes = Math.floor(resendTimer / 60);
+        const seconds = resendTimer % 60;
+        showToast(`გთხოვთ მოიცადოთ ${minutes}:${seconds.toString().padStart(2, '0')} წუთი სანამ ხელახლა სცდით`, 'error');
+        return;
+      }
+
       if (!formData.regPhone) {
         showToast('გთხოვთ შეიყვანოთ ტელეფონის ნომერი');
         return;
@@ -100,31 +125,40 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         setVerificationId(confirmationResult.verificationId);
         setPhoneVerificationStep('sent');
         setVerificationError('');
-        setResendTimer(60);
+        setResendTimer(60); // Normal resend timer
         showToast('ვერიფიკაციის კოდი გამოგზავნილია', 'success');
       } catch (error) {
         console.error('Error sending verification code:', error);
         
         let errorMessage;
+        let cooldownDuration = 0;
+        
         switch (error.code) {
           case 'auth/invalid-phone-number':
             errorMessage = 'არასწორი ტელეფონის ნომერი';
             break;
           case 'auth/quota-exceeded':
-            errorMessage = 'მოთხოვნების ლიმიტი ამოწურულია, სცადეთ მოგვიანებით';
-            break;
           case 'auth/too-many-requests':
-            errorMessage = 'ძალიან ბევრი მოთხოვნა. გთხოვთ მოიცადოთ და სცადოთ მოგვიანებით';
+            errorMessage = 'ძალიან ბევრი მოთხოვნა. გთხოვთ მოიცადოთ 5 წუთი სანამ ხელახლა სცდით';
+            cooldownDuration = COOLDOWN_DURATION;
             break;
           case 'auth/network-request-failed':
             errorMessage = 'ქსელის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი';
             break;
           case 'auth/error-code:-39':
             errorMessage = 'დროებითი შეფერხება. გთხოვთ, სცადოთ რამდენიმე წამში';
+            cooldownDuration = 30; // 30 seconds cooldown for temporary errors
             break;
           default:
             errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
         }
+
+        if (cooldownDuration > 0) {
+          const expiryTime = Math.floor(Date.now() / 1000) + cooldownDuration;
+          localStorage.setItem(STORAGE_KEY, expiryTime.toString());
+          setResendTimer(cooldownDuration);
+        }
+        
         showToast(errorMessage);
       }
     } catch (error) {
