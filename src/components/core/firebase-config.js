@@ -2,7 +2,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-import { getMessaging } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -20,18 +19,8 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 
-// Initialize messaging only in browser environment
-let messaging = null;
-if (typeof window !== 'undefined') {
-  try {
-    messaging = getMessaging(app);
-  } catch (error) {
-    console.warn('Firebase messaging initialization failed:', error);
-  }
-}
-
 // Configure auth settings
 auth.languageCode = 'ka';
 auth.settings.appVerificationDisabledForTesting = false;
 
-export { app, analytics, auth, messaging };
+export { app, analytics, auth };

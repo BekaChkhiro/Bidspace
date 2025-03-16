@@ -1,6 +1,5 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from 'firebase/app';
-import { getMessaging } from 'firebase/messaging';
 import { getAuth, RecaptchaVerifier } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 
@@ -18,11 +17,10 @@ const firebaseConfig = {
 let app;
 let analytics;
 let auth;
-let messaging;
 
 const RECAPTCHA_SCRIPT_URL = 'https://www.google.com/recaptcha/api.js';
-const SCRIPT_TIMEOUT = 30000; // Increased to 30 seconds
-const RENDER_TIMEOUT = 10000; // 10 seconds for render timeout
+const SCRIPT_TIMEOUT = 30000; // 30 seconds
+const RENDER_TIMEOUT = 10000; // 10 seconds
 
 const ensureScriptLoaded = () => {
   return new Promise((resolve) => {
@@ -45,13 +43,11 @@ const ensureScriptLoaded = () => {
 
 const loadRecaptchaScript = () => {
   return new Promise((resolve, reject) => {
-    // Check if script is already loaded and initialized
     if (window.grecaptcha && window.grecaptcha.render) {
       resolve();
       return;
     }
 
-    // Remove any existing reCAPTCHA scripts
     const existingScripts = document.querySelectorAll(`script[src^="${RECAPTCHA_SCRIPT_URL}"]`);
     existingScripts.forEach(script => script.remove());
 
@@ -68,7 +64,6 @@ const loadRecaptchaScript = () => {
       clearTimeout(timeout);
       try {
         await ensureScriptLoaded();
-        // Additional delay after script is fully loaded
         setTimeout(resolve, 1500);
       } catch (error) {
         reject(error);
@@ -86,7 +81,6 @@ const loadRecaptchaScript = () => {
 
 const cleanupRecaptcha = async () => {
   try {
-    // Clean up any existing reCAPTCHA widgets
     const existingWidgets = document.querySelectorAll('[id^="recaptcha-container-"]');
     existingWidgets.forEach(widget => {
       if (widget && widget.parentNode) {
@@ -94,7 +88,6 @@ const cleanupRecaptcha = async () => {
       }
     });
 
-    // Clear any existing verifier
     if (window.recaptchaVerifier) {
       try {
         await window.recaptchaVerifier.clear();
@@ -104,11 +97,9 @@ const cleanupRecaptcha = async () => {
       window.recaptchaVerifier = null;
     }
 
-    // Remove grecaptcha-related elements
     const grecaptchaElements = document.querySelectorAll('.grecaptcha-badge, #grecaptcha-container, .grecaptcha-iframe');
     grecaptchaElements.forEach(element => element.parentNode?.removeChild(element));
 
-    // Reset grecaptcha if it exists
     if (window.grecaptcha) {
       try {
         window.grecaptcha.reset();
@@ -122,16 +113,47 @@ const cleanupRecaptcha = async () => {
   }
 };
 
+const initializeFirebase = () => {
+  try {
+    if (!app) {
+      app = initializeApp(firebaseConfig);
+      
+      if (typeof window !== 'undefined') {
+        try {
+          analytics = getAnalytics(app);
+        } catch (error) {
+          console.warn('Analytics initialization failed:', error);
+        }
+      }
+      
+      auth = getAuth(app);
+      auth.languageCode = 'ka';
+
+      // Enable test mode for development
+      const isLocalhost = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.includes('.local');
+                         
+      if (isLocalhost) {
+        auth.settings.appVerificationDisabledForTesting = true;
+        console.log('Firebase Auth Test Mode enabled for development');
+      }
+    }
+    return auth;
+  } catch (error) {
+    console.error('Error initializing Firebase:', error);
+    throw error;
+  }
+};
+
 export const initializeRecaptcha = async (buttonId) => {
   try {
     if (!auth) {
       initializeFirebase();
     }
 
-    // Clean up existing reCAPTCHA instances
     await cleanupRecaptcha();
 
-    // Ensure reCAPTCHA script is loaded with retries
     let retryCount = 0;
     const maxRetries = 3;
     
@@ -144,19 +166,16 @@ export const initializeRecaptcha = async (buttonId) => {
         if (retryCount === maxRetries) {
           throw error;
         }
-        // Wait before retrying
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
-    // Create a unique container for this instance
     const containerId = `recaptcha-container-${Date.now()}`;
     const container = document.createElement('div');
     container.id = containerId;
     container.style.cssText = 'position: fixed; bottom: 0; right: 0; z-index: 2147483647; opacity: 0.1;';
     document.body.appendChild(container);
 
-    // Create new reCAPTCHA verifier with render timeout
     const renderPromise = new Promise(async (resolve, reject) => {
       try {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
@@ -175,7 +194,6 @@ export const initializeRecaptcha = async (buttonId) => {
           }
         });
 
-        // Make container visible during verification
         container.style.opacity = '1';
         
         await window.recaptchaVerifier.render();
@@ -185,7 +203,6 @@ export const initializeRecaptcha = async (buttonId) => {
       }
     });
 
-    // Add render timeout
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('reCAPTCHA render timeout')), RENDER_TIMEOUT);
     });
@@ -199,49 +216,6 @@ export const initializeRecaptcha = async (buttonId) => {
 };
 
 // Initialize Firebase on module load
-const initializeFirebase = () => {
-  try {
-    if (!app) {
-      app = initializeApp(firebaseConfig);
-      
-      if (typeof window !== 'undefined') {
-        analytics = getAnalytics(app);
-      }
-      
-      auth = getAuth(app);
-      auth.languageCode = 'ka';
-
-      // Enable test mode for development
-      const isLocalhost = window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1' ||
-                         window.location.hostname.includes('.local');
-                         
-      if (isLocalhost) {
-        auth.settings.appVerificationDisabledForTesting = true;
-        console.log('Firebase Auth Test Mode enabled for development');
-      }
-      
-      if (typeof window !== 'undefined') {
-        try {
-          messaging = getMessaging(app);
-        } catch (error) {
-          console.warn('Firebase messaging initialization failed:', error);
-        }
-      }
-    }
-    return auth;
-  } catch (error) {
-    console.error('Error initializing Firebase:', error);
-    throw error;
-  }
-};
-
-// Cleanup on page unload
-if (typeof window !== 'undefined') {
-  window.addEventListener('unload', cleanupRecaptcha);
-}
-
-// Initialize Firebase on module load
 initializeFirebase();
 
-export { app, analytics, auth, messaging };
+export { app, analytics, auth };
