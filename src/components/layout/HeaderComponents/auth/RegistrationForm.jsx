@@ -12,13 +12,8 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
   const [phoneVerificationStep, setPhoneVerificationStep] = useState('initial');
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
-  const [retryCount, setRetryCount] = useState(0);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('error');
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 2000; // 2 seconds
-
-  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   useEffect(() => {
     let interval;
@@ -31,36 +26,17 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       if (interval) {
         clearInterval(interval);
       }
-      // Cleanup reCAPTCHA on unmount
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear().catch(console.warn);
-        window.recaptchaVerifier = null;
-      }
-      // Remove any reCAPTCHA containers
-      document.querySelectorAll('[id^="recaptcha-container-"]').forEach(el => el.remove());
     };
   }, [resendTimer]);
 
-  useEffect(() => {
-    return () => {
-      // Cleanup reCAPTCHA on component unmount
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear().catch(console.warn);
-        window.recaptchaVerifier = null;
-      }
-      // Remove any reCAPTCHA containers
-      document.querySelectorAll('[id^="recaptcha-container-"]').forEach(el => el.remove());
-    };
-  }, []);
-
   const validateStep1 = () => {
     if (!formData.regEmail) {
-      alert('გთხოვთ შეიყვანოთ ელ-ფოსტა');
+      showToast('გთხოვთ შეიყვანოთ ელ-ფოსტა');
       return false;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.regEmail)) {
-      alert('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტის მისამართი');
+      showToast('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტის მისამართი');
       return false;
     }
     return true;
@@ -68,16 +44,16 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
   const validateStep2 = () => {
     if (!formData.regPhone || !formData.regUsername || !formData.regPersonalNumber) {
-      alert('გთხოვთ შეავსოთ ყველა ველი');
+      showToast('გთხოვთ შეავსოთ ყველა ველი');
       return false;
     }
     const phoneRegex = /^5\d{8}$/;
     if (!phoneRegex.test(formData.regPhone)) {
-      alert('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი (5XXXXXXXX)');
+      showToast('გთხოვთ შეიყვანოთ სწორი ტელეფონის ნომერი (5XXXXXXXX)');
       return false;
     }
     if (!/^\d{11}$/.test(formData.regPersonalNumber)) {
-      alert('პირადი ნომერი უნდა შედგებოდეს 11 ციფრისგან');
+      showToast('პირადი ნომერი უნდა შედგებოდეს 11 ციფრისგან');
       return false;
     }
     return true;
@@ -88,7 +64,7 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
     setToastType(type);
   };
 
-  const handleSendVerificationCode = async (retryCount = 0) => {
+  const handleSendVerificationCode = async () => {
     try {
       if (!formData.regPhone) {
         showToast('გთხოვთ შეიყვანოთ ტელეფონის ნომერი');
@@ -105,32 +81,10 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
       setVerificationError('');
 
       const phoneNumber = '+995' + formData.regPhone;
-
-      // Add delay between retries
-      if (retryCount > 0) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * retryCount));
-      }
+      const containerId = `recaptcha-container-${Date.now()}`;
 
       try {
-        // Clean up any existing reCAPTCHA containers first
-        document.querySelectorAll('[id^="recaptcha-container-"]').forEach(el => el.remove());
-        
-        let recaptchaVerifier;
-        try {
-          recaptchaVerifier = await initializeRecaptcha('send-code-button');
-          
-          // Wait a short moment to ensure reCAPTCHA is fully initialized
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-        } catch (recaptchaError) {
-          console.error('reCAPTCHA error:', recaptchaError);
-          if (recaptchaError.message.includes('timeout')) {
-            showToast('Recaptcha-ს ჩატვირთვა ვერ მოხერხდა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი და სცადოთ თავიდან');
-            return;
-          }
-          throw recaptchaError;
-        }
-
+        const recaptchaVerifier = await initializeRecaptcha(containerId);
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
         
         setVerificationId(confirmationResult.verificationId);
@@ -138,14 +92,10 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
         setVerificationError('');
         setResendTimer(60);
         showToast('ვერიფიკაციის კოდი გამოგზავნილია', 'success');
-
       } catch (error) {
         console.error('Error sending verification code:', error);
         
-        // Handle specific error cases
         let errorMessage;
-        let shouldRetry = false;
-
         switch (error.code) {
           case 'auth/invalid-phone-number':
             errorMessage = 'არასწორი ტელეფონის ნომერი';
@@ -158,23 +108,10 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
             break;
           case 'auth/network-request-failed':
             errorMessage = 'ქსელის შეცდომა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი';
-            shouldRetry = true;
-            break;
-          case 'auth/error-code:-39':
-            errorMessage = 'დროებითი შეფერხება Firebase-თან. ცოტა ხანში სცადეთ თავიდან';
-            shouldRetry = true;
             break;
           default:
             errorMessage = 'ვერ მოხერხდა კოდის გაგზავნა. გთხოვთ, სცადოთ თავიდან';
-            shouldRetry = error.message?.includes('503');
         }
-
-        // Implement retry logic for network-related errors
-        if (shouldRetry && retryCount < MAX_RETRIES) {
-          console.log(`Retrying SMS send... Attempt ${retryCount + 1}`);
-          return handleSendVerificationCode(retryCount + 1);
-        }
-
         showToast(errorMessage);
       }
     } catch (error) {
@@ -196,40 +133,28 @@ const RegistrationForm = ({ formData, handleInputChange, handleRegister, errorMe
 
     try {
       const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
-      // Instead of signing in, just verify the credential
-      await auth.currentUser?.linkWithCredential(credential)
-        .catch(async (error) => {
-          if (error.code === 'auth/credential-already-in-use') {
-            // If phone is already linked to another account, just verify it's valid
-            await auth.signInWithCredential(credential);
-            await auth.signOut(); // Sign out immediately since we don't want to actually sign in
-          } else {
-            throw error;
-          }
-        });
-      
+      await auth.signInWithCredential(credential);
       setIsPhoneVerified(true);
       setPhoneVerificationStep('verified');
-      setVerificationError('');
-      showToast('ნომერი წარმატებით დადასტურდა', 'success');
-      handleNextStep();
+      showToast('ტელეფონის ნომერი დადასტურებულია', 'success');
     } catch (error) {
-      console.error('Verification error:', error);
+      console.error('Error verifying code:', error);
       let errorMessage;
       
       switch (error.code) {
         case 'auth/invalid-verification-code':
-          errorMessage = 'არასწორი კოდი';
+          errorMessage = 'არასწორი კოდი. გთხოვთ, სცადოთ თავიდან';
           break;
         case 'auth/code-expired':
-          errorMessage = 'კოდის ვადა გავიდა. გთხოვთ მოითხოვოთ ახალი კოდი';
+          errorMessage = 'კოდს ვადა გაუვიდა. გთხოვთ, მოითხოვოთ ახალი კოდი';
           setPhoneVerificationStep('initial');
           break;
         default:
-          errorMessage = 'დადასტურების შეცდომა. გთხოვთ სცადოთ თავიდან';
+          errorMessage = 'ვერიფიკაციის შეცდომა. გთხოვთ, სცადოთ თავიდან';
       }
       
       showToast(errorMessage);
+      setVerificationError(errorMessage);
     } finally {
       setLoading(false);
     }
