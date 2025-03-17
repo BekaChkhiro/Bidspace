@@ -147,19 +147,6 @@ function custom_register_endpoint($request) {
     </body>
     </html>';
 
-    // Plain text version
-    $message_text = sprintf(
-        "ანგარიშის დადასტურება - Bidspace\n\n" .
-        "გამარჯობა %s,\n\n" .
-        "მადლობა Bidspace-ზე დარეგისტრირებისთვის. გთხოვთ, დაადასტუროთ თქვენი ანგარიში.\n\n" .
-        "თქვენი დადასტურების კოდია: %s\n\n" .
-        "კოდი მოქმედებს 30 წუთის განმავლობაში.\n\n" .
-        "თუ თქვენ არ დარეგისტრირებულხართ Bidspace-ზე, გთხოვთ უგულებელყოთ ეს შეტყობინება.\n\n" .
-        "ეს არის ავტომატური შეტყობინება, გთხოვთ არ უპასუხოთ.",
-        $first_name,
-        $verification_code
-    );
-
     $headers = array(
         'Content-Type: text/html; charset=UTF-8',
         'From: Bidspace <noreply@bidspace.ge>'
@@ -167,22 +154,11 @@ function custom_register_endpoint($request) {
 
     $subject = 'ანგარიშის დადასტურება - Bidspace';
 
-    // Send email with both HTML and plain text versions
+    // Send email with HTML version
     add_filter('wp_mail_content_type', function() { return "text/html"; });
     $mail_sent = wp_mail($email, $subject, $message_html, $headers);
     remove_filter('wp_mail_content_type', function() { return "text/html"; });
 
-    // Send verification email
-    $to = $email;
-    $subject = 'ელ-ფოსტის დადასტურება';
-    $message = sprintf(
-        'გამარჯობა %s,\n\nგთხოვთ შეიყვანოთ ეს კოდი თქვენი ანგარიშის დასადასტურებლად: %s',
-        $first_name,
-        $verification_code
-    );
-    $headers = array('Content-Type: text/plain; charset=UTF-8');
-    
-    $mail_sent = wp_mail($to, $subject, $message, $headers);
     error_log("Verification email sent: " . ($mail_sent ? 'success' : 'failed'));
 
     return new WP_REST_Response([
