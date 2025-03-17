@@ -12,6 +12,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   useEffect(() => {
     return () => {
@@ -26,6 +27,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       [name]: value
     }));
     setErrorMessage('');
+    setDebugInfo(null);
   };
 
   const startTimer = () => {
@@ -58,6 +60,9 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     }
 
     setLoading(true);
+    setErrorMessage('');
+    setDebugInfo(null);
+
     try {
       const response = await fetch('/wp-json/bidspace/v1/request-password-reset', {
         method: 'POST',
@@ -75,9 +80,12 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         throw new Error(data.message || 'დაფიქსირდა შეცდომა');
       }
 
+      if (data.debug_info) {
+        setDebugInfo(data.debug_info);
+      }
+
       setStep('emailSent');
       startTimer();
-      setErrorMessage('');
     } catch (error) {
       console.error('Error requesting password reset:', error);
       setErrorMessage(error.message || 'დაფიქსირდა შეცდომა, სცადეთ თავიდან');
@@ -92,6 +100,9 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     }
 
     setLoading(true);
+    setErrorMessage('');
+    setDebugInfo(null);
+
     try {
       const response = await fetch('/wp-json/bidspace/v1/verify-code', {
         method: 'POST',
@@ -110,9 +121,12 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         throw new Error(data.message || 'არასწორი კოდი');
       }
 
+      if (data.debug_info) {
+        setDebugInfo(data.debug_info);
+      }
+
       setStep('newPassword');
       if (timer) clearInterval(timer);
-      setErrorMessage('');
     } catch (error) {
       console.error('Error verifying code:', error);
       setErrorMessage(error.message || 'არასწორი კოდი');
@@ -137,6 +151,9 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     }
 
     setLoading(true);
+    setErrorMessage('');
+    setDebugInfo(null);
+
     try {
       const response = await fetch('/wp-json/bidspace/v1/reset-password', {
         method: 'POST',
@@ -156,8 +173,11 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         throw new Error(data.message || 'პაროლის შეცვლა ვერ მოხერხდა');
       }
 
+      if (data.debug_info) {
+        setDebugInfo(data.debug_info);
+      }
+
       setIsPasswordReset(false);
-      setErrorMessage('');
     } catch (error) {
       console.error('Error resetting password:', error);
       setErrorMessage(error.message || 'პაროლის შეცვლა ვერ მოხერხდა');
@@ -179,6 +199,11 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       <h3 className="text-xl font-semibold text-center">პაროლის აღდგენა</h3>
       {errorMessage && (
         <p className="text-sm text-red-500 text-center">{errorMessage}</p>
+      )}
+      {debugInfo && (
+        <div className="debug-info" style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+          Debug Info: {JSON.stringify(debugInfo)}
+        </div>
       )}
       
       <div className="flex flex-col gap-4">
