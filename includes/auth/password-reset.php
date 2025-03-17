@@ -107,9 +107,19 @@ function bidspace_request_password_reset($request) {
     error_log('Password reset email attempt:');
     error_log('To: ' . $to);
     error_log('Subject: ' . $subject);
+    error_log('Headers: ' . print_r($headers, true));
     error_log('Result: ' . ($mail_sent ? 'Success' : 'Failed'));
     if (!$mail_sent) {
         error_log('WordPress mail error: ' . print_r($GLOBALS['phpmailer']->ErrorInfo, true));
+        
+        // Additional debug info
+        if (isset($GLOBALS['phpmailer'])) {
+            error_log('PHPMailer Debug Info:');
+            error_log('Host: ' . $GLOBALS['phpmailer']->Host);
+            error_log('Port: ' . $GLOBALS['phpmailer']->Port);
+            error_log('SMTPAuth: ' . ($GLOBALS['phpmailer']->SMTPAuth ? 'true' : 'false'));
+            error_log('SMTPSecure: ' . $GLOBALS['phpmailer']->SMTPSecure);
+        }
     }
 
     if ($mail_sent) {

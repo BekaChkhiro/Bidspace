@@ -145,7 +145,24 @@ const TheatreCinemaCarousel = () => {
     fetchTheatreCinemaAuctions();
   }, [toast]);
 
-  if (loading || error || theatreCinemaAuctions.length === 0) {
+  if (loading) {
+    return (
+      <div className="theatre-cinema-auctions-carousel">
+        <h3 className="text-2xl font-bold text-center text-black mb-12">{texts.auctionsTitle}</h3>
+        <Carousel className="w-full">
+          <CarouselContent>
+            {[1, 2, 3].map((item) => (
+              <CarouselItem key={item} className="basis-[85%] md:basis-[45%] lg:basis-[30%]">
+                <SkeletonLoader />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+      </div>
+    );
+  }
+
+  if (error || theatreCinemaAuctions.length === 0) {
     return null;
   }
 
