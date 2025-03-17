@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../../../../lib/firebase-config';
-import { sendPasswordResetEmail } from 'firebase/auth';
 
 const PasswordResetForm = ({ setIsPasswordReset }) => {
   const [step, setStep] = useState('initial'); // initial, emailSent, verificationCode, newPassword
@@ -61,13 +59,28 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
 
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, userData.email);
+      const response = await fetch('/wp-json/bidspace/v1/request-password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          email: userData.email 
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'დაფიქსირდა შეცდომა');
+      }
+
       setStep('emailSent');
       startTimer();
       setErrorMessage('');
     } catch (error) {
       console.error('Error requesting password reset:', error);
-      setErrorMessage('დაფიქსირდა შეცდომა, სცადეთ თავიდან');
+      setErrorMessage(error.message || 'დაფიქსირდა შეცდომა, სცადეთ თავიდან');
     }
     setLoading(false);
   };
@@ -90,13 +103,19 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
           code: userData.verification_code 
         })
       });
-      if (!response.ok) throw new Error('Invalid code');
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'არასწორი კოდი');
+      }
+
       setStep('newPassword');
       if (timer) clearInterval(timer);
       setErrorMessage('');
     } catch (error) {
       console.error('Error verifying code:', error);
-      setErrorMessage('არასწორი კოდი');
+      setErrorMessage(error.message || 'არასწორი კოდი');
     }
     setLoading(false);
   };
@@ -131,13 +150,17 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         })
       });
 
-      if (!response.ok) throw new Error('Failed to reset password');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'პაროლის შეცვლა ვერ მოხერხდა');
+      }
 
       setIsPasswordReset(false);
       setErrorMessage('');
     } catch (error) {
       console.error('Error resetting password:', error);
-      setErrorMessage('პაროლის შეცვლა ვერ მოხერხდა');
+      setErrorMessage(error.message || 'პაროლის შეცვლა ვერ მოხერხდა');
     }
     setLoading(false);
   };
