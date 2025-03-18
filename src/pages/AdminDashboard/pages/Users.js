@@ -14,14 +14,17 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [usersPerPage] = useState(10);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage]);
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/wp-json/wp/v2/users');
+      const response = await fetch(`/wp-json/wp/v2/users?per_page=${usersPerPage}&page=${currentPage}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch users');
@@ -30,6 +33,11 @@ const Users = () => {
       const data = await response.json();
       console.log('Users data:', data);
       setUsers(data);
+      
+      // Get total pages from headers
+      const totalUsers = response.headers.get('X-WP-Total');
+      const calculatedTotalPages = Math.ceil(totalUsers / usersPerPage);
+      setTotalPages(calculatedTotalPages);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -239,15 +247,89 @@ const Users = () => {
         </table>
       </div>
 
-      {/* User Details Sidebar */}
-      <UserDetailsSidebar
-        user={selectedUser}
-        isOpen={isSidebarOpen}
-        onClose={() => {
-          setIsSidebarOpen(false);
-          setSelectedUser(null);
-        }}
-      />
+      {/* Pagination Controls */}
+      <div className="mt-4 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+        <div className="flex flex-1 justify-between sm:hidden">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+              currentPage === 1 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            წინა
+          </button>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+              currentPage === totalPages 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            შემდეგი
+          </button>
+        </div>
+        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700">
+              ნაჩვენებია <span className="font-medium">{(currentPage - 1) * usersPerPage + 1}</span> - <span className="font-medium">{Math.min(currentPage * usersPerPage, totalPages * usersPerPage)}</span>
+            </p>
+          </div>
+          <div>
+            <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                  currentPage === 1 ? 'cursor-not-allowed' : 'hover:bg-gray-50'
+                }`}
+              >
+                <span className="sr-only">წინა</span>
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                </svg>
+              </button>
+              {[...Array(totalPages)].map((_, idx) => (
+                <button
+                  key={idx + 1}
+                  onClick={() => setCurrentPage(idx + 1)}
+                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                    currentPage === idx + 1
+                      ? 'z-10 bg-[#1caff0] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1caff0]'
+                      : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                  currentPage === totalPages ? 'cursor-not-allowed' : 'hover:bg-gray-50'
+                }`}
+              >
+                <span className="sr-only">შემდეგი</span>
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+      
+      {selectedUser && (
+        <UserDetailsSidebar
+          user={selectedUser}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };
