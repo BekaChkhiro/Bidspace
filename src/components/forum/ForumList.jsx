@@ -88,11 +88,11 @@ const ForumList = ({ category, title }) => {
 
     const renderPagination = () => {
         return (
-            <div className="flex justify-center items-center space-x-2 mt-6">
+            <div className="flex justify-center items-center space-x-1 sm:space-x-2 mt-6">
                 <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className={`px-3 py-1 rounded ${
+                    className={`px-2 sm:px-3 py-1 rounded text-sm sm:text-base ${
                         page === 1
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             : 'bg-[#00aff0] text-white'
@@ -101,23 +101,23 @@ const ForumList = ({ category, title }) => {
                     წინა
                 </button>
                 
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
                     let pageNumber;
-                    if (totalPages <= 5) {
+                    if (totalPages <= 3) {
                         pageNumber = i + 1;
-                    } else if (page <= 3) {
+                    } else if (page <= 2) {
                         pageNumber = i + 1;
-                    } else if (page >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
+                    } else if (page >= totalPages - 1) {
+                        pageNumber = totalPages - 2 + i;
                     } else {
-                        pageNumber = page - 2 + i;
+                        pageNumber = page - 1 + i;
                     }
 
                     return (
                         <button
                             key={pageNumber}
                             onClick={() => setPage(pageNumber)}
-                            className={`px-3 py-1 rounded ${
+                            className={`px-2 sm:px-3 py-1 rounded text-sm sm:text-base ${
                                 page === pageNumber
                                     ? 'bg-[#00aff0] text-white'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -131,7 +131,7 @@ const ForumList = ({ category, title }) => {
                 <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className={`px-3 py-1 rounded ${
+                    className={`px-2 sm:px-3 py-1 rounded text-sm sm:text-base ${
                         page === totalPages
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             : 'bg-[#00aff0] text-white'
@@ -157,22 +157,22 @@ const ForumList = ({ category, title }) => {
 
     return (
         <div>
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold">{title}</h2>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
+                    <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
                     <ForumFilters onSortChange={handleSortChange} sortBy={sortBy} />
                 </div>
             </div>
             
             <div className="grid gap-4">
                 {posts.length === 0 ? (
-                    <div className="text-center bg-gray-50 rounded-lg py-12">
-                        <p className="text-gray-500 text-lg">
+                    <div className="text-center bg-gray-50 rounded-lg py-8 sm:py-12">
+                        <p className="text-gray-500 text-base sm:text-lg">
                             ამ კატეგორიაში კითხვები არ არის
                         </p>
                         <Link
                             to="/forum/add-question"
-                            className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                            className="inline-block mt-4 px-3 sm:px-4 py-2 bg-blue-600 text-white text-sm sm:text-base rounded-md hover:bg-blue-700 transition-colors"
                         >
                             + დაამატე პირველი კითხვა
                         </Link>
@@ -183,7 +183,7 @@ const ForumList = ({ category, title }) => {
                             <div key={post.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
                                 <Link to={`/forum/post/${post.id}`} className="block">
                                     {post.featured_image_url && (
-                                        <div className="relative h-48 overflow-hidden">
+                                        <div className="relative h-32 sm:h-48 overflow-hidden">
                                             <img 
                                                 src={post.featured_image_url}
                                                 alt={post.title.rendered}
@@ -195,8 +195,8 @@ const ForumList = ({ category, title }) => {
                                         </div>
                                     )}
                                 </Link>
-                                <div className="p-6">
-                                    <div className="flex items-start justify-between mb-4">
+                                <div className="p-4 sm:p-6">
+                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 space-y-3 sm:space-y-0">
                                         <div className="flex items-center space-x-3">
                                             {post._embedded?.author?.[0]?.avatar_urls?.['48'] && (
                                                 <img 
