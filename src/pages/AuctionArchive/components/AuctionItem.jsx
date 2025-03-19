@@ -108,13 +108,6 @@ const AuctionItem = ({
           >
             {texts.placeBid}
           </Link>
-          <Link
-            to={getAuctionLink(auction.id)}  
-            className="w-full py-2 sm:py-3 text-center text-sm sm:text-base rounded-full"
-            style={{ backgroundColor: '#E6E6E6' }}
-          >
-            {texts.buyNow} {auction.meta.buy_now}{texts.currency}
-          </Link>
         </div>
       </Link>
     </div>
