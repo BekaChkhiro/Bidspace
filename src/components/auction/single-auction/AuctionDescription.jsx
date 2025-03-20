@@ -136,9 +136,12 @@ const AuctionDescription = ({ auction }) => {
           </h3>
         </div>
         <div className="p-6 prose prose-gray max-w-none">
+          {console.log('Auction Content:', auction.content)}
+          {console.log('Auction Description:', auction.description)}
           <div dangerouslySetInnerHTML={{ 
-            __html: auction.content?.rendered || auction.content || auction.description || 
-            '<p className="text-gray-500 italic">აღწერა არ არის</p>' 
+            __html: auction.content?.rendered || 
+                   (typeof auction.description === 'string' ? auction.description : '') || 
+                   '<p className="text-gray-500 italic">აღწერა არ არის</p>'
           }} />
         </div>
       </div>
