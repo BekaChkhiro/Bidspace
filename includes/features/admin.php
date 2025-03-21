@@ -158,3 +158,55 @@ function render_email_test_page() {
     </script>
     <?php
 }
+
+// Add BOG Payment settings
+add_action('admin_init', function() {
+    // Register BOG settings
+    register_setting('general', 'bog_client_id');
+    register_setting('general', 'bog_secret_key');
+    register_setting('general', 'bog_is_production');
+
+    // Add BOG settings fields
+    add_settings_section(
+        'bog_payment_settings',
+        'BOG გადახდების პარამეტრები',
+        function() {
+            echo '<p>Bank of Georgia გადახდების ინტეგრაციის პარამეტრები</p>';
+        },
+        'general'
+    );
+
+    add_settings_field(
+        'bog_client_id',
+        'Client ID',
+        function() {
+            $value = get_option('bog_client_id');
+            echo '<input type="text" name="bog_client_id" value="' . esc_attr($value) . '" class="regular-text">';
+        },
+        'general',
+        'bog_payment_settings'
+    );
+
+    add_settings_field(
+        'bog_secret_key',
+        'Secret Key',
+        function() {
+            $value = get_option('bog_secret_key');
+            echo '<input type="password" name="bog_secret_key" value="' . esc_attr($value) . '" class="regular-text">';
+        },
+        'general',
+        'bog_payment_settings'
+    );
+
+    add_settings_field(
+        'bog_is_production',
+        'Production Mode',
+        function() {
+            $value = get_option('bog_is_production');
+            echo '<input type="checkbox" name="bog_is_production" value="1"' . checked(1, $value, false) . '>';
+            echo ' გააქტიურეთ პროდაქშენ რეჟიმი';
+        },
+        'general',
+        'bog_payment_settings'
+    );
+});

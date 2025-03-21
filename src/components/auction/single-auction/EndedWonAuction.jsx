@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import wonAuctionIcon from '../../assets/icons/auction/won_auction.svg';
 import dateIcon from '../../assets/icons/auction/date_icon.svg';
 import paymentArrowIcon from '../../assets/icons/auction/payment_arrow.svg';
 
 const EndedWonAuction = ({ auctionData }) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+
   // Get the last bid from the bids list
   const getLastBid = () => {
     if (!auctionData?.meta?.bids_list) return null;
@@ -22,6 +25,50 @@ const EndedWonAuction = ({ auctionData }) => {
   };
 
   const lastBid = getLastBid();
+
+  const handlePayment = async () => {
+    try {
+      setIsProcessing(true);
+      setError(null);
+
+      // Check if payment is already completed
+      if (auctionData.meta?.payment_status === 'completed') {
+        setError('გადახდა უკვე განხორციელებულია');
+        return;
+      }
+
+      // Initiate payment
+      const response = await fetch('/wp-json/bidspace/v1/payment/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': window.bidspaceSettings?.restNonce || '',
+        },
+        body: JSON.stringify({
+          auction_id: auctionData.id,
+          amount: lastBid?.bid_price || 0
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('გადახდის ინიციალიზაცია ვერ მოხერხდა');
+      }
+
+      const data = await response.json();
+
+      // Redirect to BOG payment page
+      if (data.links && data.links.redirect) {
+        window.location.href = data.links.redirect;
+      } else {
+        throw new Error('გადახდის ბმული ვერ მოიძებნა');
+      }
+    } catch (err) {
+      setError(err.message || 'გადახდის დროს დაფიქსირდა შეცდომა');
+      console.error('Payment error:', err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   
   // Format date to readable string
   const formatDate = (dateString) => {
@@ -71,12 +118,21 @@ const EndedWonAuction = ({ auctionData }) => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <button className='flex items-center gap-1 sm:gap-2'>
-              <span className="font-bold text-[10px] sm:text-base text-[#00a9eb] whitespace-nowrap">გადახდა</span>
+            <button 
+              className='flex items-center gap-1 sm:gap-2 disabled:opacity-50'
+              onClick={handlePayment}
+              disabled={isProcessing || auctionData.meta?.payment_status === 'completed'}
+            >
+              <span className="font-bold text-[10px] sm:text-base text-[#00a9eb] whitespace-nowrap">
+                {isProcessing ? 'იტვირთება...' : 'გადახდა'}
+              </span>
               <img src={paymentArrowIcon} alt='payment icon' className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
+        {error && (
+          <p className="text-red-500 text-sm text-center">{error}</p>
+        )}
       </div>
     </div>
   );
