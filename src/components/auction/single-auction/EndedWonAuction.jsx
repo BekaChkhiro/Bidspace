@@ -7,16 +7,13 @@ const EndedWonAuction = ({ auctionData }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Get the last bid from the bids list
   const getLastBid = () => {
     if (!auctionData?.meta?.bids_list) return null;
     
-    // Handle both array and object formats from the API
     const bidsList = Array.isArray(auctionData.meta.bids_list) 
       ? auctionData.meta.bids_list
       : Object.values(auctionData.meta.bids_list);
     
-    // Sort by bid time and get the latest
     return bidsList.sort((a, b) => {
       const timeA = new Date(a.bid_time);
       const timeB = new Date(b.bid_time);
@@ -37,6 +34,17 @@ const EndedWonAuction = ({ auctionData }) => {
         return;
       }
 
+      if (!lastBid || !lastBid.bid_price) {
+        setError('ბიდის თანხა ვერ მოიძებნა');
+        return;
+      }
+
+      console.log('Initiating payment for auction:', {
+        auctionId: auctionData.id,
+        amount: lastBid.bid_price,
+        nonce: window.bidspaceSettings?.restNonce
+      });
+
       // Initiate payment
       const response = await fetch('/wp-json/bidspace/v1/payment/initiate', {
         method: 'POST',
@@ -46,46 +54,61 @@ const EndedWonAuction = ({ auctionData }) => {
         },
         body: JSON.stringify({
           auction_id: auctionData.id,
-          amount: lastBid?.bid_price || 0
+          amount: lastBid.bid_price
         })
       });
 
+      const responseText = await response.text();
+      console.log('Payment API Response:', {
+        status: response.status,
+        text: responseText
+      });
+
       if (!response.ok) {
-        throw new Error('გადახდის ინიციალიზაცია ვერ მოხერხდა');
+        let errorMessage = 'გადახდის ინიციალიზაცია ვერ მოხერხდა';
+        try {
+          const errorData = JSON.parse(responseText);
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Error parsing success response:', e);
+        throw new Error('გადახდის სერვისიდან მიღებულია არასწორი პასუხი');
+      }
 
       // Redirect to BOG payment page
       if (data.links && data.links.redirect) {
         window.location.href = data.links.redirect;
       } else {
-        throw new Error('გადახდის ბმული ვერ მოიძებნა');
+        throw new Error('გადახდის ბმული ვერ მოიძებნა პასუხში');
       }
     } catch (err) {
-      setError(err.message || 'გადახდის დროს დაფიქსირდა შეცდომა');
       console.error('Payment error:', err);
+      setError(err.message || 'გადახდის დროს დაფიქსირდა შეცდომა');
     } finally {
       setIsProcessing(false);
     }
   };
   
-  // Format date to readable string
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const formattedDate = date.toLocaleString('ka-GE', {
+    return date.toLocaleString('ka-GE', {
       year: 'numeric',
       month: 'numeric',
-      day: 'numeric'
-    });
-    
-    const formattedTime = date.toLocaleString('ka-GE', {
+      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     });
-    
-    return `${formattedDate}, ${formattedTime}`;
   };
 
   return (

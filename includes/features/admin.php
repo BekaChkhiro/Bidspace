@@ -166,16 +166,17 @@ add_action('admin_init', function() {
     register_setting('general', 'bog_secret_key');
     register_setting('general', 'bog_is_production');
 
-    // Add BOG settings fields
+    // Add BOG settings section
     add_settings_section(
         'bog_payment_settings',
         'BOG გადახდების პარამეტრები',
         function() {
-            echo '<p>Bank of Georgia გადახდების ინტეგრაციის პარამეტრები</p>';
+            echo '<p>შეიყვანეთ BOG გადახდების სისტემის პარამეტრები</p>';
         },
         'general'
     );
 
+    // Add Client ID field
     add_settings_field(
         'bog_client_id',
         'Client ID',
@@ -187,6 +188,7 @@ add_action('admin_init', function() {
         'bog_payment_settings'
     );
 
+    // Add Secret Key field
     add_settings_field(
         'bog_secret_key',
         'Secret Key',
@@ -198,13 +200,14 @@ add_action('admin_init', function() {
         'bog_payment_settings'
     );
 
+    // Add Production Mode toggle
     add_settings_field(
         'bog_is_production',
         'Production Mode',
         function() {
-            $value = get_option('bog_is_production');
-            echo '<input type="checkbox" name="bog_is_production" value="1"' . checked(1, $value, false) . '>';
-            echo ' გააქტიურეთ პროდაქშენ რეჟიმი';
+            $value = get_option('bog_is_production', false);
+            echo '<input type="checkbox" name="bog_is_production" value="1" ' . checked(1, $value, false) . '>';
+            echo '<p class="description">მონიშნეთ რეალური გადახდების გასააქტიურებლად</p>';
         },
         'general',
         'bog_payment_settings'

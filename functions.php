@@ -12,6 +12,7 @@ require_once get_template_directory() . '/includes/features/auction.php';
 require_once get_template_directory() . '/includes/features/comments.php';
 require_once get_template_directory() . '/includes/features/admin.php';
 require_once get_template_directory() . '/includes/features/users.php';
+require_once get_template_directory() . '/includes/features/payments.php';
 require_once get_template_directory() . '/functions/wishlist.php';
 require_once get_template_directory() . '/includes/core/forum.php';
 
