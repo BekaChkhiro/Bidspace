@@ -41,8 +41,7 @@ const EndedWonAuction = ({ auctionData }) => {
 
       console.log('Initiating payment for auction:', {
         auctionId: auctionData.id,
-        amount: lastBid.bid_price,
-        nonce: window.bidspaceSettings?.restNonce
+        amount: lastBid.bid_price
       });
 
       // Initiate payment
@@ -50,12 +49,14 @@ const EndedWonAuction = ({ auctionData }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'X-WP-Nonce': window.bidspaceSettings?.restNonce || '',
         },
         body: JSON.stringify({
           auction_id: auctionData.id,
           amount: lastBid.bid_price
-        })
+        }),
+        credentials: 'include'
       });
 
       const responseText = await response.text();
@@ -85,12 +86,16 @@ const EndedWonAuction = ({ auctionData }) => {
         throw new Error('გადახდის სერვისიდან მიღებულია არასწორი პასუხი');
       }
 
-      // Redirect to BOG payment page
-      if (data.links && data.links.redirect) {
-        window.location.href = data.links.redirect;
-      } else {
-        throw new Error('გადახდის ბმული ვერ მოიძებნა პასუხში');
+      // Check if we have valid redirect URL
+      if (!data.links?.redirect) {
+        console.error('Missing redirect URL in response:', data);
+        throw new Error('გადახდის ბმული ვერ მოიძებნა');
       }
+
+      // Redirect to BOG payment page
+      console.log('Redirecting to payment page:', data.links.redirect);
+      window.location.href = data.links.redirect;
+
     } catch (err) {
       console.error('Payment error:', err);
       setError(err.message || 'გადახდის დროს დაფიქსირდა შეცდომა');
@@ -106,15 +111,14 @@ const EndedWonAuction = ({ auctionData }) => {
       month: 'numeric',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
+      minute: '2-digit'
     });
   };
 
   return (
     <div className="w-full flex flex-col py-4 sm:py-6 gap-4 sm:gap-6">
       <div className="flex justify-center items-center gap-3 sm:gap-6 px-2 sm:px-0">
-        <img src={wonAuctionIcon} alt="Auction ended icon" className="w-8 h-8 sm:w-auto sm:h-auto" />
+        <img src={wonAuctionIcon} alt="აუქციონი დასრულდა" className="w-8 h-8 sm:w-auto sm:h-auto" />
         <span className="font-normal text-sm sm:text-lg">გილოცავთ!</span>
       </div>
 
@@ -122,11 +126,12 @@ const EndedWonAuction = ({ auctionData }) => {
         <span className="w-full font-bold text-sm sm:text-lg px-2 sm:px-0">
           {auctionData?.title?.rendered || 'აუქციონის სახელი'}
         </span>
+        
         <div className="w-full flex flex-row overflow-x-auto gap-3 sm:gap-0 sm:justify-between items-center px-2 sm:px-0">
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <img src={dateIcon} alt="Date icon" className="w-4 h-4 sm:w-auto sm:h-auto" />
+            <img src={dateIcon} alt="თარიღის იკონი" className="w-4 h-4 sm:w-auto sm:h-auto" />
             <span className="text-[10px] sm:text-base whitespace-nowrap">
-              {lastBid ? formatDate(lastBid.bid_time).split(',')[0] : 'თარიღი არ არის'}
+              {lastBid ? formatDate(lastBid.bid_time) : 'თარიღი არ არის'}
             </span>
           </div>
 
@@ -137,24 +142,43 @@ const EndedWonAuction = ({ auctionData }) => {
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <span className="font-bold text-[10px] sm:text-base whitespace-nowrap">ფასი: </span>
-            <span className="text-[10px] sm:text-base whitespace-nowrap">{lastBid ? `${lastBid.bid_price}₾` : '0₾'}</span>
+            <span className="text-[10px] sm:text-base whitespace-nowrap">
+              {lastBid ? `${lastBid.bid_price}₾` : '0₾'}
+            </span>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <button 
-              className='flex items-center gap-1 sm:gap-2 disabled:opacity-50'
-              onClick={handlePayment}
-              disabled={isProcessing || auctionData.meta?.payment_status === 'completed'}
-            >
-              <span className="font-bold text-[10px] sm:text-base text-[#00a9eb] whitespace-nowrap">
-                {isProcessing ? 'იტვირთება...' : 'გადახდა'}
+            {auctionData.meta?.payment_status === 'completed' ? (
+              <span className="font-bold text-[10px] sm:text-base text-green-500 whitespace-nowrap">
+                გადახდილია
               </span>
-              <img src={paymentArrowIcon} alt='payment icon' className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
+            ) : (
+              <button 
+                className="flex items-center gap-1 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handlePayment}
+                disabled={isProcessing}
+              >
+                <span className="font-bold text-[10px] sm:text-base text-[#00a9eb] whitespace-nowrap">
+                  {isProcessing ? 'იტვირთება...' : 'გადახდა'}
+                </span>
+                <img src={paymentArrowIcon} alt="გადახდის იკონი" className="w-3 h-3 sm:w-4 sm:h-4" />
+              </button>
+            )}
           </div>
         </div>
+
         {error && (
-          <p className="text-red-500 text-sm text-center">{error}</p>
+          <div className="w-full mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm text-center">{error}</p>
+          </div>
+        )}
+
+        {auctionData.meta?.payment_status === 'pending' && (
+          <div className="w-full mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-yellow-700 text-sm text-center">
+              გთხოვთ გადაიხადოთ მოგებული ბილეთის საფასური 24 საათის განმავლობაში
+            </p>
+          </div>
         )}
       </div>
     </div>

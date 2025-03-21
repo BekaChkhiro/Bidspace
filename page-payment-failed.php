@@ -3,54 +3,27 @@
  * Template Name: Payment Failed
  */
 
-get_header();
+get_header(); ?>
 
-$order_id = isset($_GET['order_id']) ? sanitize_text_field($_GET['order_id']) : '';
-
-// Get auction details by order ID
-$args = array(
-    'post_type' => 'auction',
-    'meta_query' => array(
-        array(
-            'key' => 'payment_order_id',
-            'value' => $order_id
-        )
-    )
-);
-
-$auctions = get_posts($args);
-$auction = !empty($auctions) ? $auctions[0] : null;
-?>
-
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-        <div class="text-center mb-6">
-            <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">გადახდა ვერ განხორციელდა</h2>
-            <?php if ($auction): ?>
-                <p class="text-gray-600 mb-4">
-                    აუქციონი: <?php echo esc_html($auction->post_title); ?>
-                </p>
-            <?php endif; ?>
-            <p class="text-red-600">გთხოვთ სცადოთ ხელახლა</p>
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+        <div class="text-red-500 text-5xl mb-4">
+            <i class="fas fa-times-circle"></i>
         </div>
-
-        <div class="space-y-4">
-            <div class="text-center">
-                <?php if ($auction): ?>
-                    <a href="<?php echo esc_url(get_permalink($auction->ID)); ?>" 
-                       class="inline-block bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors">
-                        აუქციონზე დაბრუნება
-                    </a>
-                <?php else: ?>
-                    <a href="<?php echo esc_url(home_url('/')); ?>" 
-                       class="inline-block bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors">
-                        მთავარ გვერდზე დაბრუნება
-                    </a>
-                <?php endif; ?>
-            </div>
+        <h1 class="text-2xl font-bold mb-4">გადახდა ვერ განხორციელდა</h1>
+        <p class="text-gray-600 mb-6">
+            სამწუხაროდ, გადახდის დროს დაფიქსირდა შეცდომა.<br>
+            გთხოვთ სცადოთ თავიდან ან დაგვიკავშირდეთ თუ პრობლემა განმეორდება.
+        </p>
+        <div class="space-x-4">
+            <a href="<?php echo esc_url(home_url('/auctions')); ?>" 
+               class="inline-block bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors">
+                აუქციონებზე დაბრუნება
+            </a>
+            <a href="<?php echo esc_url(home_url('/contact')); ?>" 
+               class="inline-block bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition-colors">
+                დახმარება
+            </a>
         </div>
     </div>
 </div>

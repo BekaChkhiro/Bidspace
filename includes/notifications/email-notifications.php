@@ -676,3 +676,88 @@ add_action('rest_api_init', function() {
         }
      ));
 });
+
+// Payment notifications
+add_action('bidspace_payment_completed', 'send_payment_success_notification');
+add_action('bidspace_payment_failed', 'send_payment_failed_notification');
+add_action('bidspace_payment_cancelled', 'send_payment_cancelled_notification');
+
+function send_payment_success_notification($auction_id) {
+    $auction = get_post($auction_id);
+    if (!$auction) return;
+
+    $user_id = get_current_user_id();
+    $user = get_userdata($user_id);
+    if (!$user) return;
+
+    $amount = get_post_meta($auction_id, 'payment_amount', true);
+    $order_id = get_post_meta($auction_id, 'payment_order_id', true);
+
+    $subject = 'გადახდა წარმატებით დასრულდა';
+    $message = sprintf(
+        'გამარჯობა %s,<br><br>' .
+        'თქვენი გადახდა აუქციონისთვის "%s" წარმატებით დასრულდა.<br>' .
+        'გადახდის დეტალები:<br>' .
+        'თანხა: %s₾<br>' .
+        'გადახდის ID: %s<br><br>' .
+        'გმადლობთ Bidspace-ით სარგებლობისთვის!',
+        $user->display_name,
+        $auction->post_title,
+        number_format($amount, 2),
+        $order_id
+    );
+
+    $headers = array('Content-Type: text/html; charset=UTF-8');
+    wp_mail($user->user_email, $subject, $message, $headers);
+}
+
+function send_payment_failed_notification($auction_id) {
+    $auction = get_post($auction_id);
+    if (!$auction) return;
+
+    $user_id = get_current_user_id();
+    $user = get_userdata($user_id);
+    if (!$user) return;
+
+    $amount = get_post_meta($auction_id, 'payment_amount', true);
+
+    $subject = 'გადახდა ვერ განხორციელდა';
+    $message = sprintf(
+        'გამარჯობა %s,<br><br>' .
+        'სამწუხაროდ, თქვენი გადახდა აუქციონისთვის "%s" ვერ განხორციელდა.<br>' .
+        'გთხოვთ სცადოთ ხელახლა.<br>' .
+        'თანხა: %s₾<br><br>' .
+        'თუ პრობლემა განმეორდება, დაგვიკავშირდით.',
+        $user->display_name,
+        $auction->post_title,
+        number_format($amount, 2)
+    );
+
+    $headers = array('Content-Type: text/html; charset=UTF-8');
+    wp_mail($user->user_email, $subject, $message, $headers);
+}
+
+function send_payment_cancelled_notification($auction_id) {
+    $auction = get_post($auction_id);
+    if (!$auction) return;
+
+    $user_id = get_current_user_id();
+    $user = get_userdata($user_id);
+    if (!$user) return;
+
+    $amount = get_post_meta($auction_id, 'payment_amount', true);
+
+    $subject = 'გადახდა გაუქმდა';
+    $message = sprintf(
+        'გამარჯობა %s,<br><br>' .
+        'თქვენი გადახდა აუქციონისთვის "%s" გაუქმდა.<br>' .
+        'თანხა: %s₾<br><br>' .
+        'შეგიძლიათ ნებისმიერ დროს სცადოთ გადახდა ხელახლა.',
+        $user->display_name,
+        $auction->post_title,
+        number_format($amount, 2)
+    );
+
+    $headers = array('Content-Type: text/html; charset=UTF-8');
+    wp_mail($user->user_email, $subject, $message, $headers);
+}
