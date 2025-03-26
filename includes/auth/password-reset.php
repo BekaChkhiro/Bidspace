@@ -175,31 +175,49 @@ function bidspace_verify_code($request) {
 
 function bidspace_reset_password($request) {
     // Debug log
-    error_log('Password reset request received. Raw data: ' . print_r($request->get_body(), true));
+    error_log('Password reset request received');
     
+    // Get JSON data
     $json = $request->get_json_params();
-    error_log('Parsed JSON data: ' . print_r($json, true));
+    error_log('Raw JSON data: ' . print_r($json, true));
     
+    // Validate JSON data exists
+    if (empty($json)) {
+        error_log('No JSON data received');
+        return new WP_Error(
+            'missing_data',
+            'Missing required data',
+            array(
+                'status' => 400,
+                'debug' => 'No JSON data received in request'
+            )
+        );
+    }
+
+    // Extract and sanitize fields
     $email = isset($json['email']) ? sanitize_email($json['email']) : '';
     $code = isset($json['code']) ? sanitize_text_field($json['code']) : '';
     $password = isset($json['password']) ? sanitize_text_field($json['password']) : '';
 
-    error_log('Processed data - Email: ' . $email . ', Code exists: ' . (!empty($code) ? 'yes' : 'no') . ', Password exists: ' . (!empty($password) ? 'yes' : 'no'));
+    error_log(sprintf(
+        'Processed fields - Email: %s, Code: %s, Password length: %d',
+        $email,
+        $code,
+        strlen($password)
+    ));
 
-    // Validate all required fields are present and not empty
+    // Validate required fields
     if (empty($email) || empty($code) || empty($password)) {
-        error_log('Missing required fields - Email: ' . (!empty($email) ? 'yes' : 'no') . 
-                 ', Code: ' . (!empty($code) ? 'yes' : 'no') . 
-                 ', Password: ' . (!empty($password) ? 'yes' : 'no'));
+        error_log('Missing required fields');
         return new WP_Error(
-            'missing_data', 
-            'გთხოვთ მიუთითოთ ყველა საჭირო ველი', 
+            'missing_data',
+            'Missing required data',
             array(
                 'status' => 400,
-                'received' => array(
-                    'email' => !empty($email),
-                    'code' => !empty($code),
-                    'password' => !empty($password)
+                'debug' => array(
+                    'email_present' => !empty($email),
+                    'code_present' => !empty($code),
+                    'password_present' => !empty($password)
                 )
             )
         );
@@ -207,19 +225,21 @@ function bidspace_reset_password($request) {
 
     $user = get_user_by('email', $email);
     if (!$user) {
-        return new WP_Error('user_not_found', 'მომხმარებელი ვერ მოიძებნა', array('status' => 404));
+        error_log('User not found for email: ' . $email);
+        return new WP_Error('user_not_found', 'User not found', array('status' => 404));
     }
 
     $code_data = get_user_meta($user->ID, 'password_reset_code', true);
-    error_log('Stored code data: ' . print_r($code_data, true));
+    error_log('Retrieved code data: ' . print_r($code_data, true));
     
     if (!$code_data || time() > $code_data['expires']) {
-        return new WP_Error('code_expired', 'კოდს ვადა გაუვიდა', array('status' => 400));
+        error_log('Code expired or not found');
+        return new WP_Error('code_expired', 'Code has expired', array('status' => 400));
     }
 
     if ($code !== (string)$code_data['code']) {
-        error_log('Code mismatch - Received: ' . $code . ', Stored: ' . $code_data['code']);
-        return new WP_Error('invalid_code', 'არასწორი კოდი', array('status' => 400));
+        error_log(sprintf('Code mismatch - Received: %s, Stored: %s', $code, $code_data['code']));
+        return new WP_Error('invalid_code', 'Invalid code', array('status' => 400));
     }
 
     // Reset the password
@@ -228,9 +248,10 @@ function bidspace_reset_password($request) {
     // Clear the reset code
     delete_user_meta($user->ID, 'password_reset_code');
 
+    error_log('Password successfully reset for user: ' . $email);
     return array(
         'success' => true,
-        'message' => 'პაროლი წარმატებით შეიცვალა'
+        'message' => 'Password has been reset successfully'
     );
 }
 
