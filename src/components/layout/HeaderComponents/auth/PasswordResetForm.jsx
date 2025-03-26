@@ -125,6 +125,13 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         setDebugInfo(data.debug_info);
       }
 
+      // Clear verification code and set new step
+      setUserData(prev => ({
+        ...prev,
+        verification_code: '',
+        password: '',
+        password_confirm: ''
+      }));
       setStep('newPassword');
       if (timer) clearInterval(timer);
     } catch (error) {
@@ -167,10 +174,6 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       
       if (!response.ok) {
         throw new Error(data.message || 'პაროლის შეცვლა ვერ მოხერხდა');
-      }
-
-      if (data.debug_info) {
-        setDebugInfo(data.debug_info);
       }
 
       // If successful, show success message and close the form
