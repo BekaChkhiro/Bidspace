@@ -174,11 +174,17 @@ function bidspace_verify_code($request) {
 }
 
 function bidspace_reset_password($request) {
+    // Debug log
+    error_log('Password reset request received. Raw data: ' . print_r($request->get_body(), true));
+    
     $json = $request->get_json_params();
+    error_log('Parsed JSON data: ' . print_r($json, true));
     
     $email = isset($json['email']) ? sanitize_email($json['email']) : '';
     $code = isset($json['code']) ? sanitize_text_field($json['code']) : '';
     $password = isset($json['password']) ? sanitize_text_field($json['password']) : '';
+
+    error_log('Processed data - Email: ' . $email . ', Code exists: ' . (!empty($code) ? 'yes' : 'no') . ', Password exists: ' . (!empty($password) ? 'yes' : 'no'));
 
     if (!$email || !$code || !$password) {
         return new WP_Error(
@@ -201,12 +207,14 @@ function bidspace_reset_password($request) {
     }
 
     $code_data = get_user_meta($user->ID, 'password_reset_code', true);
+    error_log('Stored code data: ' . print_r($code_data, true));
     
     if (!$code_data || time() > $code_data['expires']) {
         return new WP_Error('code_expired', 'კოდს ვადა გაუვიდა', array('status' => 400));
     }
 
     if ($code !== (string)$code_data['code']) {
+        error_log('Code mismatch - Received: ' . $code . ', Stored: ' . $code_data['code']);
         return new WP_Error('invalid_code', 'არასწორი კოდი', array('status' => 400));
     }
 

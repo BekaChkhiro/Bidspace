@@ -125,13 +125,17 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         setDebugInfo(data.debug_info);
       }
 
-      // Clear verification code and set new step
+      // Store the verified code
+      const verifiedCode = userData.verification_code;
+
+      // Reset form fields but keep the email and verified code
       setUserData(prev => ({
         ...prev,
-        verification_code: '',
         password: '',
-        password_confirm: ''
+        password_confirm: '',
+        verification_code: verifiedCode // Keep the verified code
       }));
+      
       setStep('newPassword');
       if (timer) clearInterval(timer);
     } catch (error) {
@@ -156,6 +160,12 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     setErrorMessage('');
     setDebugInfo(null);
 
+    console.log('Sending password reset request with data:', {
+      email: userData.email,
+      code: userData.verification_code,
+      password: userData.password
+    });
+
     try {
       const response = await fetch('/wp-json/bidspace/v1/reset-password', {
         method: 'POST',
@@ -171,6 +181,8 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       });
 
       const data = await response.json();
+      
+      console.log('Server response:', data);
       
       if (!response.ok) {
         throw new Error(data.message || 'პაროლის შეცვლა ვერ მოხერხდა');
