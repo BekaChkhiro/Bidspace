@@ -186,9 +186,13 @@ function bidspace_reset_password($request) {
 
     error_log('Processed data - Email: ' . $email . ', Code exists: ' . (!empty($code) ? 'yes' : 'no') . ', Password exists: ' . (!empty($password) ? 'yes' : 'no'));
 
-    if (!$email || !$code || !$password) {
+    // Validate all required fields are present and not empty
+    if (empty($email) || empty($code) || empty($password)) {
+        error_log('Missing required fields - Email: ' . (!empty($email) ? 'yes' : 'no') . 
+                 ', Code: ' . (!empty($code) ? 'yes' : 'no') . 
+                 ', Password: ' . (!empty($password) ? 'yes' : 'no'));
         return new WP_Error(
-            'invalid_request', 
+            'missing_data', 
             'გთხოვთ მიუთითოთ ყველა საჭირო ველი', 
             array(
                 'status' => 400,
