@@ -95,10 +95,11 @@ function bidspace_request_password_reset($request) {
     // Email headers
     $headers = array(
         'Content-Type: text/html; charset=UTF-8',
-        'From: Bidspace <noreply@bidspace.ge>'
+        'From: Bidspace <noreply@bidspace.ge>',
+        'Reply-To: noreply@bidspace.ge'
     );
 
-    // Try to send the email
+   // Try to send the email
     add_filter('wp_mail_content_type', function() { return "text/html"; });
     $mail_sent = wp_mail($to, $subject, $message_html, $headers);
     remove_filter('wp_mail_content_type', function() { return "text/html"; });

@@ -511,6 +511,60 @@ add_action('save_post_auction', function($post_id, $post, $update) {
     }
 }, 10, 3);
 
+// Add BOG Payment Settings
+function bidspace_add_bog_settings() {
+    add_settings_section(
+        'bidspace_bog_settings',
+        'BOG გადახდის პარამეტრები',
+        function() {
+            echo '<p>Bank of Georgia გადახდის სისტემის პარამეტრები</p>';
+        },
+        'general'
+    );
+
+    // Client ID
+    add_settings_field(
+        'bog_client_id',
+        'Client ID',
+        function() {
+            $value = get_option('bog_client_id');
+            echo '<input type="text" id="bog_client_id" name="bog_client_id" value="' . esc_attr($value) . '" class="regular-text">';
+        },
+        'general',
+        'bidspace_bog_settings'
+    );
+
+    // Secret Key
+    add_settings_field(
+        'bog_secret_key',
+        'Secret Key',
+        function() {
+            $value = get_option('bog_secret_key');
+            echo '<input type="password" id="bog_secret_key" name="bog_secret_key" value="' . esc_attr($value) . '" class="regular-text">';
+        },
+        'general',
+        'bidspace_bog_settings'
+    );
+
+    // Production Mode
+    add_settings_field(
+        'bog_is_production',
+        'Production Mode',
+        function() {
+            $value = get_option('bog_is_production', false);
+            echo '<input type="checkbox" id="bog_is_production" name="bog_is_production" value="1" ' . checked(1, $value, false) . '>';
+            echo '<label for="bog_is_production"> Enable production mode</label>';
+        },
+        'general',
+        'bidspace_bog_settings'
+    );
+
+    register_setting('general', 'bog_client_id');
+    register_setting('general', 'bog_secret_key');
+    register_setting('general', 'bog_is_production');
+}
+add_action('admin_init', 'bidspace_add_bog_settings');
+
 
 
 

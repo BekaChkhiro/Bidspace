@@ -103,6 +103,11 @@ class BOG_Payments {
             return $token;
         }
 
+        // The OAuth endpoint is separate from the API endpoints
+        $oauth_url = $this->is_production 
+            ? 'https://oauth2.bog.ge/auth/realms/bog/protocol/openid-connect/token'
+            : 'https://oauth2-test.bog.ge/auth/realms/bog/protocol/openid-connect/token';
+
         $args = array(
             'method' => 'POST',
             'timeout' => 30,
@@ -117,21 +122,35 @@ class BOG_Payments {
             )
         );
 
-        $response = wp_remote_post($this->api_base_url . '/oauth2/token', $args);
-
+        error_log('BOG OAuth Request URL: ' . $oauth_url);
+        error_log('BOG OAuth Request Body: ' . json_encode($args['body']));
+        
+        $response = wp_remote_post($oauth_url, $args);
+        
         if (is_wp_error($response)) {
+            error_log('BOG OAuth Error: ' . $response->get_error_message());
             throw new Exception($response->get_error_message());
         }
 
-        $body = json_decode(wp_remote_retrieve_body($response), true);
+        $body = wp_remote_retrieve_body($response);
+        $status = wp_remote_retrieve_response_code($response);
+        
+        error_log('BOG OAuth Response Status: ' . $status);
+        error_log('BOG OAuth Response Body: ' . $body);
 
-        if (!isset($body['access_token'])) {
-            throw new Exception('Failed to get access token');
+        $data = json_decode($body, true);
+        
+        if ($status !== 200 || !isset($data['access_token'])) {
+            $error_msg = isset($data['error_description']) ? $data['error_description'] : 'Unknown error';
+            error_log('BOG OAuth Error: ' . $error_msg);
+            throw new Exception('Failed to get access token: ' . $error_msg);
         }
 
-        set_transient($cache_key, $body['access_token'], HOUR_IN_SECONDS); // Cache for 1 hour
-
-        return $body['access_token'];
+        // Cache token for slightly less than its expiry time if provided, otherwise 1 hour
+        $expires_in = isset($data['expires_in']) ? (int)$data['expires_in'] - 60 : HOUR_IN_SECONDS;
+        set_transient($cache_key, $data['access_token'], $expires_in);
+        
+        return $data['access_token'];
     }
 
     public function verify_payment($order_id) {
