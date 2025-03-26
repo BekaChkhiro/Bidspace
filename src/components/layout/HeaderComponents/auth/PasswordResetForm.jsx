@@ -135,18 +135,13 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
   };
 
   const resetPassword = async () => {
-    if (!userData.password || !userData.password_confirm) {
-      setErrorMessage('გთხოვთ შეავსოთ ყველა ველი');
+    if (!userData.password) {
+      setErrorMessage('გთხოვთ შეიყვანოთ ახალი პაროლი');
       return;
     }
 
     if (userData.password !== userData.password_confirm) {
       setErrorMessage('პაროლები არ ემთხვევა');
-      return;
-    }
-
-    if (userData.password.length < 6) {
-      setErrorMessage('პაროლი უნდა შეიცავდეს მინიმუმ 6 სიმბოლოს');
       return;
     }
 
@@ -158,7 +153,8 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       const response = await fetch('/wp-json/bidspace/v1/reset-password', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           email: userData.email,
@@ -177,6 +173,8 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         setDebugInfo(data.debug_info);
       }
 
+      // If successful, show success message and close the form
+      alert('პაროლი წარმატებით შეიცვალა');
       setIsPasswordReset(false);
     } catch (error) {
       console.error('Error resetting password:', error);

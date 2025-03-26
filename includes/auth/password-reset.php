@@ -174,12 +174,25 @@ function bidspace_verify_code($request) {
 }
 
 function bidspace_reset_password($request) {
-    $email = sanitize_email($request->get_param('email'));
-    $code = $request->get_param('code');
-    $password = $request->get_param('password');
+    $json = $request->get_json_params();
+    
+    $email = isset($json['email']) ? sanitize_email($json['email']) : '';
+    $code = isset($json['code']) ? sanitize_text_field($json['code']) : '';
+    $password = isset($json['password']) ? sanitize_text_field($json['password']) : '';
 
     if (!$email || !$code || !$password) {
-        return new WP_Error('invalid_request', 'გთხოვთ მიუთითოთ ყველა საჭირო ველი', array('status' => 400));
+        return new WP_Error(
+            'invalid_request', 
+            'გთხოვთ მიუთითოთ ყველა საჭირო ველი', 
+            array(
+                'status' => 400,
+                'received' => array(
+                    'email' => !empty($email),
+                    'code' => !empty($code),
+                    'password' => !empty($password)
+                )
+            )
+        );
     }
 
     $user = get_user_by('email', $email);
