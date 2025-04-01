@@ -125,17 +125,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         setDebugInfo(data.debug_info);
       }
 
-      // Store the verified code
-      const verifiedCode = userData.verification_code;
-
-      // Reset form fields but keep the email and verified code
-      setUserData(prev => ({
-        ...prev,
-        password: '',
-        password_confirm: '',
-        verification_code: verifiedCode // Keep the verified code
-      }));
-      
+      // Move to password step without resetting fields
       setStep('newPassword');
       if (timer) clearInterval(timer);
     } catch (error) {
@@ -161,6 +151,14 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       return;
     }
 
+    // Log the full userData state
+    console.log('Current userData state:', {
+      email: userData.email,
+      code: userData.verification_code,
+      password: userData.password,
+      password_confirm: userData.password_confirm
+    });
+
     setLoading(true);
     setErrorMessage('');
     setDebugInfo(null);
@@ -172,7 +170,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         code: userData.verification_code,
         password: userData.password
       };
-      console.log('Sending data to server:', requestData);
+      console.log('Sending data to server:', JSON.stringify(requestData));
 
       const response = await fetch('/wp-json/bidspace/v1/reset-password', {
         method: 'POST',
@@ -182,6 +180,10 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         },
         body: JSON.stringify(requestData)
       });
+
+      // Log raw response
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
 
       const data = await response.json();
       console.log('Full server response:', {

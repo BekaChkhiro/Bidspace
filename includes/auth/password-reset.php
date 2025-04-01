@@ -181,13 +181,17 @@ function bidspace_reset_password($request) {
     error_log('Raw body: ' . $request->get_body());
     
     // Get the raw data from the request
-    $data = $request->get_json_params();
-    error_log('JSON params: ' . print_r($data, true));
+    $raw_data = $request->get_body();
+    error_log('Raw request body: ' . $raw_data);
+    
+    $data = json_decode($raw_data, true);
+    error_log('Decoded JSON data: ' . print_r($data, true));
     
     // If JSON parsing failed, try getting data from regular POST
     if (empty($data)) {
+        error_log('JSON parsing failed, trying POST params');
         $data = $request->get_params();
-        error_log('Fallback to POST params: ' . print_r($data, true));
+        error_log('POST params: ' . print_r($data, true));
     }
 
     // Get password from the request
@@ -218,7 +222,8 @@ function bidspace_reset_password($request) {
                         'password' => isset($data['password']),
                         'email_empty' => empty($data['email']),
                         'code_empty' => empty($data['code']),
-                        'password_empty' => empty($password)
+                        'password_empty' => empty($password),
+                        'raw_data' => $raw_data
                     )
                 )
             )
