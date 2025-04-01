@@ -156,6 +156,11 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       return;
     }
 
+    if (!userData.email || !userData.verification_code) {
+      setErrorMessage('მონაცემები არასრულია, სცადეთ თავიდან');
+      return;
+    }
+
     setLoading(true);
     setErrorMessage('');
     setDebugInfo(null);
@@ -175,6 +180,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
+        credentials: 'same-origin',
         body: JSON.stringify(requestData)
       });
 
@@ -182,7 +188,6 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       console.log('Server response:', data);
 
       if (!response.ok) {
-        // Extract debug info if available
         if (data.data && data.data.debug) {
           setDebugInfo(data.data.debug);
         }
