@@ -188,10 +188,15 @@ function bidspace_reset_password($request) {
         $data = $request->get_params();
     }
 
-    // Validate required fields and check for both password and new_password fields
-    $password = !empty($data['new_password']) ? $data['new_password'] : (!empty($data['password']) ? $data['password'] : '');
+    // Get password from the request
+    $password = !empty($data['password']) ? $data['password'] : '';
     
     if (empty($data['email']) || empty($data['code']) || empty($password)) {
+        error_log('Missing required fields:');
+        error_log('Email: ' . (empty($data['email']) ? 'missing' : 'present'));
+        error_log('Code: ' . (empty($data['code']) ? 'missing' : 'present'));
+        error_log('Password: ' . (empty($password) ? 'missing' : 'present'));
+        
         return new WP_Error(
             'missing_data',
             'გთხოვთ მიუთითოთ ყველა საჭირო ველი',
@@ -249,7 +254,12 @@ function bidspace_reset_password($request) {
     }
 
     // Reset the password
-    wp_set_password($password, $user->ID);
+    $result = wp_set_password($password, $user->ID);
+    
+    if (is_wp_error($result)) {
+        error_log('Failed to reset password: ' . $result->get_error_message());
+        return new WP_Error('password_reset_failed', 'პაროლის შეცვლა ვერ მოხერხდა', array('status' => 500));
+    }
     
     // Clear the reset code
     delete_user_meta($user->ID, 'password_reset_code');

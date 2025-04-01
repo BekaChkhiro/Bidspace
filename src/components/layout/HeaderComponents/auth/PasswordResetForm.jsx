@@ -165,14 +165,6 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     setErrorMessage('');
     setDebugInfo(null);
 
-    const requestData = {
-      email: userData.email,
-      code: userData.verification_code,
-      password: userData.password
-    };
-
-    console.log('Sending password reset request with data:', requestData);
-
     try {
       const response = await fetch('/wp-json/bidspace/v1/reset-password', {
         method: 'POST',
@@ -180,8 +172,11 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        credentials: 'same-origin',
-        body: JSON.stringify(requestData)
+        body: JSON.stringify({
+          email: userData.email,
+          code: userData.verification_code,
+          password: userData.password
+        })
       });
 
       const data = await response.json();
@@ -190,6 +185,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       if (!response.ok) {
         if (data.data && data.data.debug) {
           setDebugInfo(data.data.debug);
+          console.error('Debug info:', data.data.debug);
         }
         throw new Error(data.message || 'პაროლის შეცვლა ვერ მოხერხდა');
       }
@@ -200,9 +196,8 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     } catch (error) {
       console.error('Error resetting password:', error);
       setErrorMessage(error.message || 'პაროლის შეცვლა ვერ მოხერხდა');
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   return (
