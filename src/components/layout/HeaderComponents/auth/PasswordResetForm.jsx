@@ -166,13 +166,6 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     try {
       // Add a small delay to ensure all state updates are complete
       await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Create FormData object for admin-ajax.php
-      const formData = new FormData();
-      formData.append('action', 'reset_password_ajax');
-      formData.append('email', userData.email);
-      formData.append('code', userData.verification_code);
-      formData.append('password', userData.password);
       
       console.log('Sending data to server:', {
         email: userData.email,
@@ -180,9 +173,16 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         password: userData.password ? '(password provided)' : '(no password)'
       });
 
-      const response = await fetch('/wp-admin/admin-ajax.php', {
+      const response = await fetch('/wp-json/bidspace/v1/reset-password', {
         method: 'POST',
-        body: formData
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: userData.email,
+          code: userData.verification_code,
+          password: userData.password
+        })
       });
 
       // Log raw response
@@ -192,12 +192,12 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       const data = await response.json();
       console.log('Full server response:', data);
 
-      if (!data.success) {
+      if (!response.ok) {
         if (data.data && data.data.debug) {
           setDebugInfo(data.data.debug);
           console.error('Debug info:', data.data.debug);
         }
-        throw new Error(data.data?.message || 'პაროლის შეცვლა ვერ მოხერხდა');
+        throw new Error(data.message || 'პაროლის შეცვლა ვერ მოხერხდა');
       }
 
       // If successful, show success message and close the form
