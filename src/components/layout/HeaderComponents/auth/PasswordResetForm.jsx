@@ -164,6 +164,9 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     setDebugInfo(null);
 
     try {
+      // Add a small delay to ensure all state updates are complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Log the data being sent
       const requestData = {
         email: userData.email,

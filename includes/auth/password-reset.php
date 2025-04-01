@@ -178,60 +178,35 @@ function bidspace_reset_password($request) {
     error_log('Password reset request received');
     error_log('Request method: ' . $request->get_method());
     error_log('Content type: ' . $request->get_header('content-type'));
-    error_log('Raw body: ' . $request->get_body());
     
-    // Get the raw data from the request
-    $raw_data = $request->get_body();
-    error_log('Raw request body: ' . $raw_data);
-    
-    $data = json_decode($raw_data, true);
-    error_log('Decoded JSON data: ' . print_r($data, true));
-    
-    // If JSON parsing failed, try getting data from regular POST
-    if (empty($data)) {
-        error_log('JSON parsing failed, trying POST params');
-        $data = $request->get_params();
-        error_log('POST params: ' . print_r($data, true));
-    }
+    // Get parameters directly from the request
+    $email = $request->get_param('email');
+    $code = $request->get_param('code');
+    $password = $request->get_param('password');
 
-    // Get password from the request
-    $password = !empty($data['password']) ? $data['password'] : '';
+    // Log received parameters
+    error_log('Received parameters:');
+    error_log('Email: ' . ($email ? 'present' : 'missing'));
+    error_log('Code: ' . ($code ? 'present' : 'missing'));
+    error_log('Password: ' . ($password ? 'present' : 'missing'));
     
-    // Log all received fields
-    error_log('Received fields:');
-    error_log('email: ' . (isset($data['email']) ? 'set' : 'not set'));
-    error_log('code: ' . (isset($data['code']) ? 'set' : 'not set'));
-    error_log('password: ' . (isset($data['password']) ? 'set' : 'not set'));
-    error_log('password length: ' . strlen($password));
-    
-    if (empty($data['email']) || empty($data['code']) || empty($password)) {
-        error_log('Missing required fields:');
-        error_log('Email: ' . (empty($data['email']) ? 'missing' : 'present'));
-        error_log('Code: ' . (empty($data['code']) ? 'missing' : 'present'));
-        error_log('Password: ' . (empty($password) ? 'missing' : 'present'));
-        
+    if (empty($email) || empty($code) || empty($password)) {
         return new WP_Error(
             'missing_data',
             'გთხოვთ მიუთითოთ ყველა საჭირო ველი',
             array(
                 'status' => 400,
                 'debug' => array(
-                    'received_data' => array(
-                        'email' => isset($data['email']),
-                        'code' => isset($data['code']),
-                        'password' => isset($data['password']),
-                        'email_empty' => empty($data['email']),
-                        'code_empty' => empty($data['code']),
-                        'password_empty' => empty($password),
-                        'raw_data' => $raw_data
-                    )
+                    'email_present' => !empty($email),
+                    'code_present' => !empty($code),
+                    'password_present' => !empty($password)
                 )
             )
         );
     }
 
-    $email = sanitize_email($data['email']);
-    $code = sanitize_text_field($data['code']);
+    $email = sanitize_email($email);
+    $code = sanitize_text_field($code);
     $password = sanitize_text_field($password);
 
     error_log('Processed data:');
