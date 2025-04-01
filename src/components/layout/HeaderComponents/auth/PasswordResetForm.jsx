@@ -166,21 +166,29 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
     setDebugInfo(null);
 
     try {
+      // Log the data being sent
+      const requestData = {
+        email: userData.email,
+        code: userData.verification_code,
+        password: userData.password
+      };
+      console.log('Sending data to server:', requestData);
+
       const response = await fetch('/wp-json/bidspace/v1/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          email: userData.email,
-          code: userData.verification_code,
-          password: userData.password
-        })
+        body: JSON.stringify(requestData)
       });
 
       const data = await response.json();
-      console.log('Server response:', data);
+      console.log('Full server response:', {
+        status: response.status,
+        ok: response.ok,
+        data: data
+      });
 
       if (!response.ok) {
         if (data.data && data.data.debug) {

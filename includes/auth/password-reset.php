@@ -182,14 +182,23 @@ function bidspace_reset_password($request) {
     
     // Get the raw data from the request
     $data = $request->get_json_params();
+    error_log('JSON params: ' . print_r($data, true));
     
     // If JSON parsing failed, try getting data from regular POST
     if (empty($data)) {
         $data = $request->get_params();
+        error_log('Fallback to POST params: ' . print_r($data, true));
     }
 
     // Get password from the request
     $password = !empty($data['password']) ? $data['password'] : '';
+    
+    // Log all received fields
+    error_log('Received fields:');
+    error_log('email: ' . (isset($data['email']) ? 'set' : 'not set'));
+    error_log('code: ' . (isset($data['code']) ? 'set' : 'not set'));
+    error_log('password: ' . (isset($data['password']) ? 'set' : 'not set'));
+    error_log('password length: ' . strlen($password));
     
     if (empty($data['email']) || empty($data['code']) || empty($password)) {
         error_log('Missing required fields:');
@@ -203,10 +212,14 @@ function bidspace_reset_password($request) {
             array(
                 'status' => 400,
                 'debug' => array(
-                    'received_data' => $data,
-                    'email_present' => !empty($data['email']),
-                    'code_present' => !empty($data['code']),
-                    'password_present' => !empty($password)
+                    'received_data' => array(
+                        'email' => isset($data['email']),
+                        'code' => isset($data['code']),
+                        'password' => isset($data['password']),
+                        'email_empty' => empty($data['email']),
+                        'code_empty' => empty($data['code']),
+                        'password_empty' => empty($password)
+                    )
                 )
             )
         );
