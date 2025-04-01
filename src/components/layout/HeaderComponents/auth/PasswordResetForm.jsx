@@ -167,20 +167,21 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       // Add a small delay to ensure all state updates are complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Create FormData object
-      const formData = new URLSearchParams();
+      // Create FormData object for admin-ajax.php
+      const formData = new FormData();
+      formData.append('action', 'reset_password_ajax');
       formData.append('email', userData.email);
       formData.append('code', userData.verification_code);
       formData.append('password', userData.password);
       
-      console.log('Sending data to server:', formData.toString());
+      console.log('Sending data to server:', {
+        email: userData.email,
+        code: userData.verification_code,
+        password: userData.password ? '(password provided)' : '(no password)'
+      });
 
-      const response = await fetch('/wp-json/bidspace/v1/reset-password', {
+      const response = await fetch('/wp-admin/admin-ajax.php', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
-        },
         body: formData
       });
 
@@ -189,18 +190,14 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
 
       const data = await response.json();
-      console.log('Full server response:', {
-        status: response.status,
-        ok: response.ok,
-        data: data
-      });
+      console.log('Full server response:', data);
 
-      if (!response.ok) {
+      if (!data.success) {
         if (data.data && data.data.debug) {
           setDebugInfo(data.data.debug);
           console.error('Debug info:', data.data.debug);
         }
-        throw new Error(data.message || 'პაროლის შეცვლა ვერ მოხერხდა');
+        throw new Error(data.data?.message || 'პაროლის შეცვლა ვერ მოხერხდა');
       }
 
       // If successful, show success message and close the form

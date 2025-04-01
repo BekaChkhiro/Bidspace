@@ -297,3 +297,71 @@ function bidspace_reset_password($request) {
 }
 
 add_action('rest_api_init', 'bidspace_register_password_reset_endpoints');
+
+// Add AJAX handler for password reset
+function reset_password_ajax_handler() {
+    // Get parameters from POST
+    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+    $code = isset($_POST['code']) ? sanitize_text_field($_POST['code']) : '';
+    $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
+    
+    // Log received parameters
+    error_log('AJAX Password reset request received');
+    error_log('Email: ' . ($email ? $email : 'missing'));
+    error_log('Code: ' . ($code ? $code : 'missing'));
+    error_log('Password length: ' . ($password ? strlen($password) : 0));
+    
+    // Check if required parameters are present
+    if (empty($email) || empty($code) || empty($password)) {
+        wp_send_json_error(array(
+            'message' => 'გთხოვთ მიუთითოთ ყველა საჭირო ველი',
+            'debug' => array(
+                'email_present' => !empty($email),
+                'code_present' => !empty($code),
+                'password_present' => !empty($password)
+            )
+        ), 400);
+        wp_die();
+    }
+    
+    $user = get_user_by('email', $email);
+    if (!$user) {
+        error_log('User not found for email: ' . $email);
+        wp_send_json_error(array('message' => 'მომხმარებელი ვერ მოიძებნა'), 404);
+        wp_die();
+    }
+
+    $code_data = get_user_meta($user->ID, 'password_reset_code', true);
+    error_log('Retrieved code data: ' . print_r($code_data, true));
+    
+    if (!$code_data || !is_array($code_data) || !isset($code_data['code']) || !isset($code_data['expires'])) {
+        error_log('Invalid or missing code data structure');
+        wp_send_json_error(array('message' => 'კოდი არასწორია'), 400);
+        wp_die();
+    }
+    
+    if (time() > $code_data['expires']) {
+        error_log('Code expired. Current time: ' . time() . ', Expiry: ' . $code_data['expires']);
+        wp_send_json_error(array('message' => 'კოდს ვადა გაუვიდა'), 400);
+        wp_die();
+    }
+
+    if ($code !== (string)$code_data['code']) {
+        error_log('Code mismatch - Received: ' . $code . ', Stored: ' . $code_data['code']);
+        wp_send_json_error(array('message' => 'კოდი არასწორია'), 400);
+        wp_die();
+    }
+
+    // Reset the password
+    wp_set_password($password, $user->ID);
+    
+    // Clear the reset code
+    delete_user_meta($user->ID, 'password_reset_code');
+
+    error_log('Password successfully reset for user: ' . $email);
+    wp_send_json_success(array('message' => 'პაროლი წარმატებით შეიცვალა'));
+    wp_die();
+}
+
+add_action('wp_ajax_reset_password_ajax', 'reset_password_ajax_handler');
+add_action('wp_ajax_nopriv_reset_password_ajax', 'reset_password_ajax_handler');
