@@ -191,18 +191,52 @@ function bidspace_verify_code($request) {
 }
 
 function bidspace_reset_password($request) {
-    // Get parameters directly from the request
+    // Log raw request for debugging
+    error_log('Password reset request received');
+    error_log('Request method: ' . $request->get_method());
+    error_log('Content type: ' . $request->get_header('content-type'));
+    error_log('Raw body: ' . $request->get_body());
+    
+    // Try to get parameters from the request
     $email = $request->get_param('email');
     $code = $request->get_param('code');
     $password = $request->get_param('password');
-
-    // Log received parameters
-    error_log('Password reset request received');
+    
+    // If parameters are missing, try to parse JSON body
+    if (empty($email) || empty($code) || empty($password)) {
+        $json_data = json_decode($request->get_body(), true);
+        error_log('Parsed JSON data: ' . print_r($json_data, true));
+        
+        if (is_array($json_data)) {
+            $email = !empty($json_data['email']) ? $json_data['email'] : $email;
+            $code = !empty($json_data['code']) ? $json_data['code'] : $code;
+            $password = !empty($json_data['password']) ? $json_data['password'] : $password;
+        }
+    }
+    
+    // Log parameters after parsing
+    error_log('Final parameters:');
     error_log('Email: ' . ($email ? $email : 'missing'));
     error_log('Code: ' . ($code ? $code : 'missing'));
     error_log('Password length: ' . ($password ? strlen($password) : 0));
-
-    // Parameters are already validated by the schema
+    
+    // Check if required parameters are present
+    if (empty($email) || empty($code) || empty($password)) {
+        return new WP_Error(
+            'missing_data',
+            'გთხოვთ მიუთითოთ ყველა საჭირო ველი',
+            array(
+                'status' => 400,
+                'debug' => array(
+                    'email_present' => !empty($email),
+                    'code_present' => !empty($code),
+                    'password_present' => !empty($password)
+                )
+            )
+        );
+    }
+    
+    // Sanitize parameters
     $email = sanitize_email($email);
     $code = sanitize_text_field($code);
     $password = sanitize_text_field($password);
