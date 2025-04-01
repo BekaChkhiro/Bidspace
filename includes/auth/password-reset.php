@@ -16,9 +16,25 @@ function bidspace_register_password_reset_endpoints() {
     register_rest_route('bidspace/v1', '/reset-password', array(
         'methods' => 'POST',
         'callback' => 'bidspace_reset_password',
-        'permission_callback' => '__return_true'
+        'permission_callback' => '__return_true',
+        'args' => array(
+            'email' => array(
+                'required' => true,
+                'type' => 'string',
+                'validate_callback' => function($param) {
+                    return is_email($param);
+                }
+            ),
+            'code' => array(
+                'required' => true,
+                'type' => 'string'
+            ),
+            'password' => array(
+                'required' => true,
+                'type' => 'string'
+            )
+        )
     ));
-}
 
 function bidspace_request_password_reset($request) {
     $email = sanitize_email($request->get_param('email'));
@@ -174,37 +190,18 @@ function bidspace_verify_code($request) {
 }
 
 function bidspace_reset_password($request) {
-    // Debug log
-    error_log('Password reset request received');
-    error_log('Request method: ' . $request->get_method());
-    error_log('Content type: ' . $request->get_header('content-type'));
-    
     // Get parameters directly from the request
     $email = $request->get_param('email');
     $code = $request->get_param('code');
     $password = $request->get_param('password');
 
     // Log received parameters
-    error_log('Received parameters:');
-    error_log('Email: ' . ($email ? 'present' : 'missing'));
-    error_log('Code: ' . ($code ? 'present' : 'missing'));
-    error_log('Password: ' . ($password ? 'present' : 'missing'));
-    
-    if (empty($email) || empty($code) || empty($password)) {
-        return new WP_Error(
-            'missing_data',
-            'გთხოვთ მიუთითოთ ყველა საჭირო ველი',
-            array(
-                'status' => 400,
-                'debug' => array(
-                    'email_present' => !empty($email),
-                    'code_present' => !empty($code),
-                    'password_present' => !empty($password)
-                )
-            )
-        );
-    }
+    error_log('Password reset request received');
+    error_log('Email: ' . ($email ? $email : 'missing'));
+    error_log('Code: ' . ($code ? $code : 'missing'));
+    error_log('Password length: ' . ($password ? strlen($password) : 0));
 
+    // Parameters are already validated by the schema
     $email = sanitize_email($email);
     $code = sanitize_text_field($code);
     $password = sanitize_text_field($password);
