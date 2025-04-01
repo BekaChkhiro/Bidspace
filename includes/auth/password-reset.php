@@ -35,6 +35,7 @@ function bidspace_register_password_reset_endpoints() {
             )
         )
     ));
+}
 
 function bidspace_request_password_reset($request) {
     $email = sanitize_email($request->get_param('email'));
