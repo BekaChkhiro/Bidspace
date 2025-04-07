@@ -10,9 +10,11 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
   });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
+  const [sentCode, setSentCode] = useState(null); // Add this state for storing sent code
 
   useEffect(() => {
     return () => {
@@ -84,6 +86,11 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         setDebugInfo(data.debug_info);
       }
 
+      // Store the verification code in state if it's returned from the server
+      if (data.verification_code) {
+        setSentCode(data.verification_code);
+      }
+
       setStep('emailSent');
       startTimer();
     } catch (error) {
@@ -151,63 +158,54 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
       return;
     }
 
-    // Log the full userData state
-    console.log('Current userData state:', {
-      email: userData.email,
-      code: userData.verification_code,
-      password: userData.password,
-      password_confirm: userData.password_confirm
-    });
-
     setLoading(true);
     setErrorMessage('');
+    setSuccessMessage('');
     setDebugInfo(null);
 
     try {
-      // Add a small delay to ensure all state updates are complete
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      console.log('Sending data to server:', {
+      console.log('Sending password reset request with data:', {
         email: userData.email,
         code: userData.verification_code,
-        password: userData.password ? '(password provided)' : '(no password)'
+        password: '****',
+        password_confirm: '****'
       });
 
       const response = await fetch('/wp-json/bidspace/v1/reset-password', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           email: userData.email,
           code: userData.verification_code,
-          password: userData.password
+          password: userData.password,
+          password_confirm: userData.password_confirm
         })
       });
 
-      // Log raw response
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
-
       const data = await response.json();
-      console.log('Full server response:', data);
-
+      
       if (!response.ok) {
-        if (data.data && data.data.debug) {
-          setDebugInfo(data.data.debug);
-          console.error('Debug info:', data.data.debug);
-        }
-        throw new Error(data.message || 'პაროლის შეცვლა ვერ მოხერხდა');
+      
+        console.error('Password reset error response:', data);
+        throw new Error(data.message || data.error || 'პაროლის შეცვლა ვერ მოხერხდა');
       }
 
-      // If successful, show success message and close the form
-      alert('პაროლი წარმატებით შეიცვალა');
-      setIsPasswordReset(false);
+      console.log('Password reset successful:', data);
+      setSuccessMessage('პაროლი წარმატებით შეიცვალა');
+      
+      // დავაყოვნოთ 2 წამით რომ მომხმარებელმა დაინახოს წარმატების მესიჯი
+      setTimeout(() => {
+        setIsPasswordReset(false);
+      }, 2000);
     } catch (error) {
       console.error('Error resetting password:', error);
       setErrorMessage(error.message || 'პაროლის შეცვლა ვერ მოხერხდა');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -216,6 +214,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         onClick={() => setIsPasswordReset(false)} 
         className="absolute top-3 left-6 text-gray-500 hover:text-gray-700"
       >
+        
         <svg className="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -223,7 +222,14 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
 
       <h3 className="text-xl font-semibold text-center">პაროლის აღდგენა</h3>
       {errorMessage && (
-        <p className="text-sm text-red-500 text-center">{errorMessage}</p>
+        <div className="text-sm text-red-500 bg-red-50 p-3 rounded-lg text-center">
+          {errorMessage}
+        </div>
+      )}
+      {successMessage && (
+        <div className="text-sm text-green-500 bg-green-50 p-3 rounded-lg text-center">
+          {successMessage}
+        </div>
       )}
       {debugInfo && (
         <div className="debug-info" style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
@@ -277,6 +283,12 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
                 maxLength={6}
                 required
               />
+              {sentCode && (
+                <div className="mt-2 p-3 bg-gray-100 rounded-lg text-center">
+                  <span className="text-sm text-gray-600">თქვენი კოდია:</span>
+                  <span className="ml-2 font-bold">{sentCode}</span>
+                </div>
+              )}
             </div>
             <button
               type="button"

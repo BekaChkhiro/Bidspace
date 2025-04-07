@@ -4,13 +4,32 @@ function bidspace_register_password_reset_endpoints() {
     register_rest_route('bidspace/v1', '/request-password-reset', array(
         'methods' => 'POST',
         'callback' => 'bidspace_request_password_reset',
-        'permission_callback' => '__return_true'
+        'permission_callback' => '__return_true',
+        'args' => array(
+            'email' => array(
+                'required' => true,
+                'type' => 'string',
+                'validate_callback' => function($param) {
+                    return is_email($param);
+                }
+            )
+        )
     ));
 
     register_rest_route('bidspace/v1', '/verify-code', array(
         'methods' => 'POST',
         'callback' => 'bidspace_verify_code',
-        'permission_callback' => '__return_true'
+        'permission_callback' => '__return_true',
+        'args' => array(
+            'email' => array(
+                'required' => true,
+                'type' => 'string'
+            ),
+            'code' => array(
+                'required' => true,
+                'type' => 'string'
+            )
+        )
     ));
 
     register_rest_route('bidspace/v1', '/reset-password', array(
@@ -20,16 +39,17 @@ function bidspace_register_password_reset_endpoints() {
         'args' => array(
             'email' => array(
                 'required' => true,
-                'type' => 'string',
-                'validate_callback' => function($param) {
-                    return is_email($param);
-                }
+                'type' => 'string'
             ),
             'code' => array(
                 'required' => true,
                 'type' => 'string'
             ),
             'password' => array(
+                'required' => true,
+                'type' => 'string'
+            ),
+            'password_confirm' => array(
                 'required' => true,
                 'type' => 'string'
             )
@@ -50,6 +70,7 @@ function bidspace_request_password_reset($request) {
     }
     
     $verification_code = wp_rand(100000, 999999);
+    
     $code_data = array(
         'code' => $verification_code,
         'expires' => time() + (30 * 60) // 30 minutes
@@ -144,20 +165,14 @@ function bidspace_request_password_reset($request) {
         return array(
             'success' => true,
             'message' => 'კოდი გამოგზავნილია',
-            'debug_email' => $to // Debug info
+            'verification_code' => $verification_code // Return code for development
         );
     }
 
     return new WP_Error(
         'email_failed', 
         'კოდის გაგზავნა ვერ მოხერხდა', 
-        array(
-            'status' => 500,
-            'debug_info' => array(
-                'to' => $to,
-                'error' => isset($GLOBALS['phpmailer']) ? $GLOBALS['phpmailer']->ErrorInfo : 'Unknown error'
-            )
-        )
+        array('status' => 500)
     );
 }
 
@@ -191,37 +206,23 @@ function bidspace_verify_code($request) {
 }
 
 function bidspace_reset_password($request) {
-    // Log raw request for debugging
     error_log('Password reset request received');
-    error_log('Request method: ' . $request->get_method());
-    error_log('Content type: ' . $request->get_header('content-type'));
-    error_log('Raw body: ' . $request->get_body());
     
-    // Try to get parameters from the request
-    $email = $request->get_param('email');
-    $code = $request->get_param('code');
-    $password = $request->get_param('password');
+    $params = $request->get_json_params();
+    error_log('Decoded params: ' . print_r($params, true));
     
-    // If parameters are missing, try to parse JSON body
-    if (empty($email) || empty($code) || empty($password)) {
-        $json_data = json_decode($request->get_body(), true);
-        error_log('Parsed JSON data: ' . print_r($json_data, true));
-        
-        if (is_array($json_data)) {
-            $email = !empty($json_data['email']) ? $json_data['email'] : $email;
-            $code = !empty($json_data['code']) ? $json_data['code'] : $code;
-            $password = !empty($json_data['password']) ? $json_data['password'] : $password;
-        }
-    }
-    
-    // Log parameters after parsing
-    error_log('Final parameters:');
+    $email = isset($params['email']) ? sanitize_email($params['email']) : '';
+    $code = isset($params['code']) ? sanitize_text_field($params['code']) : '';
+    $password = isset($params['password']) ? sanitize_text_field($params['password']) : '';
+    $password_confirm = isset($params['password_confirm']) ? sanitize_text_field($params['password_confirm']) : '';
+
+    error_log('Sanitized inputs received:');
     error_log('Email: ' . ($email ? $email : 'missing'));
     error_log('Code: ' . ($code ? $code : 'missing'));
-    error_log('Password length: ' . ($password ? strlen($password) : 0));
-    
-    // Check if required parameters are present
-    if (empty($email) || empty($code) || empty($password)) {
+    error_log('Password present: ' . (!empty($password) ? 'yes' : 'no'));
+    error_log('Password confirm present: ' . (!empty($password_confirm) ? 'yes' : 'no'));
+
+    if (empty($email) || empty($code) || empty($password) || empty($password_confirm)) {
         return new WP_Error(
             'missing_data',
             'გთხოვთ მიუთითოთ ყველა საჭირო ველი',
@@ -230,21 +231,20 @@ function bidspace_reset_password($request) {
                 'debug' => array(
                     'email_present' => !empty($email),
                     'code_present' => !empty($code),
-                    'password_present' => !empty($password)
+                    'password_present' => !empty($password),
+                    'password_confirm_present' => !empty($password_confirm)
                 )
             )
         );
     }
-    
-    // Sanitize parameters
-    $email = sanitize_email($email);
-    $code = sanitize_text_field($code);
-    $password = sanitize_text_field($password);
 
-    error_log('Processed data:');
-    error_log('Email: ' . $email);
-    error_log('Code length: ' . strlen($code));
-    error_log('Password length: ' . strlen($password));
+    if ($password !== $password_confirm) {
+        return new WP_Error('password_mismatch', 'პაროლები არ ემთხვევა', array('status' => 400));
+    }
+
+    if (strlen($password) < 6) {
+        return new WP_Error('password_too_short', 'პაროლი უნდა შეიცავდეს მინიმუმ 6 სიმბოლოს', array('status' => 400));
+    }
 
     $user = get_user_by('email', $email);
     if (!$user) {
@@ -256,40 +256,28 @@ function bidspace_reset_password($request) {
     error_log('Retrieved code data: ' . print_r($code_data, true));
     
     if (!$code_data || !is_array($code_data) || !isset($code_data['code']) || !isset($code_data['expires'])) {
-        error_log('Invalid or missing code data structure');
-        return new WP_Error('invalid_code', 'კოდი არასწორია', array(
-            'status' => 400,
-            'debug' => array(
-                'code_data_exists' => !empty($code_data),
-                'is_array' => is_array($code_data),
-                'has_code' => isset($code_data['code']),
-                'has_expires' => isset($code_data['expires'])
-            )
-        ));
+        error_log('Invalid code data structure');
+        return new WP_Error('invalid_code', 'კოდი არ არის ვალიდური', array('status' => 400));
     }
     
     if (time() > $code_data['expires']) {
         error_log('Code expired. Current time: ' . time() . ', Expiry: ' . $code_data['expires']);
+        delete_user_meta($user->ID, 'password_reset_code');
         return new WP_Error('code_expired', 'კოდს ვადა გაუვიდა', array('status' => 400));
     }
 
     if ($code !== (string)$code_data['code']) {
-        error_log(sprintf('Code mismatch - Received: %s, Stored: %s', $code, $code_data['code']));
+        error_log('Code mismatch - Received: ' . $code . ', Stored: ' . $code_data['code']);
         return new WP_Error('invalid_code', 'კოდი არასწორია', array('status' => 400));
     }
 
     // Reset the password
-    $result = wp_set_password($password, $user->ID);
-    
-    if (is_wp_error($result)) {
-        error_log('Failed to reset password: ' . $result->get_error_message());
-        return new WP_Error('password_reset_failed', 'პაროლის შეცვლა ვერ მოხერხდა', array('status' => 500));
-    }
+    wp_set_password($password, $user->ID);
+    error_log('Password successfully reset for user: ' . $email);
     
     // Clear the reset code
     delete_user_meta($user->ID, 'password_reset_code');
 
-    error_log('Password successfully reset for user: ' . $email);
     return array(
         'success' => true,
         'message' => 'პაროლი წარმატებით შეიცვალა'

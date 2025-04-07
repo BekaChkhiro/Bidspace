@@ -533,9 +533,10 @@ add_action('rest_api_init', function() {
 
 // Add phone number verification endpoint
 add_action('rest_api_init', function () {
-    register_rest_route('bidspace/v1', '/reset-password', array(
+    // Remove duplicate password reset endpoint
+    register_rest_route('bidspace/v1', '/verify-phone', array(
         'methods' => 'POST',
-        'callback' => 'handle_password_reset',
+        'callback' => 'handle_phone_verification',
         'permission_callback' => '__return_true'
     ));
 });
