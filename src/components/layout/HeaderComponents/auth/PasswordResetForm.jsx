@@ -14,7 +14,6 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
   const [timeLeft, setTimeLeft] = useState(60);
   const [timer, setTimer] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
-  const [sentCode, setSentCode] = useState(null); // Add this state for storing sent code
 
   useEffect(() => {
     return () => {
@@ -86,11 +85,7 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
         setDebugInfo(data.debug_info);
       }
 
-      // Store the verification code in state if it's returned from the server
-      if (data.verification_code) {
-        setSentCode(data.verification_code);
-      }
-
+      setSuccessMessage('დადასტურების კოდი გამოგზავნილია თქვენს ელ-ფოსტაზე');
       setStep('emailSent');
       startTimer();
     } catch (error) {
@@ -272,6 +267,9 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
               <label htmlFor="verification_code" className="text-sm text-gray-600">
                 დადასტურების კოდი {timeLeft > 0 && <span className="text-gray-500 ml-2">({timeLeft} წამი)</span>}
               </label>
+              <p className="text-sm text-gray-600 mb-2">
+                დადასტურების კოდი გამოგზავნილია თქვენს ელ-ფოსტაზე
+              </p>
               <input
                 type="text"
                 id="verification_code"
@@ -283,12 +281,6 @@ const PasswordResetForm = ({ setIsPasswordReset }) => {
                 maxLength={6}
                 required
               />
-              {sentCode && (
-                <div className="mt-2 p-3 bg-gray-100 rounded-lg text-center">
-                  <span className="text-sm text-gray-600">თქვენი კოდია:</span>
-                  <span className="ml-2 font-bold">{sentCode}</span>
-                </div>
-              )}
             </div>
             <button
               type="button"

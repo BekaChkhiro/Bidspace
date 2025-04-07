@@ -69,14 +69,26 @@ function bidspace_request_password_reset($request) {
         return new WP_Error('user_not_found', 'მომხმარებელი ვერ მოიძებნა', array('status' => 404));
     }
     
+    // Add rate limiting
+    $last_request_time = get_user_meta($user->ID, 'password_reset_last_request', true);
+    if ($last_request_time && (time() - $last_request_time < 60)) { // 1 minute cooldown
+        return new WP_Error(
+            'too_many_requests', 
+            'გთხოვთ მოიცადოთ 1 წუთი ახალი კოდის მოთხოვნამდე', 
+            array('status' => 429)
+        );
+    }
+    
     $verification_code = wp_rand(100000, 999999);
     
     $code_data = array(
         'code' => $verification_code,
-        'expires' => time() + (30 * 60) // 30 minutes
+        'expires' => time() + (30 * 60), // 30 minutes
+        'attempts' => 0 // Track failed attempts
     );
     
     update_user_meta($user->ID, 'password_reset_code', $code_data);
+    update_user_meta($user->ID, 'password_reset_last_request', time());
 
     $to = $email;
     $subject = 'პაროლის აღდგენა - Bidspace';
@@ -118,54 +130,21 @@ function bidspace_request_password_reset($request) {
     </body>
     </html>';
 
-    // Plain text version of the email
-    $message_text = sprintf(
-        "პაროლის აღდგენა - Bidspace\n\n" .
-        "გამარჯობა,\n\n" .
-        "მივიღეთ თქვენი მოთხოვნა Bidspace-ზე პაროლის აღდგენის შესახებ.\n\n" .
-        "თქვენი დადასტურების კოდია: %s\n\n" .
-        "კოდი მოქმედებს 30 წუთის განმავლობაში.\n\n" .
-        "თუ თქვენ არ მოგითხოვიათ პაროლის აღდგენა, გთხოვთ უგულებელყოთ ეს შეტყობინება.\n\n" .
-        "ეს არის ავტომატური შეტყობინება, გთხოვთ არ უპასუხოთ.",
-        $verification_code
-    );
-
-    // Email headers
     $headers = array(
         'Content-Type: text/html; charset=UTF-8',
         'From: Bidspace <noreply@bidspace.ge>',
         'Reply-To: noreply@bidspace.ge'
     );
 
-   // Try to send the email
+    // Try to send the email
     add_filter('wp_mail_content_type', function() { return "text/html"; });
     $mail_sent = wp_mail($to, $subject, $message_html, $headers);
     remove_filter('wp_mail_content_type', function() { return "text/html"; });
 
-    // Log email attempt
-    error_log('Password reset email attempt:');
-    error_log('To: ' . $to);
-    error_log('Subject: ' . $subject);
-    error_log('Headers: ' . print_r($headers, true));
-    error_log('Result: ' . ($mail_sent ? 'Success' : 'Failed'));
-    if (!$mail_sent) {
-        error_log('WordPress mail error: ' . print_r($GLOBALS['phpmailer']->ErrorInfo, true));
-        
-        // Additional debug info
-        if (isset($GLOBALS['phpmailer'])) {
-            error_log('PHPMailer Debug Info:');
-            error_log('Host: ' . $GLOBALS['phpmailer']->Host);
-            error_log('Port: ' . $GLOBALS['phpmailer']->Port);
-            error_log('SMTPAuth: ' . ($GLOBALS['phpmailer']->SMTPAuth ? 'true' : 'false'));
-            error_log('SMTPSecure: ' . $GLOBALS['phpmailer']->SMTPSecure);
-        }
-    }
-
     if ($mail_sent) {
         return array(
             'success' => true,
-            'message' => 'კოდი გამოგზავნილია',
-            'verification_code' => $verification_code // Return code for development
+            'message' => 'კოდი გამოგზავნილია'
         );
     }
 
@@ -191,11 +170,26 @@ function bidspace_verify_code($request) {
 
     $code_data = get_user_meta($user->ID, 'password_reset_code', true);
     
-    if (!$code_data || time() > $code_data['expires']) {
+    if (!$code_data || !is_array($code_data)) {
+        return new WP_Error('invalid_code', 'კოდი არ არის ვალიდური', array('status' => 400));
+    }
+
+    // Check for too many failed attempts
+    if (isset($code_data['attempts']) && $code_data['attempts'] >= 5) {
+        delete_user_meta($user->ID, 'password_reset_code');
+        return new WP_Error('too_many_attempts', 'ძალიან ბევრი მცდელობა. გთხოვთ მოითხოვოთ ახალი კოდი', array('status' => 400));
+    }
+    
+    if (time() > $code_data['expires']) {
+        delete_user_meta($user->ID, 'password_reset_code');
         return new WP_Error('code_expired', 'კოდს ვადა გაუვიდა', array('status' => 400));
     }
 
     if ($code !== (string)$code_data['code']) {
+        // Increment failed attempts
+        $code_data['attempts'] = isset($code_data['attempts']) ? $code_data['attempts'] + 1 : 1;
+        update_user_meta($user->ID, 'password_reset_code', $code_data);
+        
         return new WP_Error('invalid_code', 'არასწორი კოდი', array('status' => 400));
     }
 
