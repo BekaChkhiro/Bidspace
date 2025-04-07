@@ -3,9 +3,42 @@ import wonAuctionIcon from '../../assets/icons/auction/won_auction.svg';
 import dateIcon from '../../assets/icons/auction/date_icon.svg';
 import paymentArrowIcon from '../../assets/icons/auction/payment_arrow.svg';
 
+const PaymentModal = ({ isOpen, onClose, amount, onConfirm, isProcessing }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h2 className="text-xl font-bold mb-4">გადახდა</h2>
+        <div className="mb-4">
+          <p className="text-gray-600">გადასახდელი თანხა:</p>
+          <p className="text-2xl font-bold text-[#00AEEF]">{amount} ₾</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onConfirm}
+            disabled={isProcessing}
+            className="flex-1 bg-[#00AEEF] text-white py-2 px-4 rounded-lg hover:bg-[#009bd6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isProcessing ? 'დამუშავება...' : 'გადახდა'}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={isProcessing}
+            className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            გაუქმება
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EndedWonAuction = ({ auctionData }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const getLastBid = () => {
     if (!auctionData?.meta?.bids_list) return null;
@@ -181,6 +214,25 @@ const EndedWonAuction = ({ auctionData }) => {
           </div>
         )}
       </div>
+
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        amount={lastBid?.bid_price}
+        onConfirm={handlePayment}
+        isProcessing={isProcessing}
+      />
+
+      {auctionData.meta?.payment_status !== 'completed' && (
+        <button 
+          onClick={() => setShowPaymentModal(true)}
+          disabled={isProcessing}
+          className="flex items-center justify-center gap-2 bg-[#00AEEF] text-white py-3 px-6 rounded-lg hover:bg-[#009bd6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span>გადახდა</span>
+          <img src={paymentArrowIcon} alt="გადახდის იკონი" className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 };

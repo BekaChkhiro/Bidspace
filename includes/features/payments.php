@@ -119,3 +119,91 @@ function verify_bog_payment($request) {
         );
     }
 }
+
+function initiate_auction_payment($auction_id, $amount) {
+    // Create WooCommerce product for the auction
+    $auction = get_post($auction_id);
+    $product = array(
+        'post_title'    => sprintf('აუქციონი: %s', $auction->post_title),
+        'post_content'  => sprintf('გადახდა აუქციონისთვის: %s', $auction->post_title),
+        'post_status'   => 'publish',
+        'post_type'     => 'product'
+    );
+    
+    $product_id = wp_insert_post($product);
+    
+    if (is_wp_error($product_id)) {
+        throw new Exception('Failed to create product');
+    }
+
+    // Set product meta
+    update_post_meta($product_id, '_regular_price', $amount);
+    update_post_meta($product_id, '_price', $amount);
+    update_post_meta($product_id, '_virtual', 'yes');
+    update_post_meta($product_id, '_sold_individually', 'yes');
+    
+    // Link product to auction
+    update_post_meta($product_id, '_auction_id', $auction_id);
+    update_post_meta($auction_id, '_product_id', $product_id);
+
+    // Create cart url
+    WC()->cart->empty_cart();
+    WC()->cart->add_to_cart($product_id, 1);
+    $checkout_url = wc_get_checkout_url();
+
+    return array(
+        'success' => true,
+        'links' => array(
+            'redirect' => $checkout_url
+        )
+    );
+}
+
+// Add WooCommerce order completion handler
+add_action('woocommerce_order_status_completed', 'handle_auction_payment_completion');
+function handle_auction_payment_completion($order_id) {
+    $order = wc_get_order($order_id);
+    
+    foreach ($order->get_items() as $item) {
+        $product_id = $item->get_product_id();
+        $auction_id = get_post_meta($product_id, '_auction_id', true);
+        
+        if ($auction_id) {
+            update_post_meta($auction_id, 'payment_status', 'completed');
+            do_action('bidspace_payment_completed', $auction_id);
+        }
+    }
+}
+
+// Clean up temporary products
+add_action('bidspace_payment_completed', 'cleanup_auction_product');
+function cleanup_auction_product($auction_id) {
+    $product_id = get_post_meta($auction_id, '_product_id', true);
+    if ($product_id) {
+        wp_delete_post($product_id, true); // Force delete the product
+        delete_post_meta($auction_id, '_product_id');
+    }
+}
+
+// Hook into payment initiation
+add_filter('bidspace_payment_initiate', function($result, $auction_id, $amount) {
+    try {
+        // Check if WooCommerce is active
+        if (!class_exists('WooCommerce')) {
+            return $result;
+        }
+
+        // Check if user chose WooCommerce payment
+        if (isset($_POST['payment_method']) && $_POST['payment_method'] === 'woocommerce') {
+            return initiate_auction_payment($auction_id, $amount);
+        }
+
+        return $result;
+    } catch (Exception $e) {
+        return new WP_Error(
+            'payment_initiation_failed',
+            $e->getMessage(),
+            array('status' => 500)
+        );
+    }
+}, 10, 3);
