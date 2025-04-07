@@ -86,7 +86,7 @@ function initiate_bog_payment($request) {
             );
         }
 
-        // Validate amount matches the last bid
+        // Get and validate last bid
         $bids_list = get_post_meta($auction_id, 'bids_list', true);
         if (!$bids_list || !is_array($bids_list)) {
             return new WP_Error(
@@ -96,8 +96,26 @@ function initiate_bog_payment($request) {
             );
         }
 
-        $last_bid = end($bids_list);
-        if (!$last_bid || floatval($last_bid['bid_price']) !== $amount) {
+        // Get the last bid (most recent)
+        usort($bids_list, function($a, $b) {
+            return strtotime($b['bid_time']) - strtotime($a['bid_time']);
+        });
+        $last_bid = reset($bids_list);
+
+        if (!$last_bid) {
+            return new WP_Error(
+                'no_bids',
+                'ბიდი ვერ მოიძებნა',
+                array('status' => 400)
+            );
+        }
+
+        // Compare amounts with float precision handling
+        $last_bid_amount = floatval($last_bid['bid_price']);
+        $requested_amount = floatval($amount);
+
+        if (abs($last_bid_amount - $requested_amount) > 0.01) { // Allow for minor float precision differences
+            error_log("Amount mismatch - Last bid: $last_bid_amount, Requested: $requested_amount");
             return new WP_Error(
                 'invalid_amount',
                 'გადასახდელი თანხა არ ემთხვევა ბიდის თანხას',

@@ -61,14 +61,21 @@ const EndedWonAuction = ({ auctionData }) => {
       setIsProcessing(true);
       setError(null);
 
-      // Check if payment is already completed
       if (auctionData.meta?.payment_status === 'completed') {
         setError('გადახდა უკვე განხორციელებულია');
         return;
       }
 
+      const lastBid = getLastBid();
       if (!lastBid || !lastBid.bid_price) {
         setError('ბიდის თანხა ვერ მოიძებნა');
+        return;
+      }
+
+      // Ensure bid_price is a number and properly formatted
+      const bidPrice = parseFloat(lastBid.bid_price);
+      if (isNaN(bidPrice)) {
+        setError('არასწორი ბიდის თანხა');
         return;
       }
 
@@ -81,7 +88,7 @@ const EndedWonAuction = ({ auctionData }) => {
         },
         body: JSON.stringify({
           auction_id: auctionData.id,
-          amount: lastBid.bid_price
+          amount: bidPrice
         })
       });
 
@@ -94,18 +101,16 @@ const EndedWonAuction = ({ auctionData }) => {
       }
 
       if (!response.ok) {
-        const errorMessage = responseData.message || 'გადახდის ინიციალიზაცია ვერ მოხერხდა';
-        throw new Error(errorMessage);
-      }
-
-      if (!responseData.success || !responseData.links?.redirect) {
-        console.error('Invalid payment response:', responseData);
-        throw new Error('გადახდის ინიციალიზაცია ვერ მოხერხდა');
+        throw new Error(responseData.message || 'გადახდის ინიციალიზაცია ვერ მოხერხდა');
       }
 
       // Redirect to BOG payment page
-      console.log('Redirecting to payment page:', responseData.links.redirect);
-      window.location.href = responseData.links.redirect;
+      if (responseData.success && responseData.links?.redirect) {
+        console.log('Redirecting to payment page:', responseData.links.redirect);
+        window.location.href = responseData.links.redirect;
+      } else {
+        throw new Error('გადახდის ინიციალიზაცია ვერ მოხერხდა');
+      }
 
     } catch (err) {
       console.error('Payment error:', err);
