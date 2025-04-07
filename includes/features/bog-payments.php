@@ -14,14 +14,22 @@ class BOG_Payments {
         $this->client_secret = '4CkZtaO70B3s';
     }
 
+    private function configure_curl($ch) {
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        // Set a longer timeout for slow connections
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    }
+
     public function get_access_token() {
         $ch = curl_init($this->token_url);
         
         error_log('BOG Payment: Requesting access token from ' . $this->token_url);
         
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $this->configure_curl($ch);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification temporarily
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
         
         $postFields = [
@@ -62,7 +70,7 @@ class BOG_Payments {
         error_log('BOG Payment: Failed to parse token response - ' . print_r($response, true));
         return [
             'success' => false,
-            'error' => 'Invalid token response'
+            'error' => isset($data['error_description']) ? $data['error_description'] : 'Invalid token response'
         ];
     }
 
@@ -105,9 +113,8 @@ class BOG_Payments {
         error_log('BOG Payment: Payment request data - ' . print_r($data, true));
 
         $ch = curl_init($this->api_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $this->configure_curl($ch);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification temporarily
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $token_response['token'],
             'Content-Type: application/json',
@@ -137,7 +144,17 @@ class BOG_Payments {
         $response_data = json_decode($response, true);
         error_log('BOG Payment: Parsed response - ' . print_r($response_data, true));
 
-        if (isset($response_data['links']) && is_array($response_data['links'])) {
+        // Look for the redirect URL in various response formats
+        if (isset($response_data['_links']['redirect']['href'])) {
+            return [
+                'success' => true,
+                'links' => [
+                    'redirect' => $response_data['_links']['redirect']['href']
+                ]
+            ];
+        }
+        
+        if (isset($response_data['links'])) {
             foreach ($response_data['links'] as $link) {
                 if (isset($link['rel']) && $link['rel'] === 'approve' && isset($link['href'])) {
                     return [
@@ -150,9 +167,18 @@ class BOG_Payments {
             }
         }
 
+        // Check for error messages in the response
+        $error_message = 'Could not find payment redirect URL in response';
+        if (isset($response_data['message'])) {
+            $error_message = $response_data['message'];
+        } elseif (isset($response_data['error']['message'])) {
+            $error_message = $response_data['error']['message'];
+        }
+
+        error_log('BOG Payment: Failed to find redirect URL in response - ' . $error_message);
         return [
             'success' => false,
-            'error' => 'Could not find payment redirect URL in response'
+            'error' => $error_message
         ];
     }
 
@@ -170,9 +196,8 @@ class BOG_Payments {
         $verify_url = $this->api_url . '/' . $order_id;
         
         $ch = curl_init($verify_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $this->configure_curl($ch);
         curl_setopt($ch, CURLOPT_HTTPGET, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $token_response['token'],
             'Accept-Language: ka'

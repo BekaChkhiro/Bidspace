@@ -143,8 +143,13 @@ function initiate_bog_payment($request) {
         $result = $bog_payments->initiate_payment($order_id, $amount, 'GEL', $description);
 
         if (!$result['success']) {
-            error_log('BOG Payment initiation failed: ' . $result['error']);
-            throw new Exception($result['error']);
+            error_log('BOG Payment initiation failed: ' . print_r($result, true));
+            throw new Exception($result['error'] ?: 'Could not initiate payment');
+        }
+
+        if (!isset($result['links']['redirect'])) {
+            error_log('BOG Payment missing redirect URL: ' . print_r($result, true));
+            throw new Exception('Could not find payment redirect URL in response');
         }
 
         error_log('Payment initiated successfully. Redirect URL: ' . $result['links']['redirect']);
