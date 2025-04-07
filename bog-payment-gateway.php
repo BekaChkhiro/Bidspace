@@ -191,15 +191,27 @@ function init_bog_payment_gateway_class() {
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true); // Enable SSL verification
             curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded'));
             curl_setopt($ch, CURLOPT_USERPWD, "{$client_id}:{$client_secret}");
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(array('grant_type' => 'client_credentials')));
-
+            
+            // Add detailed error logging
+            error_log('Making token request to: ' . $url);
+            error_log('Using client ID: ' . $client_id);
+            
             $response = curl_exec($ch);
+            $curl_info = curl_getinfo($ch);
+            
             if (curl_errno($ch)) {
                 error_log('Token request curl error: ' . curl_error($ch));
+                error_log('Curl info: ' . print_r($curl_info, true));
                 return new WP_Error('curl_error', curl_error($ch));
             }
+            
+            error_log('Token response: ' . $response);
+            error_log('Response info: ' . print_r($curl_info, true));
+            
             curl_close($ch);
             
             $body = json_decode($response, true);
@@ -217,6 +229,7 @@ function init_bog_payment_gateway_class() {
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true); // Enable SSL verification
             curl_setopt($ch, CURLOPT_HTTPHEADER, array(
                 'Accept-Language: ka',
                 'Authorization: Bearer ' . $token,
@@ -224,14 +237,23 @@ function init_bog_payment_gateway_class() {
             ));
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
             
+            error_log('Making payment order request to: ' . $url);
+            error_log('Request data: ' . json_encode($data));
+            
             $response = curl_exec($ch);
+            $curl_info = curl_getinfo($ch);
+            
             if (curl_errno($ch)) {
                 error_log('Payment order creation curl error: ' . curl_error($ch));
+                error_log('Curl info: ' . print_r($curl_info, true));
                 return new WP_Error('curl_error', curl_error($ch));
             }
-            curl_close($ch);
             
             error_log('Payment order creation response: ' . $response);
+            error_log('Response info: ' . print_r($curl_info, true));
+            
+            curl_close($ch);
+            
             return json_decode($response, true);
         }
 

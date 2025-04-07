@@ -72,62 +72,40 @@ const EndedWonAuction = ({ auctionData }) => {
         return;
       }
 
-      console.log('Initiating payment for auction:', {
-        auctionId: auctionData.id,
-        amount: lastBid.bid_price
-      });
-
       // Initiate payment
       const response = await fetch('/wp-json/bidspace/v1/payment/initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
           'X-WP-Nonce': window.bidspaceSettings?.restNonce || '',
         },
         body: JSON.stringify({
           auction_id: auctionData.id,
           amount: lastBid.bid_price
-        }),
-        credentials: 'include'
+        })
       });
 
-      const responseText = await response.text();
-      console.log('Payment API Response:', {
-        status: response.status,
-        text: responseText
-      });
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        console.error('Error parsing response:', e);
+        throw new Error('Invalid response from payment server');
+      }
 
       if (!response.ok) {
-        let errorMessage = 'გადახდის ინიციალიზაცია ვერ მოხერხდა';
-        try {
-          const errorData = JSON.parse(responseText);
-          if (errorData.message) {
-            errorMessage = errorData.message;
-          }
-        } catch (e) {
-          console.error('Error parsing error response:', e);
-        }
+        const errorMessage = responseData.message || 'გადახდის ინიციალიზაცია ვერ მოხერხდა';
         throw new Error(errorMessage);
       }
 
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('Error parsing success response:', e);
-        throw new Error('გადახდის სერვისიდან მიღებულია არასწორი პასუხი');
-      }
-
-      // Check if we have valid redirect URL
-      if (!data.links?.redirect) {
-        console.error('Missing redirect URL in response:', data);
-        throw new Error('გადახდის ბმული ვერ მოიძებნა');
+      if (!responseData.success || !responseData.links?.redirect) {
+        console.error('Invalid payment response:', responseData);
+        throw new Error('გადახდის ინიციალიზაცია ვერ მოხერხდა');
       }
 
       // Redirect to BOG payment page
-      console.log('Redirecting to payment page:', data.links.redirect);
-      window.location.href = data.links.redirect;
+      console.log('Redirecting to payment page:', responseData.links.redirect);
+      window.location.href = responseData.links.redirect;
 
     } catch (err) {
       console.error('Payment error:', err);

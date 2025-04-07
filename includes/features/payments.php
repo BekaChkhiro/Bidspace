@@ -52,8 +52,29 @@ add_action('rest_api_init', function () {
 function initiate_bog_payment($request) {
     try {
         $params = $request->get_json_params();
-        $auction_id = $params['auction_id'];
-        $amount = $params['amount'];
+        $auction_id = absint($params['auction_id']);
+        $amount = floatval($params['amount']);
+
+        error_log('Payment Initiation Request - Auction ID: ' . $auction_id . ', Amount: ' . $amount . ', User ID: ' . get_current_user_id());
+
+        // Validate user authentication
+        if (!is_user_logged_in()) {
+            return new WP_Error(
+                'authentication_required',
+                'გთხოვთ გაიაროთ ავტორიზაცია',
+                array('status' => 401)
+            );
+        }
+
+        // Validate auction exists and is published
+        $auction = get_post($auction_id);
+        if (!$auction || $auction->post_type !== 'auction' || $auction->post_status !== 'publish') {
+            return new WP_Error(
+                'invalid_auction',
+                'აუქციონი ვერ მოიძებნა',
+                array('status' => 404)
+            );
+        }
 
         // Check if payment already exists and is completed
         $payment_status = get_post_meta($auction_id, 'payment_status', true);
@@ -61,6 +82,25 @@ function initiate_bog_payment($request) {
             return new WP_Error(
                 'payment_exists',
                 'გადახდა უკვე განხორციელებულია',
+                array('status' => 400)
+            );
+        }
+
+        // Validate amount matches the last bid
+        $bids_list = get_post_meta($auction_id, 'bids_list', true);
+        if (!$bids_list || !is_array($bids_list)) {
+            return new WP_Error(
+                'invalid_bid',
+                'ბიდი ვერ მოიძებნა',
+                array('status' => 400)
+            );
+        }
+
+        $last_bid = end($bids_list);
+        if (!$last_bid || floatval($last_bid['bid_price']) !== $amount) {
+            return new WP_Error(
+                'invalid_amount',
+                'გადასახდელი თანხა არ ემთხვევა ბიდის თანხას',
                 array('status' => 400)
             );
         }
@@ -74,22 +114,33 @@ function initiate_bog_payment($request) {
         update_post_meta($auction_id, 'payment_status', 'pending');
 
         // Get auction title for payment description
-        $auction = get_post($auction_id);
         $description = sprintf(
             'გადახდა აუქციონისთვის: %s',
             $auction->post_title
         );
 
+        error_log('Initiating BOG payment with order ID: ' . $order_id);
+        
         $bog_payments = get_bog_payments();
         $result = $bog_payments->initiate_payment($order_id, $amount, 'GEL', $description);
 
         if (!$result['success']) {
+            error_log('BOG Payment initiation failed: ' . $result['error']);
             throw new Exception($result['error']);
         }
 
-        return rest_ensure_response($result);
+        error_log('Payment initiated successfully. Redirect URL: ' . $result['links']['redirect']);
+
+        return rest_ensure_response([
+            'success' => true,
+            'links' => [
+                'redirect' => $result['links']['redirect']
+            ],
+            'order_id' => $order_id
+        ]);
 
     } catch (Exception $e) {
+        error_log('Payment initiation error: ' . $e->getMessage());
         return new WP_Error(
             'payment_init_failed',
             $e->getMessage(),
