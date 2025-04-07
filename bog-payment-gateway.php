@@ -47,13 +47,13 @@ function init_bog_payment_gateway_class() {
                     'title'       => __('Client ID', 'woocommerce'),
                     'type'        => 'text',
                     'description' => __('Your BOG Client ID.', 'woocommerce'),
-                    'default'     => '',
+                    'default'     => '10000610',
                 ),
                 'client_secret' => array(
                     'title'       => __('Client Secret', 'woocommerce'),
                     'type'        => 'password',
                     'description' => __('Your BOG Client Secret.', 'woocommerce'),
-                    'default'     => '',
+                    'default'     => '4CkZtaO70B3s',
                 ),
             );
         }
